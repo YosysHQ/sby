@@ -227,6 +227,8 @@ class SbyJob:
         self.logfile.flush()
 
     def copy_src(self):
+        os.makedirs(self.workdir + "/src")
+
         for dstfile, srcfile in self.files.items():
             dstfile = self.workdir + "/src/" + dstfile
 
