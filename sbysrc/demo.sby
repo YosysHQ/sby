@@ -1,0 +1,20 @@
+
+[options]
+mode bmc
+depth 10
+
+[engines]
+smtbmc -s yices
+smtbmc -s boolector
+smtbmc -s z3 --nomem
+abc_bmc3
+
+[script]
+read_verilog -formal -norestrict -assume-asserts picorv32.v
+read_verilog -formal axicheck.v
+prep -nordff -top testbench
+
+[files]
+picorv32.v ~/Work/picorv32/picorv32.v
+axicheck.v ~/Work/picorv32/scripts/smtbmc/axicheck.v
+
