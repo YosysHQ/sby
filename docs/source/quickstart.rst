@@ -7,6 +7,18 @@ Installing
 
 TBD
 
+Until I find the time to write this section this links must be sufficient:
+
+  * Yosys: http://www.clifford.at/yosys/
+  * SymbiYosys: https://github.com/cliffordwolf/SymbiYosys
+  * Z3: https://github.com/Z3Prover/z3
+  * Yices2: http://yices.csl.sri.com/
+  * Boolector: http://fmv.jku.at/boolector/
+  * super_prove: http://downloads.bvsrc.org/super_prove/
+
+(Yosys, SymbiYosys, and Z3 are non-optional. The other packages are only
+required for some engine configurations.)
+
 First step: A simple BMC example
 --------------------------------
 
@@ -79,7 +91,7 @@ This will also create a ``demo/`` directory tree with all relevant information,
 such as a copy of the design source, various log files, and trace data in case
 the proof fails.
 
-(Use ``sby -f demo.sby`` to re-run the prove. Without ``-f`` the command will
+(Use ``sby -f demo.sby`` to re-run the proof. Without ``-f`` the command will
 fail because the output directory ``demo/`` already exists.)
 
 Time for a simple exercise: Modify the design so that the property is false
