@@ -78,7 +78,9 @@ def run_smtbmc(job, engine_idx, engine):
     job.engine_tasks.append(task)
 
 
-def run_abc_bmc3(job, engine_idx, engine):
+def run_abc(job, engine_idx, engine):
+    assert engine == ["abc", "bmc3"]
+
     task = SbyTask(job, "engine_%d" % engine_idx, job.model("aig"),
             ("cd %s; yosys-abc -c 'read_aiger model/design_aiger.aig; fold; strash; bmc3 -F %d -v; " +
              "undc -c; write_cex -a engine_%d/trace.aiw'") % (job.workdir, job.opt_depth, engine_idx),
@@ -159,8 +161,8 @@ def run(job):
         if engine[0] == "smtbmc":
             run_smtbmc(job, engine_idx, engine)
 
-        elif engine[0] == "abc_bmc3":
-            run_abc_bmc3(job, engine_idx, engine)
+        elif engine[0] == "abc":
+            run_abc(job, engine_idx, engine)
 
         else:
             assert False

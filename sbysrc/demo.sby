@@ -7,7 +7,7 @@ depth 10
 smtbmc -s yices
 smtbmc -s boolector
 smtbmc -s z3 --nomem
-abc_bmc3
+abc bmc3
 
 [script]
 read_verilog -formal -norestrict -assume-asserts picorv32.v
