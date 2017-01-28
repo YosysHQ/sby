@@ -17,6 +17,7 @@
 #
 
 import re, os, getopt
+from shutil import copyfile
 from sby_core import SbyTask
 
 def run_smtbmc(job, engine_idx, engine):
@@ -80,7 +81,7 @@ def run_smtbmc(job, engine_idx, engine):
 def run_abc_bmc3(job, engine_idx, engine):
     task = SbyTask(job, "engine_%d" % engine_idx, job.model("aig"),
             ("cd %s; yosys-abc -c 'read_aiger model/design_aiger.aig; fold; strash; bmc3 -F %d -v; " +
-             "undc -c; write_cex -n engine_%d/trace.cex'") % (job.workdir, job.opt_depth, engine_idx),
+             "undc -c; write_cex -a engine_%d/trace.aiw'") % (job.workdir, job.opt_depth, engine_idx),
             logfile=open("%s/engine_%d/logfile.txt" % (job.workdir, engine_idx), "w"))
 
     task_status = None
@@ -107,9 +108,10 @@ def run_abc_bmc3(job, engine_idx, engine):
                 t.terminate()
 
         if job.status == "FAIL":
+            copyfile("%s/model/design_aiger.aim" % job.workdir, "%s/engine_%d/trace.aim" % (job.workdir, engine_idx))
             task2 = SbyTask(job, "engine_%d" % engine_idx, job.model("smt2"),
                     ("cd %s; yosys-smtbmc --noprogress %s -t %d --dump-vcd engine_%d/trace.vcd --dump-vlogtb engine_%d/trace_tb.v " +
-                     "--dump-smtc engine_%d/trace.smtc --cex engine_%d/trace.cex model/design_smt2.smt2") %
+                     "--dump-smtc engine_%d/trace.smtc --aig engine_%d/trace --aig-noheader model/design_smt2.smt2") %
                             (job.workdir, " ".join(engine[1:]), job.opt_depth, engine_idx, engine_idx, engine_idx, engine_idx),
                     logfile=open("%s/engine_%d/logfile2.txt" % (job.workdir, engine_idx), "w"))
 
