@@ -2,12 +2,15 @@
 Getting Started
 ===============
 
+The example files used in this chapter can be downloaded from `here
+<https://github.com/cliffordwolf/SymbiYosys/tree/master/docs/examples/quickstart>`_.
+
 Installing
 ----------
 
 TBD
 
-Until I find the time to write this section this links must be sufficient:
+Until I find the time to write this section this links must suffice:
 
   * Yosys: http://www.clifford.at/yosys/
   * SymbiYosys: https://github.com/cliffordwolf/SymbiYosys
@@ -24,24 +27,8 @@ First step: A simple BMC example
 
 Here is a simple example design with a safety property (assertion).
 
-.. code-block:: systemverilog
-
-   module demo (
-
-     input clk,
-     output [5:0] counter
-   );
-     reg [5:0] counter = 0;
-
-     always @(posedge clk) begin
-       if (counter == 15)
-         counter <= 0;
-       else
-         counter <= counter + 1;
-     end
-
-     assert property (counter < 32);
-   endmodule
+.. literalinclude:: ../examples/quickstart/demo.v
+   :language: systemverilog
 
 The property in this example is true. We'd like to verify this using a bounded
 model check (BMC) that is 100 cycles deep.
@@ -49,21 +36,8 @@ model check (BMC) that is 100 cycles deep.
 SymbiYosys is controlled by ``.sby`` files. The following file can be used to
 configure SymbiYosys to run a BMC for 100 cycles on the design:
 
-.. code-block:: text
-
-   [options]
-   mode bmc
-   depth 100
-
-   [engines]
-   smtbmc
-
-   [script]
-   read_verilog -formal demo.v
-   prep -top demo
-
-   [files]
-   demo.v
+.. literalinclude:: ../examples/quickstart/demo.sby
+   :language: text
 
 Simply create a text file ``demo.v`` with the example design and another text
 file ``demo.sby`` with the SymbiYosys configuration. Then run::
@@ -98,8 +72,46 @@ Time for a simple exercise: Modify the design so that the property is false
 and the offending state is reachable within 100 cycles. Re-run ``sby`` with
 the modified design and see if the proof now fails.
 
-Going beyond bounded model checks
----------------------------------
+Selecting the right engine
+--------------------------
+
+The ``.sby`` file for a project selects one or more engines. (When multiple
+engines are selected, all engines are executed in parallel and the result
+returned by the first engine to finish is the result returned by SymbiYosys.)
+
+Each engine has its strengths and weaknesses. Therefore it is important to
+select the right engine for each project. The documentation for the individual
+engines can provide some guidance for engine selection. (Trial and error can
+also be a useful method for engine selection.)
+
+Let's consider the following example:
+
+.. literalinclude:: ../examples/quickstart/memory.v
+   :language: systemverilog
+
+This example is expected to fail verification (see the BUG comment).
+The following ``.sby`` file can be used to show this:
+
+.. literalinclude:: ../examples/quickstart/memory.sby
+   :language: text
+
+This project uses the ``smtbmc`` engine, which uses SMT solvers to perform the
+proof. This engine uses the array-theories provided by those solvers to
+efficiently model memories. Since this example uses large memories, the
+``smtbmc`` engine is a good match.
+
+(``smtbmc -s boolector`` uses boolector as SMT solver. Note that boolector is
+only free-to-use for noncommercial purposes. Use ``smtbmc -s z3`` to use the
+permissively licensed solver Z3 instead. Z3 is the default solver when no
+``-s`` option is used with ``smtbmc``.)
+
+Exercise: The engine ``abc bmc3`` does not provide abstract memory models.
+Therefore SymbiYosys has to synthesize the memories in the example to FFs
+and address logic. How does the performance of this project change if
+``abc bmc3`` is used as engine instead of ``smtbmc -s boolector``?
+
+Beyond bounded model checks
+---------------------------
 
 TBD
 

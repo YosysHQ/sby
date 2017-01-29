@@ -1,0 +1,13 @@
+[options]
+mode bmc
+depth 10
+
+[engines]
+smtbmc -s boolector
+
+[script]
+read_verilog -formal memory.v
+prep -top testbench
+
+[files]
+memory.v
