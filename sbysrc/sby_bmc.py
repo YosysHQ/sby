@@ -112,9 +112,9 @@ def run_abc(job, engine_idx, engine):
         if job.status == "FAIL":
             copyfile("%s/model/design_aiger.aim" % job.workdir, "%s/engine_%d/trace.aim" % (job.workdir, engine_idx))
             task2 = SbyTask(job, "engine_%d" % engine_idx, job.model("smt2"),
-                    ("cd %s; yosys-smtbmc --noprogress %s -t %d --dump-vcd engine_%d/trace.vcd --dump-vlogtb engine_%d/trace_tb.v " +
+                    ("cd %s; yosys-smtbmc --noprogress -t %d --dump-vcd engine_%d/trace.vcd --dump-vlogtb engine_%d/trace_tb.v " +
                      "--dump-smtc engine_%d/trace.smtc --aig engine_%d/trace --aig-noheader model/design_smt2.smt2") %
-                            (job.workdir, " ".join(engine[1:]), job.opt_depth, engine_idx, engine_idx, engine_idx, engine_idx),
+                            (job.workdir, job.opt_depth, engine_idx, engine_idx, engine_idx, engine_idx),
                     logfile=open("%s/engine_%d/logfile2.txt" % (job.workdir, engine_idx), "w"))
 
             task2_status = None
