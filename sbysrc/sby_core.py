@@ -27,6 +27,7 @@ class SbyTask:
         self.running = False
         self.finished = False
         self.terminated = False
+        self.checkretcode = False
         self.job = job
         self.info = info
         self.deps = deps
@@ -95,13 +96,20 @@ class SbyTask:
             self.handle_output(outs.strip())
 
         if self.p.poll() is not None:
-            self.handle_exit(self.p.returncode)
             self.job.log("%s: finished (returncode=%d)" % (self.info, self.p.returncode))
+            self.handle_exit(self.p.returncode)
 
             self.job.tasks_running.remove(self)
             self.running = False
-            self.finished = True
 
+            if self.checkretcode and self.p.returncode != 0:
+                self.job.log("%s: job failed. terminate." % self.info)
+                self.terminated = True
+                for task in self.job.tasks_running:
+                    task.terminate()
+                return
+
+            self.finished = True
             for next_task in self.notify:
                 next_task.poll()
             return
@@ -255,6 +263,7 @@ class SbyJob:
 
             task = SbyTask(self, "script", [],
                     "cd %s/src; yosys -ql ../model/design.log ../model/design.ys" % (self.workdir))
+            task.checkretcode = True
 
             return [task]
 
@@ -275,6 +284,7 @@ class SbyJob:
 
             task = SbyTask(self, model_name, self.model("ilang"),
                     "cd %s/model; yosys -ql design_%s.log design_%s.ys" % (self.workdir, model_name, model_name))
+            task.checkretcode = True
 
             return [task]
 
@@ -296,6 +306,7 @@ class SbyJob:
 
             task = SbyTask(self, "aig", self.model("ilang"),
                     "cd %s/model; yosys -ql design_aiger.log design_aiger.ys" % (self.workdir))
+            task.checkretcode = True
 
             return [task]
 
