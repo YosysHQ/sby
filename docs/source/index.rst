@@ -7,15 +7,13 @@ hardware verification flows. SymbiYosys provides flows for the following
 formal tasks:
 
    * Bounded verification of safety properties (assertions)
-   * *Unbounded verification of safety properties*
-   * *Generation of test benches from cover statements*
-   * *Verification of liveness properties*
-   * *Formal equivalence checking*
+   * Unbounded verification of safety properties [TBD]
+   * Generation of test benches from cover statements [TBD]
+   * Verification of liveness properties [TBD]
+   * Formal equivalence checking [TBD]
 
-(Italic items are features under construction and not available
+(Items marked [TBD] are features under construction and not available
 at the moment.)
-
-Contents:
 
 .. toctree::
    :maxdepth: 2
