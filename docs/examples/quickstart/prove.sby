@@ -1,0 +1,12 @@
+[options]
+mode prove
+
+[engines]
+smtbmc
+
+[script]
+read_verilog -formal prove.v
+prep -top testbench
+
+[files]
+prove.v

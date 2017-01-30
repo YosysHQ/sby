@@ -116,6 +116,22 @@ can either engine verify the design when the bug has been fixed?
 Beyond bounded model checks
 ---------------------------
 
-TBD
+Bounded model checks only prove that the safety properties hold for the first
+*N* cycles (where *N* is the depth of the BMC). Sometimes this is insufficient
+and we need to prove that the safety properties hold forever, not just the first
+*N* cycles. Let us consider the following example:
 
+.. literalinclude:: ../examples/quickstart/prove.v
+   :language: systemverilog
+
+Proving this design in an unbounded manner can be achieved using the following
+SymbiYosys configuration file:
+
+.. literalinclude:: ../examples/quickstart/prove.sby
+   :language: text
+
+Note that ``mode`` is now set to ``prove`` instead of ``bmc``. The ``smtbmc``
+engine in ``prove`` mode will perform a k-induction proof. Other engines can
+use other methods, e.g. using ``abc pdr`` will prove the design using the IC3
+algorithm.
 

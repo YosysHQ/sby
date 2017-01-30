@@ -52,11 +52,12 @@ def run(mode, job, engine_idx, engine):
 
     if mode == "prove_basecase":
         taskname += ".basecase"
+        logfile_prefix += "_basecase"
 
     if mode == "prove_induction":
         taskname += ".induction"
         trace_prefix += "_induct"
-        logfile_prefix += "_induct"
+        logfile_prefix += "_induction"
         smtbmc_opts.append("-i")
 
     task = SbyTask(job, taskname, job.model(model_name),
