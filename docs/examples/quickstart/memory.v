@@ -1,6 +1,6 @@
 module testbench (
   input clk, wen,
-  input [15:0] addr,
+  input [9:0] addr,
   input [7:0] wdata,
   output [7:0] rdata
 );
@@ -12,7 +12,7 @@ module testbench (
     .rdata(rdata)
   );
 
-  wire [15:0] test_addr = $anyconst;
+  wire [9:0] test_addr = $anyconst;
   reg test_data_valid = 0;
   reg [7:0] test_data;
 
@@ -31,27 +31,30 @@ endmodule
 
 module memory (
   input clk, wen,
-  input [15:0] addr,
+  input [9:0] addr,
   input [7:0] wdata,
   output [7:0] rdata
 );
-  reg [7:0] bank0 [0:'h3fff];
-  reg [7:0] bank1 [0:'h3fff];
-  reg [7:0] bank2 [0:'h3fff];
-  reg [7:0] bank3 [0:'h3fff];
+  reg [7:0] bank0 [0:255];
+  reg [7:0] bank1 [0:255];
+  reg [7:0] bank2 [0:255];
+  reg [7:0] bank3 [0:255];
+
+  wire [1:0] mem_sel = addr[9:8];
+  wire [7:0] mem_addr = addr[7:0];
 
   always @(posedge clk) begin
-    case (addr[15:14])
-      0: if (wen) bank0[addr[13:0]] <= wdata;
-      1: if (wen) bank1[addr[13:0]] <= wdata;
-      2: if (wen) bank1[addr[13:0]] <= wdata;  // BUG: Should assign to bank2
-      3: if (wen) bank3[addr[13:0]] <= wdata;
+    case (mem_sel)
+      0: if (wen) bank0[mem_addr] <= wdata;
+      1: if (wen) bank1[mem_addr] <= wdata;
+      2: if (wen) bank1[mem_addr] <= wdata;  // BUG: Should assign to bank2
+      3: if (wen) bank3[mem_addr] <= wdata;
     endcase
   end
 
   assign rdata =
-    addr[15:14] == 0 ? bank0[addr[13:0]] :
-    addr[15:14] == 1 ? bank1[addr[13:0]] :
-    addr[15:14] == 2 ? bank2[addr[13:0]] :
-    addr[15:14] == 3 ? bank3[addr[13:0]] : 'bx;
+    mem_sel == 0 ? bank0[mem_addr] :
+    mem_sel == 1 ? bank1[mem_addr] :
+    mem_sel == 2 ? bank2[mem_addr] :
+    mem_sel == 3 ? bank3[mem_addr] : 'bx;
 endmodule
