@@ -94,6 +94,9 @@ def run_abc(job, engine_idx, engine):
         match = re.match(r"^Output [0-9]+ of miter .* was asserted in frame [0-9]+.", line)
         if match: task_status = "FAIL"
 
+        match = re.match(r"^Stopping BMC because all 2\^[0-9]+ reachable states are visited.", line)
+        if match: task_status = "PASS"
+
         match = re.match(r"^No output asserted in [0-9]+ frames.", line)
         if match: task_status = "PASS"
 
