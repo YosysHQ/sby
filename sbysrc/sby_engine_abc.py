@@ -20,11 +20,20 @@ import re, os, getopt
 from sby_core import SbyTask
 
 def run(mode, job, engine_idx, engine):
-    assert engine == ["abc", "bmc3"]
+    if mode == "bmc":
+        assert engine == ["abc", "bmc3"]
+        abc_command = "bmc3 -F %d -v" % job.opt_depth
+
+    elif mode == "prove":
+        assert engine == ["abc", "pdr"]
+        abc_command = "pdr"
+
+    else:
+        assert False
 
     task = SbyTask(job, "engine_%d" % engine_idx, job.model("aig"),
-            ("cd %s; yosys-abc -c 'read_aiger model/design_aiger.aig; fold; strash; bmc3 -F %d -v; " +
-             "undc -c; write_cex -a engine_%d/trace.aiw'") % (job.workdir, job.opt_depth, engine_idx),
+            ("cd %s; yosys-abc -c 'read_aiger model/design_aiger.aig; fold; strash; %s; " +
+             "write_cex -a engine_%d/trace.aiw'") % (job.workdir, abc_command, engine_idx),
             logfile=open("%s/engine_%d/logfile.txt" % (job.workdir, engine_idx), "w"))
 
     task_status = None
@@ -41,6 +50,9 @@ def run(mode, job, engine_idx, engine):
         match = re.match(r"^No output asserted in [0-9]+ frames.", line)
         if match: task_status = "PASS"
 
+        match = re.match(r"^Property proved.", line)
+        if match: task_status = "PASS"
+
     def exit_callback(retcode):
         assert retcode == 0
         assert task_status is not None
@@ -53,9 +65,9 @@ def run(mode, job, engine_idx, engine):
 
         if job.status == "FAIL":
             task2 = SbyTask(job, "engine_%d" % engine_idx, job.model("smt2"),
-                    ("cd %s; yosys-smtbmc --noprogress -t %d --dump-vcd engine_%d/trace.vcd --dump-vlogtb engine_%d/trace_tb.v " +
+                    ("cd %s; yosys-smtbmc --noprogress --dump-vcd engine_%d/trace.vcd --dump-vlogtb engine_%d/trace_tb.v " +
                      "--dump-smtc engine_%d/trace.smtc --aig model/design_aiger.aim:engine_%d/trace.aiw --aig-noheader model/design_smt2.smt2") %
-                            (job.workdir, job.opt_depth, engine_idx, engine_idx, engine_idx, engine_idx),
+                            (job.workdir, engine_idx, engine_idx, engine_idx, engine_idx),
                     logfile=open("%s/engine_%d/logfile2.txt" % (job.workdir, engine_idx), "w"))
 
             task2_status = None

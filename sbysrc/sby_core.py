@@ -332,6 +332,10 @@ class SbyJob:
             import sby_mode_bmc
             sby_mode_bmc.run(self)
 
+        if self.options["mode"] == "prove":
+            import sby_mode_prove
+            sby_mode_prove.run(self)
+
         else:
             assert False
 

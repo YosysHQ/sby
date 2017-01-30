@@ -20,6 +20,8 @@ import re, os, getopt
 from sby_core import SbyTask
 
 def run(mode, job, engine_idx, engine):
+    assert mode == "bmc"
+
     smtbmc_opts = []
     nomem_opt = False
     syn_opt = False
