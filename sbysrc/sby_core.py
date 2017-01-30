@@ -97,10 +97,10 @@ class SbyTask:
 
         if self.p.poll() is not None:
             self.job.log("%s: finished (returncode=%d)" % (self.info, self.p.returncode))
-            self.handle_exit(self.p.returncode)
-
             self.job.tasks_running.remove(self)
             self.running = False
+
+            self.handle_exit(self.p.returncode)
 
             if self.checkretcode and self.p.returncode != 0:
                 self.job.status = "ERROR"
