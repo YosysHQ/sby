@@ -329,8 +329,8 @@ class SbyJob:
         self.copy_src()
 
         if self.options["mode"] == "bmc":
-            import sby_bmc
-            sby_bmc.run(self)
+            import sby_mode_bmc
+            sby_mode_bmc.run(self)
 
         else:
             assert False
