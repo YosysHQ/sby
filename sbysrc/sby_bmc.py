@@ -69,13 +69,10 @@ def run_smtbmc(job, engine_idx, engine):
         if job.status == "FAIL":
             job.summary.append("counterexample trace: %s/engine_%d/trace.vcd" % (job.workdir, engine_idx))
 
-        for t in job.engine_tasks:
-            if task is not t:
-                t.terminate()
+        job.terminate()
 
     task.output_callback = output_callback
     task.exit_callback = exit_callback
-    job.engine_tasks.append(task)
 
 
 def run_abc(job, engine_idx, engine):
@@ -108,9 +105,7 @@ def run_abc(job, engine_idx, engine):
         job.log("engine_%d: Status returned by engine: %s" % (engine_idx, task_status))
         job.summary.append("engine_%d (%s) returned %s" % (engine_idx, " ".join(engine), job.status))
 
-        for t in job.engine_tasks:
-            if task is not t:
-                t.terminate()
+        job.terminate()
 
         if job.status == "FAIL":
             task2 = SbyTask(job, "engine_%d" % engine_idx, job.model("smt2"),
@@ -141,7 +136,6 @@ def run_abc(job, engine_idx, engine):
 
     task.output_callback = output_callback
     task.exit_callback = exit_callback
-    job.engine_tasks.append(task)
 
 
 def run(job):
@@ -149,9 +143,6 @@ def run(job):
 
     if "depth" in job.options:
         job.opt_depth = int(job.options["depth"])
-
-    job.status = "UNKNOWN"
-    job.engine_tasks = list()
 
     for engine_idx in range(len(job.engines)):
         engine = job.engines[engine_idx]

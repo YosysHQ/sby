@@ -103,10 +103,10 @@ class SbyTask:
             self.running = False
 
             if self.checkretcode and self.p.returncode != 0:
-                self.job.log("%s: job failed. terminate." % self.info)
+                self.job.status = "ERROR"
+                self.job.log("%s: job failed. ERROR." % self.info)
                 self.terminated = True
-                for task in self.job.tasks_running:
-                    task.terminate()
+                self.job.terminate()
                 return
 
             self.finished = True
@@ -124,6 +124,7 @@ class SbyJob:
         self.models = dict()
         self.workdir = workdir
 
+        self.status = None
         self.tasks_running = []
         self.tasks_all = []
 
@@ -318,6 +319,10 @@ class SbyJob:
             self.models[model_name] = self.make_model(model_name)
         return self.models[model_name]
 
+    def terminate(self):
+        for task in self.tasks_running:
+            task.terminate()
+
     def run(self):
         assert "mode" in self.options
 
@@ -345,10 +350,10 @@ class SbyJob:
         for line in self.summary:
             self.log("summary: %s" % line)
 
+        self.log("DONE (%s)" % self.status)
+        assert self.status in ["PASS", "FAIL", "UNKNOWN", "ERROR"]
+
         with open("%s/%s" % (self.workdir, self.status), "w") as f:
             for line in self.summary:
                 print(line, file=f)
-
-        self.log("DONE (%s)" % self.status)
-        assert self.status in ["PASS", "FAIL"]
 
