@@ -70,7 +70,9 @@ fail because the output directory ``demo/`` already exists.)
 
 Time for a simple exercise: Modify the design so that the property is false
 and the offending state is reachable within 100 cycles. Re-run ``sby`` with
-the modified design and see if the proof now fails.
+the modified design and see if the proof now fails. Inspect the counter example
+trace (``.vcd`` file) produced by ``sby``. (`GTKWave <http://gtkwave.sourceforge.net/>`_
+is an open source VCD viewer that you can use.)
 
 Selecting the right engine
 --------------------------
@@ -82,7 +84,7 @@ returned by the first engine to finish is the result returned by SymbiYosys.)
 Each engine has its strengths and weaknesses. Therefore it is important to
 select the right engine for each project. The documentation for the individual
 engines can provide some guidance for engine selection. (Trial and error can
-also be a useful method for engine selection.)
+also be a useful method for evaluating engines.)
 
 Let's consider the following example:
 
@@ -108,7 +110,8 @@ permissively licensed solver Z3 instead. Z3 is the default solver when no
 Exercise: The engine ``abc bmc3`` does not provide abstract memory models.
 Therefore SymbiYosys has to synthesize the memories in the example to FFs
 and address logic. How does the performance of this project change if
-``abc bmc3`` is used as engine instead of ``smtbmc -s boolector``?
+``abc bmc3`` is used as engine instead of ``smtbmc -s boolector``? How fast
+can either engine verify the design when the bug has been fixed?
 
 Beyond bounded model checks
 ---------------------------
