@@ -25,8 +25,10 @@ def run(job):
     if "depth" in job.options:
         job.opt_depth = int(job.options["depth"])
 
-    job.basecase_done = False
-    job.induction_done = False
+    job.status = "UNKNOWN"
+
+    job.basecase_pass = False
+    job.induction_pass = False
     job.basecase_tasks = list()
     job.induction_tasks = list()
 
