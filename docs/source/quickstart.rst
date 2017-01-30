@@ -70,7 +70,7 @@ fail because the output directory ``demo/`` already exists.)
 
 Time for a simple exercise: Modify the design so that the property is false
 and the offending state is reachable within 100 cycles. Re-run ``sby`` with
-the modified design and see if the proof now fails. Inspect the counter example
+the modified design and see if the proof now fails. Inspect the counterexample
 trace (``.vcd`` file) produced by ``sby``. (`GTKWave <http://gtkwave.sourceforge.net/>`_
 is an open source VCD viewer that you can use.)
 
