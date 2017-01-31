@@ -22,7 +22,7 @@ module demo (
   output reg [7:0] dout
 );
   reg [7:0] buffer;
-  reg [2:0] state;
+  reg [1:0] state;
 
   always @(posedge clk) begin
     if (reset) begin
@@ -30,17 +30,17 @@ module demo (
       state <= 0;
     end else
     case (state)
-      3'b 001: begin
+      0: begin
         buffer <= din;
 	state <= 1;
       end
-      3'b 010: begin
+      1: begin
         if (buffer[1:0])
 	  buffer <= buffer + 1;
 	else
 	  state <= 2;
       end
-      3'b 100: begin
+      2: begin
         dout <= dout + buffer;
 	state <= 0;
       end
