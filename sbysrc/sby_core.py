@@ -33,6 +33,7 @@ class SbyTask:
         self.deps = deps
         self.cmdline = cmdline
         self.logfile = logfile
+        self.noprintregex = None
         self.notify = []
 
         for dep in self.deps:
@@ -92,8 +93,11 @@ class SbyTask:
         while True:
             outs = self.p.stdout.readline().decode("utf-8")
             if len(outs) == 0: break
-            self.job.log("%s: %s" % (self.info, outs.strip()))
-            self.handle_output(outs.strip())
+            outs = outs.strip()
+            if len(outs) == 0: continue
+            if self.noprintregex is None or not self.noprintregex.match(outs):
+                self.job.log("%s: %s" % (self.info, outs))
+            self.handle_output(outs)
 
         if self.p.poll() is not None:
             self.job.log("%s: finished (returncode=%d)" % (self.info, self.p.returncode))

@@ -20,12 +20,24 @@ import re, os, getopt
 from sby_core import SbyTask
 
 def run(mode, job, engine_idx, engine):
-    if mode == "bmc":
-        assert engine == ["abc", "bmc3"]
+    abc_opts, abc_command = getopt.getopt(engine[1:], "", [])
+
+    for o, a in abc_opts:
+        assert False
+
+    if abc_command[0] == "bmc3":
+        assert mode == "bmc"
+        assert len(abc_command) == 1
         abc_command = "bmc3 -F %d -v" % job.opt_depth
 
-    elif mode == "prove":
-        assert engine == ["abc", "pdr"]
+    elif abc_command[0] == "sim3":
+        assert mode == "bmc"
+        assert len(abc_command) == 1
+        abc_command = "sim3 -F %d -v" % job.opt_depth
+
+    elif abc_command[0] == "pdr":
+        assert mode == "prove"
+        assert len(abc_command) == 1
         abc_command = "pdr"
 
     else:
@@ -36,6 +48,7 @@ def run(mode, job, engine_idx, engine):
              "write_cex -a engine_%d/trace.aiw'") % (job.workdir, abc_command, engine_idx),
             logfile=open("%s/engine_%d/logfile.txt" % (job.workdir, engine_idx), "w"))
 
+    task.noprintregex = re.compile(r"^\.+$")
     task_status = None
 
     def output_callback(line):
