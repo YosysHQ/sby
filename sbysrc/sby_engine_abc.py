@@ -21,6 +21,7 @@ from sby_core import SbyTask
 
 def run(mode, job, engine_idx, engine):
     abc_opts, abc_command = getopt.getopt(engine[1:], "", [])
+    assert len(abc_command) > 0
 
     for o, a in abc_opts:
         assert False
@@ -28,24 +29,25 @@ def run(mode, job, engine_idx, engine):
     if abc_command[0] == "bmc3":
         assert mode == "bmc"
         assert len(abc_command) == 1
-        abc_command = "bmc3 -F %d -v" % job.opt_depth
+        abc_script = "bmc3 -F %d -v" % job.opt_depth
 
     elif abc_command[0] == "sim3":
         assert mode == "bmc"
-        assert len(abc_command) == 1
-        abc_command = "sim3 -F %d -v" % job.opt_depth
+        abc_script = "sim3 -F %d -v" % job.opt_depth
 
     elif abc_command[0] == "pdr":
         assert mode == "prove"
-        assert len(abc_command) == 1
-        abc_command = "pdr"
+        abc_script = "pdr"
 
     else:
         assert False
 
+    if len(abc_command) > 1:
+        abc_script += " " + " ".join(abc_command[1:])
+
     task = SbyTask(job, "engine_%d" % engine_idx, job.model("aig"),
             ("cd %s; yosys-abc -c 'read_aiger model/design_aiger.aig; fold; strash; %s; " +
-             "write_cex -a engine_%d/trace.aiw'") % (job.workdir, abc_command, engine_idx),
+             "write_cex -a engine_%d/trace.aiw'") % (job.workdir, abc_script, engine_idx),
             logfile=open("%s/engine_%d/logfile.txt" % (job.workdir, engine_idx), "w"))
 
     task.noprintregex = re.compile(r"^\.+$")
@@ -56,6 +58,9 @@ def run(mode, job, engine_idx, engine):
 
         match = re.match(r"^Output [0-9]+ of miter .* was asserted in frame [0-9]+.", line)
         if match: task_status = "FAIL"
+
+        match = re.match(r"^Simulation of [0-9]+ frames for [0-9]+ rounds with [0-9]+ restarts did not assert POs.", line)
+        if match: task_status = "UNKNOWN"
 
         match = re.match(r"^Stopping BMC because all 2\^[0-9]+ reachable states are visited.", line)
         if match: task_status = "PASS"
