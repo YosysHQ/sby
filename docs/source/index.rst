@@ -8,7 +8,7 @@ formal tasks:
 
    * Bounded verification of safety properties (assertions)
    * Unbounded verification of safety properties
-   * Generation of test benches from cover statements [TBD]
+   * Generation of test benches from cover statements
    * Verification of liveness properties [TBD]
    * Formal equivalence checking [TBD]
 

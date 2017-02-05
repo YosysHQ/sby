@@ -1,0 +1,12 @@
+[options]
+mode cover
+
+[engines]
+smtbmc
+
+[script]
+read_verilog -formal cover.v
+prep -top top
+
+[files]
+cover.v

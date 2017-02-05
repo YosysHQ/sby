@@ -340,6 +340,10 @@ class SbyJob:
             import sby_mode_prove
             sby_mode_prove.run(self)
 
+        elif self.options["mode"] == "cover":
+            import sby_mode_cover
+            sby_mode_cover.run(self)
+
         else:
             assert False
 

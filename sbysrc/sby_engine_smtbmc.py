@@ -60,6 +60,10 @@ def run(mode, job, engine_idx, engine):
         logfile_prefix += "_induction"
         smtbmc_opts.append("-i")
 
+    if mode == "cover":
+        smtbmc_opts.append("-c")
+        trace_prefix += "%"
+
     task = SbyTask(job, taskname, job.model(model_name),
             ("cd %s; yosys-smtbmc --noprogress %s -t %d --dump-vcd %s.vcd --dump-vlogtb %s_tb.v --dump-smtc %s.smtc model/design_smt2.smt2") %
                     (job.workdir, " ".join(smtbmc_opts), job.opt_depth, trace_prefix, trace_prefix, trace_prefix),
@@ -85,12 +89,12 @@ def run(mode, job, engine_idx, engine):
     def exit_callback(retcode):
         assert task_status is not None
 
-        if mode == "bmc":
+        if mode == "bmc" or mode == "cover":
             job.status = task_status
             job.log("engine_%d: Status returned by engine: %s" % (engine_idx, task_status))
             job.summary.append("engine_%d (%s) returned %s" % (engine_idx, " ".join(engine), job.status))
 
-            if job.status == "FAIL":
+            if job.status == "FAIL" and mode != "cover":
                 job.summary.append("counterexample trace: %s/engine_%d/trace.vcd" % (job.workdir, engine_idx))
 
             job.terminate()
