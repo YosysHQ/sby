@@ -66,7 +66,9 @@ class SbyTask:
         if self.exit_callback is not None:
             self.exit_callback(retcode)
 
-    def terminate(self):
+    def terminate(self, timeout=False):
+        if self.job.waitmode and not timeout:
+            return
         if self.running:
             self.job.log("%s: terminating process" % self.info)
             self.p.terminate()
@@ -241,7 +243,7 @@ class SbyJob:
                 if total_clock_time > int(self.options["timeout"]):
                     self.log("Reached TIMEOUT (%d seconds). Terminating all tasks." % int(self.options["timeout"]))
                     self.status = "TIMEOUT"
-                    self.terminate()
+                    self.terminate(timeout=True)
 
     def log(self, logmessage):
         print("%s %s" % (self.logprefix, logmessage))
@@ -332,9 +334,9 @@ class SbyJob:
             self.models[model_name] = self.make_model(model_name)
         return self.models[model_name]
 
-    def terminate(self):
+    def terminate(self, timeout=False):
         for task in self.tasks_running:
-            task.terminate()
+            task.terminate(timeout=timeout)
 
     def update_status(self, new_status):
         assert new_status in ["PASS", "FAIL", "UNKNOWN", "ERROR"]
@@ -364,6 +366,10 @@ class SbyJob:
 
         if "expect" in self.options:
             self.expect = self.options["expect"].upper().split(",")
+
+        self.waitmode = False
+        if "wait" in self.options:
+            self.waitmode = self.options["wait"] == "on"
 
         self.copy_src()
 
