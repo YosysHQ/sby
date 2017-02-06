@@ -22,10 +22,3 @@ at the moment.)
    reference.rst
    license.rst
 
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`search`
-
