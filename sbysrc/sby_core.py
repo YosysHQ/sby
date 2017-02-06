@@ -335,7 +335,7 @@ class SbyJob:
         return self.models[model_name]
 
     def terminate(self, timeout=False):
-        for task in self.tasks_running:
+        for task in list(self.tasks_running):
             task.terminate(timeout=timeout)
 
     def update_status(self, new_status):
