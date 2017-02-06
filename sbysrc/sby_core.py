@@ -129,9 +129,7 @@ class SbyJob:
         self.files = dict()
         self.models = dict()
         self.workdir = workdir
-
         self.status = "UNKNOWN"
-        self.expect = ["PASS"]
 
         self.tasks_running = []
         self.tasks_all = []
@@ -363,12 +361,18 @@ class SbyJob:
 
     def run(self):
         assert "mode" in self.options
+        assert self.options["mode"] in ["bmc", "prove", "cover"]
 
+        self.expect = ["PASS"]
         if "expect" in self.options:
             self.expect = self.options["expect"].upper().split(",")
 
+        for s in self.expect:
+            assert s in ["PASS", "FAIL", "UNKNOWN", "ERROR", "TIMEOUT"]
+
         self.waitmode = False
         if "wait" in self.options:
+            assert self.options["wait"] in ["on", "off"]
             self.waitmode = self.options["wait"] == "on"
 
         self.copy_src()

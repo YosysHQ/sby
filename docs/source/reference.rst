@@ -34,6 +34,10 @@ options are:
 +-------------+-----------+---------------------------------------------------------+
 | ``timeout`` |   All     | Timeout in seconds. Default: ``none`` (i.e. no timeout) |
 +-------------+-----------+---------------------------------------------------------+
+| ``wait``    |   All     | Instead of terminating when the first engine returns,   |
+|             |           | wait for all engines to return and check for            |
+|             |           | consistency. Values: ``on``, ``off``. Default: ``off``  |
++-------------+-----------+---------------------------------------------------------+
 | ``depth``   | ``bmc``,  | Depth of the bounded model check. Only the specified    |
 |             | ``cover`` | number of cycles are considered. Default: ``20``        |
 |             +-----------+---------------------------------------------------------+
