@@ -236,6 +236,13 @@ class SbyJob:
             for task in self.tasks_running:
                 task.poll()
 
+            if "timeout" in self.options:
+                total_clock_time = int(time() - self.start_clock_time)
+                if total_clock_time > int(self.options["timeout"]):
+                    self.log("Reached TIMEOUT (%d seconds). Terminating all tasks." % int(self.options["timeout"]))
+                    self.status = "TIMEOUT"
+                    self.terminate()
+
     def log(self, logmessage):
         print("%s %s" % (self.logprefix, logmessage))
         print("%s %s" % (self.logprefix, logmessage), file=self.logfile)
@@ -392,7 +399,7 @@ class SbyJob:
 
         self.log("DONE (%s)" % self.status)
 
-        assert self.status in ["PASS", "FAIL", "UNKNOWN", "ERROR"]
+        assert self.status in ["PASS", "FAIL", "UNKNOWN", "ERROR", "TIMEOUT"]
 
         if self.status in self.expect:
             self.retcode = 0
@@ -401,6 +408,7 @@ class SbyJob:
             if self.status == "FAIL": self.retcode = 2
             if self.status == "ERROR": self.retcode = 3
             if self.status == "UNKNOWN": self.retcode = 4
+            if self.status == "TIMEOUT": self.retcode = 5
 
         with open("%s/%s" % (self.workdir, self.status), "w") as f:
             for line in self.summary:
