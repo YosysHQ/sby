@@ -90,11 +90,11 @@ def run(mode, job, engine_idx, engine):
         assert task_status is not None
 
         if mode == "bmc" or mode == "cover":
-            job.status = task_status
+            job.update_status(task_status)
             job.log("engine_%d: Status returned by engine: %s" % (engine_idx, task_status))
-            job.summary.append("engine_%d (%s) returned %s" % (engine_idx, " ".join(engine), job.status))
+            job.summary.append("engine_%d (%s) returned %s" % (engine_idx, " ".join(engine), task_status))
 
-            if job.status == "FAIL" and mode != "cover":
+            if task_status == "FAIL" and mode != "cover":
                 job.summary.append("counterexample trace: %s/engine_%d/trace.vcd" % (job.workdir, engine_idx))
 
             job.terminate()
@@ -111,7 +111,7 @@ def run(mode, job, engine_idx, engine):
                     job.basecase_pass = True
 
                 else:
-                    job.status = task_status
+                    job.update_status(task_status)
                     job.summary.append("counterexample trace: %s/engine_%d/trace.vcd" % (job.workdir, engine_idx))
                     job.terminate()
 
@@ -126,7 +126,7 @@ def run(mode, job, engine_idx, engine):
                 assert False
 
             if job.basecase_pass and job.induction_pass:
-                job.status = "PASS"
+                job.update_status("PASS")
                 job.summary.append("successful proof by k-induction.")
                 job.terminate()
 

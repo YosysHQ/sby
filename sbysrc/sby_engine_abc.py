@@ -75,13 +75,13 @@ def run(mode, job, engine_idx, engine):
         assert retcode == 0
         assert task_status is not None
 
-        job.status = task_status
+        job.update_status(task_status)
         job.log("engine_%d: Status returned by engine: %s" % (engine_idx, task_status))
-        job.summary.append("engine_%d (%s) returned %s" % (engine_idx, " ".join(engine), job.status))
+        job.summary.append("engine_%d (%s) returned %s" % (engine_idx, " ".join(engine), task_status))
 
         job.terminate()
 
-        if job.status == "FAIL":
+        if task_status == "FAIL":
             task2 = SbyTask(job, "engine_%d" % engine_idx, job.model("smt2"),
                     ("cd %s; yosys-smtbmc --noprogress --dump-vcd engine_%d/trace.vcd --dump-vlogtb engine_%d/trace_tb.v " +
                      "--dump-smtc engine_%d/trace.smtc --aig model/design_aiger.aim:engine_%d/trace.aiw --aig-noheader model/design_smt2.smt2") %

@@ -1,6 +1,7 @@
 [options]
 mode bmc
 depth 10
+expect fail
 
 [engines]
 smtbmc -s boolector

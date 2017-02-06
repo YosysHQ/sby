@@ -128,7 +128,9 @@ class SbyJob:
         self.models = dict()
         self.workdir = workdir
 
-        self.status = None
+        self.status = "UNKNOWN"
+        self.expect = ["PASS"]
+
         self.tasks_running = []
         self.tasks_all = []
 
@@ -327,8 +329,34 @@ class SbyJob:
         for task in self.tasks_running:
             task.terminate()
 
+    def update_status(self, new_status):
+        assert new_status in ["PASS", "FAIL", "UNKNOWN", "ERROR"]
+
+        if new_status == "UNKNOWN":
+            return
+
+        if self.status == "ERROR":
+            return
+
+        if new_status == "PASS":
+            assert self.status != "FAIL"
+            self.status = "PASS"
+
+        elif new_status == "FAIL":
+            assert self.status != "PASS"
+            self.status = "FAIL"
+
+        elif new_status == "ERROR":
+            self.status = "ERROR"
+
+        else:
+            assert 0
+
     def run(self):
         assert "mode" in self.options
+
+        if "expect" in self.options:
+            self.expect = self.options["expect"].upper().split(",")
 
         self.copy_src()
 
@@ -363,7 +391,16 @@ class SbyJob:
             self.log("summary: %s" % line)
 
         self.log("DONE (%s)" % self.status)
+
         assert self.status in ["PASS", "FAIL", "UNKNOWN", "ERROR"]
+
+        if self.status in self.expect:
+            self.retcode = 0
+        else:
+            if self.status == "PASS": self.retcode = 1
+            if self.status == "FAIL": self.retcode = 2
+            if self.status == "ERROR": self.retcode = 3
+            if self.status == "UNKNOWN": self.retcode = 4
 
         with open("%s/%s" % (self.workdir, self.status), "w") as f:
             for line in self.summary:

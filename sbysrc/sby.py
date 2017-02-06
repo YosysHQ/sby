@@ -84,5 +84,5 @@ if opt_force:
 job = SbyJob(sbyfile, workdir, early_logmsgs)
 job.run()
 
-sys.exit(0 if job.status == "PASS" else 1)
+sys.exit(job.retcode)
 
