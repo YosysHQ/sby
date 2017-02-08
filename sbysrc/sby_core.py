@@ -127,6 +127,7 @@ class SbyJob:
         self.engines = list()
         self.script = list()
         self.files = dict()
+        self.verbatim_files = dict()
         self.models = dict()
         self.workdir = workdir
         self.status = "UNKNOWN"
@@ -154,6 +155,7 @@ class SbyJob:
 
         with open(filename, "r") as f:
             for line in f:
+                raw_line = line
                 line = line.strip()
                 # print(line)
 
@@ -181,6 +183,14 @@ class SbyJob:
                         mode = "script"
                         assert len(self.script) == 0
                         assert len(entries) == 1
+                        continue
+
+                    if entries[0] == "file":
+                        mode = "file"
+                        assert len(entries) == 2
+                        current_verbatim_file = entries[1]
+                        assert current_verbatim_file not in self.verbatim_files
+                        self.verbatim_files[current_verbatim_file] = list()
                         continue
 
                     if entries[0] == "files":
@@ -213,6 +223,10 @@ class SbyJob:
                         self.files[entries[0]] = entries[1]
                     else:
                         assert False
+                    continue
+
+                if mode == "file":
+                    self.verbatim_files[current_verbatim_file].append(raw_line)
                     continue
 
                 assert False
@@ -250,6 +264,14 @@ class SbyJob:
 
     def copy_src(self):
         os.makedirs(self.workdir + "/src")
+
+        for dstfile, lines in self.verbatim_files.items():
+            dstfile = self.workdir + "/src/" + dstfile
+            self.log("Writing '%s'." % dstfile)
+
+            with open(dstfile, "w") as f:
+                for line in lines:
+                    f.write(line)
 
         for dstfile, srcfile in self.files.items():
             dstfile = self.workdir + "/src/" + dstfile
