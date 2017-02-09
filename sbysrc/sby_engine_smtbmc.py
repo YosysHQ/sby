@@ -65,8 +65,8 @@ def run(mode, job, engine_idx, engine):
         trace_prefix += "%"
 
     task = SbyTask(job, taskname, job.model(model_name),
-            ("cd %s; yosys-smtbmc --noprogress %s -t %d --dump-vcd %s.vcd --dump-vlogtb %s_tb.v --dump-smtc %s.smtc model/design_smt2.smt2") %
-                    (job.workdir, " ".join(smtbmc_opts), job.opt_depth, trace_prefix, trace_prefix, trace_prefix),
+            ("cd %s; %s --noprogress %s -t %d --dump-vcd %s.vcd --dump-vlogtb %s_tb.v --dump-smtc %s.smtc model/design_smt2.smt2") %
+                    (job.workdir, job.exe_paths["smtbmc"], " ".join(smtbmc_opts), job.opt_depth, trace_prefix, trace_prefix, trace_prefix),
             logfile=open(logfile_prefix + ".txt", "w"))
 
     if mode == "prove_basecase":

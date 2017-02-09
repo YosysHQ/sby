@@ -132,6 +132,13 @@ class SbyJob:
         self.workdir = workdir
         self.status = "UNKNOWN"
 
+        self.exe_paths = {
+            "yosys": "yosys",
+            "abc": "yosys-abc",
+            "smtbmc": "yosys-smtbmc",
+            "sprove": "super_prove",
+        }
+
         self.tasks_running = []
         self.tasks_all = []
 
@@ -298,7 +305,7 @@ class SbyJob:
                 print("write_ilang ../model/design.il", file=f)
 
             task = SbyTask(self, "script", [],
-                    "cd %s/src; yosys -ql ../model/design.log ../model/design.ys" % (self.workdir))
+                    "cd %s/src; %s -ql ../model/design.log ../model/design.ys" % (self.workdir, self.exe_paths["yosys"]))
             task.checkretcode = True
 
             return [task]
@@ -319,7 +326,7 @@ class SbyJob:
                 print("write_smt2 -wires design_%s.smt2" % model_name, file=f)
 
             task = SbyTask(self, model_name, self.model("ilang"),
-                    "cd %s/model; yosys -ql design_%s.log design_%s.ys" % (self.workdir, model_name, model_name))
+                    "cd %s/model; %s -ql design_%s.log design_%s.ys" % (self.workdir, self.exe_paths["yosys"], model_name, model_name))
             task.checkretcode = True
 
             return [task]
@@ -342,7 +349,7 @@ class SbyJob:
                 print("write_aiger -zinit -map design_aiger.aim design_aiger.aig", file=f)
 
             task = SbyTask(self, "aig", self.model("ilang"),
-                    "cd %s/model; yosys -ql design_aiger.log design_aiger.ys" % (self.workdir))
+                    "cd %s/model; %s -ql design_aiger.log design_aiger.ys" % (self.workdir, self.exe_paths["yosys"]))
             task.checkretcode = True
 
             return [task]

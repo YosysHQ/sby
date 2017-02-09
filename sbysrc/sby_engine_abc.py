@@ -29,25 +29,21 @@ def run(mode, job, engine_idx, engine):
     if abc_command[0] == "bmc3":
         assert mode == "bmc"
         assert len(abc_command) == 1
-        abc_script = "bmc3 -F %d -v" % job.opt_depth
+        abc_command[0] += " -F %d -v" % job.opt_depth
 
     elif abc_command[0] == "sim3":
         assert mode == "bmc"
-        abc_script = "sim3 -F %d -v" % job.opt_depth
+        abc_command[0] += " -F %d -v" % job.opt_depth
 
     elif abc_command[0] == "pdr":
         assert mode == "prove"
-        abc_script = "pdr"
 
     else:
         assert False
 
-    if len(abc_command) > 1:
-        abc_script += " " + " ".join(abc_command[1:])
-
     task = SbyTask(job, "engine_%d" % engine_idx, job.model("aig"),
-            ("cd %s; yosys-abc -c 'read_aiger model/design_aiger.aig; fold; strash; %s; " +
-             "write_cex -a engine_%d/trace.aiw'") % (job.workdir, abc_script, engine_idx),
+            ("cd %s; %s -c 'read_aiger model/design_aiger.aig; fold; strash; %s; write_cex -a engine_%d/trace.aiw'") %
+            (job.workdir, job.exe_paths["abc"], " ".join(abc_command), engine_idx),
             logfile=open("%s/engine_%d/logfile.txt" % (job.workdir, engine_idx), "w"))
 
     task.noprintregex = re.compile(r"^\.+$")
@@ -83,9 +79,9 @@ def run(mode, job, engine_idx, engine):
 
         if task_status == "FAIL":
             task2 = SbyTask(job, "engine_%d" % engine_idx, job.model("smt2"),
-                    ("cd %s; yosys-smtbmc --noprogress --dump-vcd engine_%d/trace.vcd --dump-vlogtb engine_%d/trace_tb.v " +
+                    ("cd %s; %s --noprogress --dump-vcd engine_%d/trace.vcd --dump-vlogtb engine_%d/trace_tb.v " +
                      "--dump-smtc engine_%d/trace.smtc --aig model/design_aiger.aim:engine_%d/trace.aiw --aig-noheader model/design_smt2.smt2") %
-                            (job.workdir, engine_idx, engine_idx, engine_idx, engine_idx),
+                            (job.workdir, job.exe_paths["smtbmc"], engine_idx, engine_idx, engine_idx, engine_idx),
                     logfile=open("%s/engine_%d/logfile2.txt" % (job.workdir, engine_idx), "w"))
 
             task2_status = None

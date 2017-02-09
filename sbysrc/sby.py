@@ -25,6 +25,7 @@ sbyfile = None
 workdir = None
 opt_force = False
 opt_backup = False
+exe_paths = dict()
 
 def usage():
     print("""
@@ -38,11 +39,18 @@ sby [options] <jobname>.sby
 
     -b
         backup workdir if it already exists
+
+    --yosys <path_to_executable>
+    --abc <path_to_executable>
+    --smtbmc <path_to_executable>
+    --sprove <path_to_executable>
+        configure which executable to use for the respective tool
 """)
     sys.exit(1)
 
 try:
-    opts, args = getopt.getopt(sys.argv[1:], "d:bf", [])
+    opts, args = getopt.getopt(sys.argv[1:], "d:bf", ["yosys=",
+            "abc=", "smtbmc=", "sprove="])
 except:
     usage()
 
@@ -53,6 +61,14 @@ for o, a in opts:
         opt_force = True
     elif o == "-b":
         opt_backup = True
+    elif o == "--yosys":
+        exe_paths["yosys"] = a
+    elif o == "--abc":
+        exe_paths["abc"] = a
+    elif o == "--smtbmc":
+        exe_paths["smtbmc"] = a
+    elif o == "--sprove":
+        exe_paths["sprove"] = a
     else:
         usage()
 
@@ -82,6 +98,10 @@ if opt_force:
     shutil.rmtree(workdir, ignore_errors=True)
 
 job = SbyJob(sbyfile, workdir, early_logmsgs)
+
+for k, v in exe_paths.items():
+    job.exe_paths[k] = v
+
 job.run()
 
 sys.exit(job.retcode)
