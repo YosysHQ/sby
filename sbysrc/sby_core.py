@@ -35,6 +35,7 @@ class SbyTask:
         self.logfile = logfile
         self.noprintregex = None
         self.notify = []
+        self.linebuffer = ""
 
         for dep in self.deps:
             dep.register_dep(self)
@@ -95,7 +96,11 @@ class SbyTask:
         while True:
             outs = self.p.stdout.readline().decode("utf-8")
             if len(outs) == 0: break
-            outs = outs.strip()
+            if outs[-1] != '\n':
+                self.linebuffer += outs
+                break
+            outs = (self.linebuffer + outs).strip()
+            self.linebuffer = ""
             if len(outs) == 0: continue
             if self.noprintregex is None or not self.noprintregex.match(outs):
                 self.job.log("%s: %s" % (self.info, outs))
