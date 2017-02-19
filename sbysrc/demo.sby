@@ -2,11 +2,12 @@
 [options]
 mode bmc
 depth 10
+wait on
 
 [engines]
-smtbmc -s yices
-smtbmc -s boolector
-smtbmc -s z3 --nomem
+smtbmc yices
+smtbmc boolector -ack
+smtbmc --nomem z3
 abc bmc3
 
 [script]

@@ -25,17 +25,17 @@ def run(mode, job, engine_idx, engine):
     syn_opt = False
 
     opts, args = getopt.getopt(engine[1:], "s:", ["nomem", "syn"])
-    assert len(args) == 0
 
     for o, a in opts:
-        if o == "-s":
-            smtbmc_opts += ["-s", a]
-        elif o == "--nomem":
+        if o == "--nomem":
             nomem_opt = True
         elif o == "--syn":
             syn_opt = True
         else:
             assert False
+
+    for i, a in enumerate(args):
+        smtbmc_opts += ["-s" if i == 0 else "-S", a]
 
     model_name = "smt2"
     if syn_opt: model_name += "_syn"
