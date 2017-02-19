@@ -52,12 +52,14 @@ class SbyTask:
             self.notify.append(next_task)
 
     def handle_output(self, line):
-        if self.terminated:
+        if self.terminated or len(line) == 0:
             return
-        if self.logfile is not None:
-            print(line, file=self.logfile)
         if self.output_callback is not None:
-            self.output_callback(line)
+            line = self.output_callback(line)
+        if line is not None and (self.noprintregex is None or not self.noprintregex.match(line)):
+            if self.logfile is not None:
+                print(line, file=self.logfile)
+            self.job.log("%s: %s" % (self.info, line))
 
     def handle_exit(self, retcode):
         if self.terminated:
@@ -101,9 +103,6 @@ class SbyTask:
                 break
             outs = (self.linebuffer + outs).strip()
             self.linebuffer = ""
-            if len(outs) == 0: continue
-            if self.noprintregex is None or not self.noprintregex.match(outs):
-                self.job.log("%s: %s" % (self.info, outs))
             self.handle_output(outs)
 
         if self.p.poll() is not None:
@@ -141,7 +140,8 @@ class SbyJob:
             "yosys": "yosys",
             "abc": "yosys-abc",
             "smtbmc": "yosys-smtbmc",
-            "sprove": "super_prove",
+            "suprove": "super_prove",
+            "avy": "avy",
         }
 
         self.tasks_running = []
@@ -254,8 +254,7 @@ class SbyJob:
                     fds.append(task.p.stdout)
 
             try:
-                while select(fds, [], [], 1.0) == ([], [], []):
-                    pass
+                select(fds, [], [], 1.0) == ([], [], [])
             except:
                 pass
 

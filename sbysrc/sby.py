@@ -43,14 +43,15 @@ sby [options] <jobname>.sby
     --yosys <path_to_executable>
     --abc <path_to_executable>
     --smtbmc <path_to_executable>
-    --sprove <path_to_executable>
+    --suprove <path_to_executable>
+    --avy <path_to_executable>
         configure which executable to use for the respective tool
 """)
     sys.exit(1)
 
 try:
     opts, args = getopt.getopt(sys.argv[1:], "d:bf", ["yosys=",
-            "abc=", "smtbmc=", "sprove="])
+            "abc=", "smtbmc=", "suprove="])
 except:
     usage()
 
@@ -67,8 +68,8 @@ for o, a in opts:
         exe_paths["abc"] = a
     elif o == "--smtbmc":
         exe_paths["smtbmc"] = a
-    elif o == "--sprove":
-        exe_paths["sprove"] = a
+    elif o == "--suprove":
+        exe_paths["suprove"] = a
     else:
         usage()
 

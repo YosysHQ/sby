@@ -20,58 +20,52 @@ import re, os, getopt
 from sby_core import SbyTask
 
 def run(mode, job, engine_idx, engine):
-    abc_opts, abc_command = getopt.getopt(engine[1:], "", [])
-    assert len(abc_command) > 0
+    opts, solver_args = getopt.getopt(engine[1:], "", [])
+    assert len(solver_args) > 0
 
-    for o, a in abc_opts:
+    for o, a in opts:
         assert False
 
-    if abc_command[0] == "bmc3":
-        assert mode == "bmc"
-        assert len(abc_command) == 1
-        abc_command[0] += " -F %d -v" % job.opt_depth
+    if solver_args[0] == "suprove":
+        solver_cmd = " ".join([job.exe_paths["suprove"]] + solver_args[1:])
 
-    elif abc_command[0] == "sim3":
-        assert mode == "bmc"
-        abc_command[0] += " -F %d -v" % job.opt_depth
-
-    elif abc_command[0] == "pdr":
-        assert mode == "prove"
+    elif solver_args[0] == "avy":
+        solver_cmd = " ".join([job.exe_paths["avy"], "--cex", "-"] + solver_args[1:])
 
     else:
         assert False
 
     task = SbyTask(job, "engine_%d" % engine_idx, job.model("aig"),
-            ("cd %s; %s -c 'read_aiger model/design_aiger.aig; fold; strash; %s; write_cex -a engine_%d/trace.aiw'") %
-            (job.workdir, job.exe_paths["abc"], " ".join(abc_command), engine_idx),
+            "cd %s; %s model/design_aiger.aig" % (job.workdir, solver_cmd),
             logfile=open("%s/engine_%d/logfile.txt" % (job.workdir, engine_idx), "w"))
 
-    task.noprintregex = re.compile(r"^\.+$")
     task_status = None
+    aiw_file = open("%s/engine_%d/trace.aiw" % (job.workdir, engine_idx), "w")
 
     def output_callback(line):
         nonlocal task_status
 
-        match = re.match(r"^Output [0-9]+ of miter .* was asserted in frame [0-9]+.", line)
-        if match: task_status = "FAIL"
+        if task_status is not None:
+            print(line, file=aiw_file)
+            return None
 
-        match = re.match(r"^Simulation of [0-9]+ frames for [0-9]+ rounds with [0-9]+ restarts did not assert POs.", line)
-        if match: task_status = "UNKNOWN"
+        if line.startswith("u"):
+            return "No CEX up to depth %d." % (int(line[1:])-1)
 
-        match = re.match(r"^Stopping BMC because all 2\^[0-9]+ reachable states are visited.", line)
-        if match: task_status = "PASS"
+        if line in ["0", "1", "2"]:
+            print(line, file=aiw_file)
+            if line == "0": task_status = "PASS"
+            if line == "1": task_status = "FAIL"
+            if line == "2": task_status = "UNKNOWN"
 
-        match = re.match(r"^No output asserted in [0-9]+ frames.", line)
-        if match: task_status = "PASS"
-
-        match = re.match(r"^Property proved.", line)
-        if match: task_status = "PASS"
-
-        return line
+        return None
 
     def exit_callback(retcode):
-        assert retcode == 0
+        if solver_args[0] not in ["avy"]:
+            assert retcode == 0
         assert task_status is not None
+
+        aiw_file.close()
 
         job.update_status(task_status)
         job.log("engine_%d: Status returned by engine: %s" % (engine_idx, task_status))
@@ -82,7 +76,7 @@ def run(mode, job, engine_idx, engine):
         if task_status == "FAIL":
             task2 = SbyTask(job, "engine_%d" % engine_idx, job.model("smt2"),
                     ("cd %s; %s --noprogress --dump-vcd engine_%d/trace.vcd --dump-vlogtb engine_%d/trace_tb.v " +
-                     "--dump-smtc engine_%d/trace.smtc --aig model/design_aiger.aim:engine_%d/trace.aiw --aig-noheader model/design_smt2.smt2") %
+                     "--dump-smtc engine_%d/trace.smtc --aig model/design_aiger.aim:engine_%d/trace.aiw model/design_smt2.smt2") %
                             (job.workdir, job.exe_paths["smtbmc"], engine_idx, engine_idx, engine_idx, engine_idx),
                     logfile=open("%s/engine_%d/logfile2.txt" % (job.workdir, engine_idx), "w"))
 

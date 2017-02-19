@@ -43,6 +43,10 @@ def run(job):
             import sby_engine_smtbmc
             sby_engine_smtbmc.run("prove", job, engine_idx, engine)
 
+        elif engine[0] == "aiger":
+            import sby_engine_aiger
+            sby_engine_aiger.run("prove", job, engine_idx, engine)
+
         elif engine[0] == "abc":
             import sby_engine_abc
             sby_engine_abc.run("prove", job, engine_idx, engine)

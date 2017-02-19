@@ -86,6 +86,8 @@ def run(mode, job, engine_idx, engine):
         match = re.match(r"^## [0-9: ]+ Status: PASSED", line)
         if match: task_status = "PASS"
 
+        return line
+
     def exit_callback(retcode):
         assert task_status is not None
 

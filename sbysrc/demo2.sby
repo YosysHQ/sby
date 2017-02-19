@@ -1,0 +1,21 @@
+[options]
+mode prove
+wait on
+
+[engines]
+aiger suprove
+aiger avy
+
+[script]
+read_verilog -formal demo.v
+prep -top top
+
+[file demo.v]
+module top(input clk, input up, down);
+  reg [4:0] counter = 0;
+  always @(posedge clk) begin
+    if (up && counter != 10) counter <= counter + 1;
+    if (down && counter != 0) counter <= counter - 1;
+  end
+  assert property (counter != 15);
+endmodule
