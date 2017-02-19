@@ -102,15 +102,15 @@ proof. This engine uses the array-theories provided by those solvers to
 efficiently model memories. Since this example uses large memories, the
 ``smtbmc`` engine is a good match.
 
-(``smtbmc -s boolector`` uses boolector as SMT solver. Note that boolector is
-only free-to-use for noncommercial purposes. Use ``smtbmc -s z3`` to use the
+(``smtbmc boolector`` uses boolector as SMT solver. Note that boolector is
+only free-to-use for noncommercial purposes. Use ``smtbmc z3`` to use the
 permissively licensed solver Z3 instead. Z3 is the default solver when no
-``-s`` option is used with ``smtbmc``.)
+argument is used with ``smtbmc``.)
 
 Exercise: The engine ``abc bmc3`` does not provide abstract memory models.
 Therefore SymbiYosys has to synthesize the memories in the example to FFs
 and address logic. How does the performance of this project change if
-``abc bmc3`` is used as engine instead of ``smtbmc -s boolector``? How fast
+``abc bmc3`` is used as engine instead of ``smtbmc boolector``? How fast
 can either engine verify the design when the bug has been fixed?
 
 Beyond bounded model checks

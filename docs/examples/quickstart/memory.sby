@@ -4,7 +4,7 @@ depth 10
 expect fail
 
 [engines]
-smtbmc -s boolector
+smtbmc boolector
 
 [script]
 read_verilog -formal memory.v
