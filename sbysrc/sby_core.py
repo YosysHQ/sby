@@ -314,20 +314,23 @@ class SbyJob:
 
             return [task]
 
-        if model_name in ["smt2", "smt2_syn", "smt2_nomem", "smt2_syn_nomem"]:
+        if re.match(r"^smt2(_syn)?(_nomem)?(_stbv)?$", model_name):
             with open("%s/model/design_%s.ys" % (self.workdir, model_name), "w") as f:
                 print("# running in %s/model/" % (self.workdir), file=f)
                 print("read_ilang design.il", file=f)
-                if model_name in ["smt2_nomem", "smt2_syn_nomem"]:
+                if "_nomem" in model_name:
                     print("memory_map", file=f)
                     print("opt -keepdc -fast", file=f)
-                if model_name in ["smt2_syn", "smt2_syn_nomem"]:
+                if "_syn" in model_name:
                     print("techmap", file=f)
                     print("opt -fast", file=f)
                     print("abc", file=f)
                     print("opt_clean", file=f)
                 print("stat", file=f)
-                print("write_smt2 -wires design_%s.smt2" % model_name, file=f)
+                if "_stbv" in model_name:
+                    print("write_smt2 -stbv -wires design_%s.smt2" % model_name, file=f)
+                else:
+                    print("write_smt2 -wires design_%s.smt2" % model_name, file=f)
 
             task = SbyTask(self, model_name, self.model("ilang"),
                     "cd %s/model; %s -ql design_%s.log design_%s.ys" % (self.workdir, self.exe_paths["yosys"], model_name, model_name))

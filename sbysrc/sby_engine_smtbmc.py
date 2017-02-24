@@ -23,14 +23,17 @@ def run(mode, job, engine_idx, engine):
     smtbmc_opts = []
     nomem_opt = False
     syn_opt = False
+    stbv_opt = False
 
-    opts, args = getopt.getopt(engine[1:], "s:", ["nomem", "syn"])
+    opts, args = getopt.getopt(engine[1:], "s:", ["nomem", "syn", "stbv"])
 
     for o, a in opts:
         if o == "--nomem":
             nomem_opt = True
         elif o == "--syn":
             syn_opt = True
+        elif o == "--stbv":
+            stbv_opt = True
         else:
             assert False
 
@@ -40,6 +43,7 @@ def run(mode, job, engine_idx, engine):
     model_name = "smt2"
     if syn_opt: model_name += "_syn"
     if nomem_opt: model_name += "_nomem"
+    if stbv_opt: model_name += "_stbv"
 
     if mode == "prove":
         run("prove_basecase", job, engine_idx, engine)
