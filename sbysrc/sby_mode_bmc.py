@@ -21,9 +21,13 @@ from sby_core import SbyTask
 
 def run(job):
     job.opt_depth = 20
+    job.opt_aigsmt = "z3"
 
     if "depth" in job.options:
         job.opt_depth = int(job.options["depth"])
+
+    if "aigsmt" in job.options:
+        job.opt_aigsmt = job.options["aigsmt"]
 
     for engine_idx in range(len(job.engines)):
         engine = job.engines[engine_idx]
