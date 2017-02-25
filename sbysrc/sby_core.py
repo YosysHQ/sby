@@ -141,6 +141,7 @@ class SbyJob:
             "abc": "yosys-abc",
             "smtbmc": "yosys-smtbmc",
             "suprove": "super_prove",
+            "aigbmc": "aigbmc",
             "avy": "avy",
         }
 

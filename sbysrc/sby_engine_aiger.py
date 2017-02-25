@@ -32,6 +32,9 @@ def run(mode, job, engine_idx, engine):
     elif solver_args[0] == "avy":
         solver_cmd = " ".join([job.exe_paths["avy"], "--cex", "-"] + solver_args[1:])
 
+    elif solver_args[0] == "aigbmc":
+        solver_cmd = " ".join([job.exe_paths["aigbmc"]] + solver_args[1:])
+
     else:
         assert False
 
