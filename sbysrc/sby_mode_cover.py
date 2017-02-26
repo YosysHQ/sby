@@ -20,14 +20,8 @@ import re, os, getopt
 from sby_core import SbyTask
 
 def run(job):
-    job.opt_depth = 20
-    job.opt_append = 0
-
-    if "depth" in job.options:
-        job.opt_depth = int(job.options["depth"])
-
-    if "append" in job.options:
-        job.opt_append = int(job.options["append"])
+    job.handle_int_option("depth", 20)
+    job.handle_int_option("append", 0)
 
     for engine_idx in range(len(job.engines)):
         engine = job.engines[engine_idx]
@@ -42,6 +36,4 @@ def run(job):
 
         else:
             assert False
-
-    job.taskloop()
 

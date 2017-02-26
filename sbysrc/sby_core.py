@@ -70,7 +70,7 @@ class SbyTask:
             self.exit_callback(retcode)
 
     def terminate(self, timeout=False):
-        if self.job.waitmode and not timeout:
+        if self.job.opt_wait and not timeout:
             return
         if self.running:
             self.job.log("%s: terminating process" % self.info)
@@ -128,6 +128,7 @@ class SbyTask:
 class SbyJob:
     def __init__(self, filename, workdir, early_logs):
         self.options = dict()
+        self.used_options = set()
         self.engines = list()
         self.script = list()
         self.files = dict()
@@ -262,10 +263,10 @@ class SbyJob:
             for task in self.tasks_running:
                 task.poll()
 
-            if "timeout" in self.options:
+            if self.opt_timeout is not None:
                 total_clock_time = int(time() - self.start_clock_time)
-                if total_clock_time > int(self.options["timeout"]):
-                    self.log("Reached TIMEOUT (%d seconds). Terminating all tasks." % int(self.options["timeout"]))
+                if total_clock_time > self.opt_timeout:
+                    self.log("Reached TIMEOUT (%d seconds). Terminating all tasks." % self.opt_timeout)
                     self.status = "TIMEOUT"
                     self.terminate(timeout=True)
 
@@ -298,6 +299,28 @@ class SbyJob:
             self.log("Copy '%s' to '%s'." % (srcfile, dstfile))
             copyfile(srcfile, dstfile)
 
+    def handle_str_option(self, option_name, default_value):
+        if option_name in self.options:
+            self.__dict__["opt_" + option_name] = self.options[option_name]
+            self.used_options.add(option_name)
+        else:
+            self.__dict__["opt_" + option_name] = default_value
+
+    def handle_int_option(self, option_name, default_value):
+        if option_name in self.options:
+            self.__dict__["opt_" + option_name] = int(self.options[option_name])
+            self.used_options.add(option_name)
+        else:
+            self.__dict__["opt_" + option_name] = default_value
+
+    def handle_bool_option(self, option_name, default_value):
+        if option_name in self.options:
+            assert self.options[option_name] in ["on", "off"]
+            self.__dict__["opt_" + option_name] = self.options[option_name] == "on"
+            self.used_options.add(option_name)
+        else:
+            self.__dict__["opt_" + option_name] = default_value
+
     def make_model(self, model_name):
         if not os.path.exists("%s/model" % self.workdir):
             os.makedirs("%s/model" % self.workdir)
@@ -307,6 +330,7 @@ class SbyJob:
                 print("# running in %s/src/" % self.workdir, file=f)
                 for cmd in self.script:
                     print(cmd, file=f)
+                print("opt_clean", file=f)
                 print("write_ilang ../model/design.il", file=f)
 
             task = SbyTask(self, "script", [],
@@ -397,37 +421,41 @@ class SbyJob:
             assert 0
 
     def run(self):
-        assert "mode" in self.options
-        assert self.options["mode"] in ["bmc", "prove", "cover"]
+        self.handle_str_option("mode", None)
+        assert self.opt_mode in ["bmc", "prove", "cover"]
 
         self.expect = ["PASS"]
         if "expect" in self.options:
             self.expect = self.options["expect"].upper().split(",")
+            self.used_options.add("expect")
 
         for s in self.expect:
             assert s in ["PASS", "FAIL", "UNKNOWN", "ERROR", "TIMEOUT"]
 
-        self.waitmode = False
-        if "wait" in self.options:
-            assert self.options["wait"] in ["on", "off"]
-            self.waitmode = self.options["wait"] == "on"
+        self.handle_bool_option("wait", False)
+        self.handle_int_option("timeout", None)
 
         self.copy_src()
 
-        if self.options["mode"] == "bmc":
+        if self.opt_mode == "bmc":
             import sby_mode_bmc
             sby_mode_bmc.run(self)
 
-        elif self.options["mode"] == "prove":
+        elif self.opt_mode == "prove":
             import sby_mode_prove
             sby_mode_prove.run(self)
 
-        elif self.options["mode"] == "cover":
+        elif self.opt_mode == "cover":
             import sby_mode_cover
             sby_mode_cover.run(self)
 
         else:
             assert False
+
+        for opt in self.options.keys():
+            assert opt in self.used_options
+
+        self.taskloop()
 
         total_clock_time = int(time() - self.start_clock_time)
 
