@@ -44,6 +44,7 @@ sby [options] <jobname>.sby
     --abc <path_to_executable>
     --smtbmc <path_to_executable>
     --suprove <path_to_executable>
+    --aigbmc <path_to_executable>
     --avy <path_to_executable>
         configure which executable to use for the respective tool
 """)
@@ -51,7 +52,7 @@ sby [options] <jobname>.sby
 
 try:
     opts, args = getopt.getopt(sys.argv[1:], "d:bf", ["yosys=",
-            "abc=", "smtbmc=", "suprove="])
+            "abc=", "smtbmc=", "suprove=", "aigbmc=", "avy="])
 except:
     usage()
 
@@ -70,6 +71,10 @@ for o, a in opts:
         exe_paths["smtbmc"] = a
     elif o == "--suprove":
         exe_paths["suprove"] = a
+    elif o == "--aigbmc":
+        exe_paths["aigbmc"] = a
+    elif o == "--avy":
+        exe_paths["avy"] = a
     else:
         usage()
 

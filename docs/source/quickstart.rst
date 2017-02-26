@@ -8,19 +8,77 @@ The example files used in this chapter can be downloaded from `here
 Installing
 ----------
 
-TBD
+Follow the instructions below to install SymbiYosys and its dependencies.
+Yosys, SymbiYosys, and Z3 are non-optional. The other packages are only
+required for some engine configurations.
 
-Until I find the time to write this section this links must suffice:
+Prerequisites
+~~~~~~~~~~~~~
 
-  * Yosys: http://www.clifford.at/yosys/
-  * SymbiYosys: https://github.com/cliffordwolf/SymbiYosys
-  * Z3: https://github.com/Z3Prover/z3
+Installing prerequisites (this command is for Ubuntu 16.04):
+
+.. code-block:: text
+
+   sudo apt-get install build-essential clang bison flex libreadline-dev \
+                        gawk tcl-dev libffi-dev git mercurial graphviz   \
+                        xdot pkg-config python python3 libftdi-dev
+
+Yosys, Yosys-SMTBMC and ABC
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Next install Yosys, Yosys-SMTBMC and ABC (``yosys-abc``):
+
+.. code-block:: text
+
+   git clone https://github.com/cliffordwolf/yosys.git yosys
+   cd yosys
+   make -j$(nproc)
+   sudo make install
+
+SymbiYosys
+~~~~~~~~~~
+
+.. code-block:: text
+
+   git clone https://github.com/cliffordwolf/SymbiYosys.git SymbiYosys
+   cd SymbiYosys
+   sudo make install
+
+Z3
+~~
+
+.. code-block:: text
+
+   git clone https://github.com/Z3Prover/z3.git z3
+   cd z3
+   python scripts/mk_make.py
+   cd build
+   make -j$(nproc)
+   sudo make install
+
+super_prove
+~~~~~~~~~~~
+
+Download the right binary .tar.gz for your system from http://downloads.bvsrc.org/super_prove/
+and extract it to ``/usr/local/super_prove``.
+
+Then create a wrapper script ``/usr/local/bin/suprove`` with the following contents:
+
+.. code-block:: text
+
+   #!/bin/bash
+   tool=super_prove; if [ "$1" != "${1#+}" ]; then tool="${1#+}"; shift; fi
+   exec /usr/local/super_prove/bin/${tool}.sh "$@"
+
+Other packages
+~~~~~~~~~~~~~~
+
+Until I find the time to write install guides for this packages, the following links must suffice:
+
   * Yices2: http://yices.csl.sri.com/
   * Boolector: http://fmv.jku.at/boolector/
-  * super_prove: http://downloads.bvsrc.org/super_prove/
-
-(Yosys, SymbiYosys, and Z3 are non-optional. The other packages are only
-required for some engine configurations.)
+  * Avy: https://arieg.bitbucket.io/avy/
+  * AIGER: http://fmv.jku.at/aiger/
 
 First step: A simple BMC example
 --------------------------------

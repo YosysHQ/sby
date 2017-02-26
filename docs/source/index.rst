@@ -16,7 +16,7 @@ formal tasks:
 at the moment.)
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
 
    quickstart.rst
    reference.rst
