@@ -81,9 +81,9 @@ def run(mode, job, engine_idx, engine):
 
         if task_status == "FAIL":
             task2 = SbyTask(job, "engine_%d" % engine_idx, job.model("smt2"),
-                    ("cd %s; %s -s %s --noprogress --dump-vcd engine_%d/trace.vcd --dump-vlogtb engine_%d/trace_tb.v " +
+                    ("cd %s; %s -s %s --noprogress --append %d --dump-vcd engine_%d/trace.vcd --dump-vlogtb engine_%d/trace_tb.v " +
                      "--dump-smtc engine_%d/trace.smtc --aig model/design_aiger.aim:engine_%d/trace.aiw --aig-noheader model/design_smt2.smt2") %
-                            (job.workdir, job.exe_paths["smtbmc"], job.opt_aigsmt, engine_idx, engine_idx, engine_idx, engine_idx),
+                            (job.workdir, job.exe_paths["smtbmc"], job.opt_aigsmt, job.opt_append, engine_idx, engine_idx, engine_idx, engine_idx),
                     logfile=open("%s/engine_%d/logfile2.txt" % (job.workdir, engine_idx), "w"))
 
             task2_status = None
