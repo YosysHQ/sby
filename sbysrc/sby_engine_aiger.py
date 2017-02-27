@@ -43,12 +43,16 @@ def run(mode, job, engine_idx, engine):
             logfile=open("%s/engine_%d/logfile.txt" % (job.workdir, engine_idx), "w"))
 
     task_status = None
+    produced_cex = False
     aiw_file = open("%s/engine_%d/trace.aiw" % (job.workdir, engine_idx), "w")
 
     def output_callback(line):
         nonlocal task_status
+        nonlocal produced_cex
 
         if task_status is not None:
+            if not produced_cex and line.isdigit():
+                produced_cex = True
             print(line, file=aiw_file)
             return None
 
@@ -77,33 +81,37 @@ def run(mode, job, engine_idx, engine):
         job.terminate()
 
         if task_status == "FAIL":
-            task2 = SbyTask(job, "engine_%d" % engine_idx, job.model("smt2"),
-                    ("cd %s; %s -s %s --noprogress --append %d --dump-vcd engine_%d/trace.vcd --dump-vlogtb engine_%d/trace_tb.v " +
-                     "--dump-smtc engine_%d/trace.smtc --aig model/design_aiger.aim:engine_%d/trace.aiw model/design_smt2.smt2") %
-                            (job.workdir, job.exe_paths["smtbmc"], job.opt_aigsmt, job.opt_append, engine_idx, engine_idx, engine_idx, engine_idx),
-                    logfile=open("%s/engine_%d/logfile2.txt" % (job.workdir, engine_idx), "w"))
+            if produced_cex:
+                task2 = SbyTask(job, "engine_%d" % engine_idx, job.model("smt2"),
+                        ("cd %s; %s -s %s --noprogress --append %d --dump-vcd engine_%d/trace.vcd --dump-vlogtb engine_%d/trace_tb.v " +
+                         "--dump-smtc engine_%d/trace.smtc --aig model/design_aiger.aim:engine_%d/trace.aiw model/design_smt2.smt2") %
+                                (job.workdir, job.exe_paths["smtbmc"], job.opt_aigsmt, job.opt_append, engine_idx, engine_idx, engine_idx, engine_idx),
+                        logfile=open("%s/engine_%d/logfile2.txt" % (job.workdir, engine_idx), "w"))
 
-            task2_status = None
+                task2_status = None
 
-            def output_callback2(line):
-                nonlocal task2_status
+                def output_callback2(line):
+                    nonlocal task2_status
 
-                match = re.match(r"^## [0-9: ]+ Status: FAILED", line)
-                if match: task2_status = "FAIL"
+                    match = re.match(r"^## [0-9: ]+ Status: FAILED", line)
+                    if match: task2_status = "FAIL"
 
-                match = re.match(r"^## [0-9: ]+ Status: PASSED", line)
-                if match: task2_status = "PASS"
+                    match = re.match(r"^## [0-9: ]+ Status: PASSED", line)
+                    if match: task2_status = "PASS"
 
-                return line
+                    return line
 
-            def exit_callback2(line):
-                assert task2_status is not None
-                assert task2_status == "FAIL"
+                def exit_callback2(line):
+                    assert task2_status is not None
+                    assert task2_status == "FAIL"
 
-                job.summary.append("counterexample trace: %s/engine_%d/trace.vcd" % (job.workdir, engine_idx))
+                    job.summary.append("counterexample trace: %s/engine_%d/trace.vcd" % (job.workdir, engine_idx))
 
-            task2.output_callback = output_callback2
-            task2.exit_callback = exit_callback2
+                task2.output_callback = output_callback2
+                task2.exit_callback = exit_callback2
+
+            else:
+                job.log("engine_%d: Engine did not produce a counter example." % engine_idx)
 
     task.output_callback = output_callback
     task.exit_callback = exit_callback
