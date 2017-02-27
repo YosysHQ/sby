@@ -435,6 +435,12 @@ class SbyJob:
         self.handle_bool_option("wait", False)
         self.handle_int_option("timeout", None)
 
+        self.handle_str_option("smtc", None)
+
+        if self.opt_smtc is not None:
+            for engine in self.engines:
+                assert engine[0] == "smtbmc"
+
         self.copy_src()
 
         if self.opt_mode == "bmc":

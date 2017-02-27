@@ -40,6 +40,9 @@ def run(mode, job, engine_idx, engine):
     for i, a in enumerate(args):
         smtbmc_opts += ["-s" if i == 0 else "-S", a]
 
+    if job.opt_smtc is not None:
+        smtbmc_opts += ["--smtc", "src/%s" % job.opt_smtc]
+
     model_name = "smt2"
     if syn_opt: model_name += "_syn"
     if nomem_opt: model_name += "_nomem"
