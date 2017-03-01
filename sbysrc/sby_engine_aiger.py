@@ -27,6 +27,8 @@ def run(mode, job, engine_idx, engine):
         assert False
 
     if solver_args[0] == "suprove":
+        if mode == "live" and (len(solver_args) == 1 or solver_args[1][0] != "+"):
+            solver_args.insert(1, "+simple_liveness")
         solver_cmd = " ".join([job.exe_paths["suprove"]] + solver_args[1:])
 
     elif solver_args[0] == "avy":

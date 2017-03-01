@@ -330,6 +330,13 @@ class SbyJob:
                 print("# running in %s/src/" % self.workdir, file=f)
                 for cmd in self.script:
                     print(cmd, file=f)
+                if self.opt_mode in ["bmc", "prove"]:
+                    print("chformal -live -fair -cover -remove", file=f)
+                if self.opt_mode == "cover":
+                    print("chformal -live -fair -remove", file=f)
+                if self.opt_mode == "live":
+                    print("chformal -assert2assume", file=f)
+                    print("chformal -cover -remove", file=f)
                 print("opt_clean", file=f)
                 print("write_ilang ../model/design.il", file=f)
 
@@ -422,7 +429,7 @@ class SbyJob:
 
     def run(self):
         self.handle_str_option("mode", None)
-        assert self.opt_mode in ["bmc", "prove", "cover"]
+        assert self.opt_mode in ["bmc", "prove", "cover", "live"]
 
         self.expect = ["PASS"]
         if "expect" in self.options:
@@ -450,6 +457,10 @@ class SbyJob:
         elif self.opt_mode == "prove":
             import sby_mode_prove
             sby_mode_prove.run(self)
+
+        elif self.opt_mode == "live":
+            import sby_mode_live
+            sby_mode_live.run(self)
 
         elif self.opt_mode == "cover":
             import sby_mode_cover
