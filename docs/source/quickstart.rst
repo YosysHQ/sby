@@ -70,14 +70,27 @@ Then create a wrapper script ``/usr/local/bin/suprove`` with the following conte
    tool=super_prove; if [ "$1" != "${1#+}" ]; then tool="${1#+}"; shift; fi
    exec /usr/local/super_prove/bin/${tool}.sh "$@"
 
+Avy
+~~~
+
+.. code-block:: text
+
+   git clone https://bitbucket.org/arieg/extavy.git
+   cd extavy
+   git submodule update --init
+   mkdir build; cd build
+   cmake -DCMAKE_BUILD_TYPE=Release ..
+   make -j$(nproc)
+   sudo cp avy/src/{avy,avybmc} /usr/local/bin/
+
 Other packages
 ~~~~~~~~~~~~~~
 
-Until I find the time to write install guides for this packages, the following links must suffice:
+Until I find the time to write install guides for the following packages, this
+links must suffice:
 
   * Yices2: http://yices.csl.sri.com/
   * Boolector: http://fmv.jku.at/boolector/
-  * Avy: https://arieg.bitbucket.io/avy/
   * AIGER: http://fmv.jku.at/aiger/
 
 First step: A simple BMC example
