@@ -168,6 +168,25 @@ class SbyJob:
         key = None
 
         with open(filename, "r") as f:
+            with open("%s/config.sby" % workdir, "w") as cfgfile:
+                pycode = None
+                for line in f:
+                    line = line.rstrip("\n")
+                    line = line.rstrip("\r")
+                    if line == "--pycode-begin--":
+                        pycode = ""
+                    elif line == "--pycode-end--":
+                        gdict = globals().copy()
+                        gdict["cfgfile"] = cfgfile
+                        exec("def output(*args, **kwargs):\n  print(*args, **kwargs, file=cfgfile)\n" + pycode, gdict)
+                        pycode = None
+                    else:
+                        if pycode is None:
+                            print(line, file=cfgfile)
+                        else:
+                            pycode += line + "\n"
+
+        with open("%s/config.sby" % workdir, "r") as f:
             for line in f:
                 raw_line = line
                 line = line.strip()
