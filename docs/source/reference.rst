@@ -40,7 +40,7 @@ options are:
 |             |            | consistency. Values: ``on``, ``off``. Default: ``off``  |
 +-------------+------------+---------------------------------------------------------+
 | ``aigsmt``  |   All      | Which SMT2 solver to use for converting AIGER witnesses |
-|             |            | to counter example traces. Default: ``z3``              |
+|             |            | to counter example traces. Default: ``yices``           |
 +-------------+------------+---------------------------------------------------------+
 | ``smtc``    | ``bmc``,   | Pass this ``.smtc`` file to the smtbmc engine. All      |
 |             | ``prove``, | other engines are disabled when this option is used.    |

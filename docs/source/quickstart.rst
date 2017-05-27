@@ -44,6 +44,18 @@ SymbiYosys
    cd SymbiYosys
    sudo make install
 
+Yices 2
+~~~~~~~
+
+.. code-block:: text
+
+   git clone https://github.com/SRI-CSL/yices2.git yices2
+   cd yices2
+   autoconf
+   ./configure
+   make -j$(nproc)
+   sudo make install
+
 Z3
 ~~
 
@@ -89,7 +101,6 @@ Other packages
 Until I find the time to write install guides for the following packages, this
 links must suffice:
 
-  * Yices2: http://yices.csl.sri.com/
   * Boolector: http://fmv.jku.at/boolector/
   * AIGER: http://fmv.jku.at/aiger/
 
@@ -175,8 +186,9 @@ efficiently model memories. Since this example uses large memories, the
 
 (``smtbmc boolector`` uses boolector as SMT solver. Note that boolector is
 only free-to-use for noncommercial purposes. Use ``smtbmc z3`` to use the
-permissively licensed solver Z3 instead. Z3 is the default solver when no
-argument is used with ``smtbmc``.)
+permissively licensed solver Z3, or use ``smtbmc yices`` to use the
+copyleft licensed solver Yices 2 intead. Yices 2 is the default solver when
+no argument is used with ``smtbmc``.)
 
 Exercise: The engine ``abc bmc3`` does not provide abstract memory models.
 Therefore SymbiYosys has to synthesize the memories in the example to FFs

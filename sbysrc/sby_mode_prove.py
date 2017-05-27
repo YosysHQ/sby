@@ -22,7 +22,7 @@ from sby_core import SbyTask
 def run(job):
     job.handle_int_option("depth", 20)
     job.handle_int_option("append", 0)
-    job.handle_str_option("aigsmt", "z3")
+    job.handle_str_option("aigsmt", "yices")
 
     job.status = "UNKNOWN"
 

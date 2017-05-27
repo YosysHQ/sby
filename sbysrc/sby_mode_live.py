@@ -20,7 +20,7 @@ import re, os, getopt
 from sby_core import SbyTask
 
 def run(job):
-    job.handle_str_option("aigsmt", "z3")
+    job.handle_str_option("aigsmt", "yices")
 
     job.status = "UNKNOWN"
 
