@@ -20,6 +20,8 @@ Mode      Description
 ``prove`` Unbounded model check to verify safety properties (``assert(...)`` statements)
 ``live``  Unbounded model check to verify liveness properties (``assert(s_eventually ...)`` statements)
 ``cover`` Generate set of shortest traces required to reach all cover() statements
+``equiv`` Formal equivalence checking (usually to verify pre- and post-synthesis equivalence)
+``synth`` Reactive Synthesis (synthesis of circuit from safety properties)
 ========= ===========
 
 All other options have default values and thus are optional. The available
@@ -40,7 +42,8 @@ options are:
 |             |            | consistency. Values: ``on``, ``off``. Default: ``off``  |
 +-------------+------------+---------------------------------------------------------+
 | ``aigsmt``  |   All      | Which SMT2 solver to use for converting AIGER witnesses |
-|             |            | to counter example traces. Default: ``yices``           |
+|             |            | to counter example traces. Use ``none`` to disable      |
+|             |            | conversion of AIGER witnesses. Default: ``yices``       |
 +-------------+------------+---------------------------------------------------------+
 | ``smtc``    | ``bmc``,   | Pass this ``.smtc`` file to the smtbmc engine. All      |
 |             | ``prove``, | other engines are disabled when this option is used.    |

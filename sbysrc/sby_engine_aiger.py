@@ -87,7 +87,7 @@ def run(mode, job, engine_idx, engine):
 
         job.terminate()
 
-        if task_status == "FAIL":
+        if task_status == "FAIL" and job.opt_aigsmt != "none":
             if produced_cex:
                 if mode == "live":
                     task2 = SbyTask(job, "engine_%d" % engine_idx, job.model("smt2"),
