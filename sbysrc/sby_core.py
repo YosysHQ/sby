@@ -357,6 +357,7 @@ class SbyJob:
                     print("chformal -assert2assume", file=f)
                     print("chformal -cover -remove", file=f)
                 print("opt_clean", file=f)
+                print("setundef -anyseq", file=f)
                 print("write_ilang ../model/design.il", file=f)
 
             task = SbyTask(self, "script", [],
