@@ -45,6 +45,9 @@ options are:
 |             |            | to counter example traces. Use ``none`` to disable      |
 |             |            | conversion of AIGER witnesses. Default: ``yices``       |
 +-------------+------------+---------------------------------------------------------+
+| ``tbtop``   |   All      | The top module for generated Verilog test benches, as   |
+|             |            | hierarchical path relative to the design top module.    |
++-------------+------------+---------------------------------------------------------+
 | ``smtc``    | ``bmc``,   | Pass this ``.smtc`` file to the smtbmc engine. All      |
 |             | ``prove``, | other engines are disabled when this option is used.    |
 |             | ``cover``  | Default: None                                           |

@@ -43,6 +43,9 @@ def run(mode, job, engine_idx, engine):
     if job.opt_smtc is not None:
         smtbmc_opts += ["--smtc", "src/%s" % job.opt_smtc]
 
+    if job.opt_tbtop is not None:
+         smtbmc_opts += ["--vlogtb-top", job.opt_tbtop]
+
     model_name = "smt2"
     if syn_opt: model_name += "_syn"
     if nomem_opt: model_name += "_nomem"

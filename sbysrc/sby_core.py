@@ -463,6 +463,7 @@ class SbyJob:
         self.handle_int_option("timeout", None)
 
         self.handle_str_option("smtc", None)
+        self.handle_str_option("tbtop", None)
 
         if self.opt_smtc is not None:
             for engine in self.engines:
