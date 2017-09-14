@@ -26,6 +26,10 @@ Installing prerequisites (this command is for Ubuntu 16.04):
 Yosys, Yosys-SMTBMC and ABC
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+http://www.clifford.at/yosys/
+
+https://people.eecs.berkeley.edu/~alanmi/abc/
+
 Next install Yosys, Yosys-SMTBMC and ABC (``yosys-abc``):
 
 .. code-block:: text
@@ -38,6 +42,8 @@ Next install Yosys, Yosys-SMTBMC and ABC (``yosys-abc``):
 SymbiYosys
 ~~~~~~~~~~
 
+https://github.com/cliffordwolf/SymbiYosys
+
 .. code-block:: text
 
    git clone https://github.com/cliffordwolf/SymbiYosys.git SymbiYosys
@@ -46,6 +52,8 @@ SymbiYosys
 
 Yices 2
 ~~~~~~~
+
+http://yices.csl.sri.com/
 
 .. code-block:: text
 
@@ -59,6 +67,8 @@ Yices 2
 Z3
 ~~
 
+https://github.com/Z3Prover/z3/wiki
+
 .. code-block:: text
 
    git clone https://github.com/Z3Prover/z3.git z3
@@ -70,6 +80,8 @@ Z3
 
 super_prove
 ~~~~~~~~~~~
+
+https://bitbucket.org/sterin/super_prove_build
 
 Download the right binary .tar.gz for your system from http://downloads.bvsrc.org/super_prove/
 and extract it to ``/usr/local/super_prove``.
@@ -85,6 +97,8 @@ Then create a wrapper script ``/usr/local/bin/suprove`` with the following conte
 Avy
 ~~~
 
+https://arieg.bitbucket.io/avy/
+
 .. code-block:: text
 
    git clone https://bitbucket.org/arieg/extavy.git
@@ -95,13 +109,25 @@ Avy
    make -j$(nproc)
    sudo cp avy/src/{avy,avybmc} /usr/local/bin/
 
+Boolector
+~~~~~~~~~
+
+http://fmv.jku.at/boolector/
+
+.. code-block:: text
+
+   wget http://fmv.jku.at/boolector/boolector-2.4.1-with-lingeling-bbc.tar.bz2
+   tar xvjf boolector-2.4.1-with-lingeling-bbc.tar.bz2
+   cd boolector-2.4.1-with-lingeling-bbc/
+   make
+   sudo cp boolector/bin/boolector /usr/local/bin/boolector
+
 Other packages
 ~~~~~~~~~~~~~~
 
 Until I find the time to write install guides for the following packages, this
 links must suffice:
 
-  * Boolector: http://fmv.jku.at/boolector/
   * AIGER: http://fmv.jku.at/aiger/
 
 First step: A simple BMC example
