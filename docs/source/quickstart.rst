@@ -122,14 +122,6 @@ http://fmv.jku.at/boolector/
    make
    sudo cp boolector/bin/boolector /usr/local/bin/boolector
 
-Other packages
-~~~~~~~~~~~~~~
-
-Until I find the time to write install guides for the following packages, this
-links must suffice:
-
-  * AIGER: http://fmv.jku.at/aiger/
-
 First step: A simple BMC example
 --------------------------------
 
