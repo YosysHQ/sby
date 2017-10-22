@@ -25,7 +25,7 @@ def run(mode, job, engine_idx, engine):
     syn_opt = False
     stbv_opt = False
 
-    opts, args = getopt.getopt(engine[1:], "", ["nomem", "syn", "stbv", "presat"])
+    opts, args = getopt.getopt(engine[1:], "", ["nomem", "syn", "stbv", "presat", "unroll"])
 
     for o, a in opts:
         if o == "--nomem":
@@ -36,6 +36,8 @@ def run(mode, job, engine_idx, engine):
             stbv_opt = True
         elif o == "--presat":
             smtbmc_opts += ["--presat"]
+        elif o == "--unroll":
+            smtbmc_opts += ["--unroll"]
         else:
             assert False
 
