@@ -24,8 +24,9 @@ def run(mode, job, engine_idx, engine):
     nomem_opt = False
     syn_opt = False
     stbv_opt = False
+    dumpsmt2 = False
 
-    opts, args = getopt.getopt(engine[1:], "", ["nomem", "syn", "stbv", "presat", "unroll"])
+    opts, args = getopt.getopt(engine[1:], "", ["nomem", "syn", "stbv", "presat", "unroll", "dumpsmt2"])
 
     for o, a in opts:
         if o == "--nomem":
@@ -38,6 +39,8 @@ def run(mode, job, engine_idx, engine):
             smtbmc_opts += ["--presat"]
         elif o == "--unroll":
             smtbmc_opts += ["--unroll"]
+        elif o == "--dumpsmt2":
+            dumpsmt2 = True
         else:
             assert False
 
@@ -77,6 +80,9 @@ def run(mode, job, engine_idx, engine):
     if mode == "cover":
         smtbmc_opts.append("-c")
         trace_prefix += "%"
+
+    if dumpsmt2:
+        smtbmc_opts += ["--dump-smt2", trace_prefix + ".smt2"]
 
     task = SbyTask(job, taskname, job.model(model_name),
             "cd %s; %s --noprogress %s -t %d --append %d --dump-vcd %s.vcd --dump-vlogtb %s_tb.v --dump-smtc %s.smtc model/design_%s.smt2" %
