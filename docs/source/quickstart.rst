@@ -21,7 +21,9 @@ Installing prerequisites (this command is for Ubuntu 16.04):
 
    sudo apt-get install build-essential clang bison flex libreadline-dev \
                         gawk tcl-dev libffi-dev git mercurial graphviz   \
-                        xdot pkg-config python python3 libftdi-dev gperf
+                        xdot pkg-config python python3 libftdi-dev gperf \
+                        libboost-program-options-dev autoconf libgmp-dev \
+                        cmake
 
 Yosys, Yosys-SMTBMC and ABC
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
