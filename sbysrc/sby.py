@@ -17,7 +17,7 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #
 
-import os, sys, getopt, shutil
+import os, sys, getopt, shutil, tempfile
 ##yosys-sys-path##
 from sby_core import SbyJob
 
@@ -29,7 +29,7 @@ exe_paths = dict()
 
 def usage():
     print("""
-sby [options] <jobname>.sby
+sby [options] [<jobname>.sby]
 
     -d <dirname>
         set workdir name. default: <jobname> (without .sby)
@@ -78,10 +78,13 @@ for o, a in opts:
     else:
         usage()
 
-if len(args) != 1:
+if len(args) > 1:
     usage()
 
-sbyfile = args[0]
+if len(args) == 1:
+    sbyfile = args[0]
+    assert sbyfile.endswith(".sby")
+
 early_logmsgs = list()
 
 def early_log(msg):
@@ -89,8 +92,10 @@ def early_log(msg):
     print(early_logmsgs[-1])
 
 if workdir is None:
-    assert sbyfile.endswith(".sby")
-    workdir = sbyfile[:-4]
+    if sbyfile:
+        workdir = sbyfile[:-4]
+    else:
+        workdir = tempfile.mkdtemp()
 
 if opt_backup:
     backup_idx = 0
@@ -101,7 +106,11 @@ if opt_backup:
 
 if opt_force:
     early_log("Removing direcory '%s'." % (workdir))
-    shutil.rmtree(workdir, ignore_errors=True)
+    if sbyfile:
+        shutil.rmtree(workdir, ignore_errors=True)
+
+if sbyfile:
+    os.makedirs(workdir)
 
 job = SbyJob(sbyfile, workdir, early_logmsgs)
 
@@ -109,6 +118,9 @@ for k, v in exe_paths.items():
     job.exe_paths[k] = v
 
 job.run()
+
+if not sbyfile:
+    shutil.rmtree(workdir, ignore_errors=True)
 
 sys.exit(job.retcode)
 

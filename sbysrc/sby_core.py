@@ -16,7 +16,7 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #
 
-import os, re, resource
+import os, re, resource, sys
 import subprocess, fcntl
 from shutil import copyfile
 from select import select
@@ -157,7 +157,6 @@ class SbyJob:
         self.logprefix = "SBY [%s]" % self.workdir
         self.summary = list()
 
-        os.makedirs(workdir)
         self.logfile = open("%s/logfile.txt" % workdir, "w")
 
         for line in early_logs:
@@ -167,7 +166,7 @@ class SbyJob:
         mode = None
         key = None
 
-        with open(filename, "r") as f:
+        with (open(filename, "r") if filename else sys.stdin) as f:
             with open("%s/config.sby" % workdir, "w") as cfgfile:
                 pycode = None
                 for line in f:
