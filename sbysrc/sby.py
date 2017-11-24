@@ -25,6 +25,7 @@ sbyfile = None
 workdir = None
 opt_force = False
 opt_backup = False
+opt_tmpdir = False
 exe_paths = dict()
 
 def usage():
@@ -40,6 +41,9 @@ sby [options] [<jobname>.sby]
     -b
         backup workdir if it already exists
 
+    -t
+        run in a temporary workdir (remove when finished)
+
     --yosys <path_to_executable>
     --abc <path_to_executable>
     --smtbmc <path_to_executable>
@@ -51,7 +55,7 @@ sby [options] [<jobname>.sby]
     sys.exit(1)
 
 try:
-    opts, args = getopt.getopt(sys.argv[1:], "d:bf", ["yosys=",
+    opts, args = getopt.getopt(sys.argv[1:], "d:btf", ["yosys=",
             "abc=", "smtbmc=", "suprove=", "aigbmc=", "avy="])
 except:
     usage()
@@ -63,6 +67,8 @@ for o, a in opts:
         opt_force = True
     elif o == "-b":
         opt_backup = True
+    elif o == "-t":
+        opt_tmpdir = True
     elif o == "--yosys":
         exe_paths["yosys"] = a
     elif o == "--abc":
@@ -91,26 +97,27 @@ def early_log(msg):
     early_logmsgs.append("SBY [%s] %s" % (workdir, msg))
     print(early_logmsgs[-1])
 
-if workdir is None:
-    if sbyfile:
-        workdir = sbyfile[:-4]
-    else:
-        workdir = tempfile.mkdtemp()
+if workdir is None and sbyfile is not None and not opt_tmpdir:
+    workdir = sbyfile[:-4]
 
-if opt_backup:
-    backup_idx = 0
-    while os.path.exists("%s.bak%03d" % (workdir, backup_idx)):
-        backup_idx += 1
-    early_log("Moving direcory '%s' to '%s'." % (workdir, "%s.bak%03d" % (workdir, backup_idx)))
-    shutil.move(workdir, "%s.bak%03d" % (workdir, backup_idx))
+if workdir is not None:
+    if opt_backup:
+        backup_idx = 0
+        while os.path.exists("%s.bak%03d" % (workdir, backup_idx)):
+            backup_idx += 1
+        early_log("Moving direcory '%s' to '%s'." % (workdir, "%s.bak%03d" % (workdir, backup_idx)))
+        shutil.move(workdir, "%s.bak%03d" % (workdir, backup_idx))
 
-if opt_force:
-    early_log("Removing direcory '%s'." % (workdir))
-    if sbyfile:
-        shutil.rmtree(workdir, ignore_errors=True)
+    if opt_force:
+        early_log("Removing direcory '%s'." % (workdir))
+        if sbyfile:
+            shutil.rmtree(workdir, ignore_errors=True)
 
-if sbyfile:
     os.makedirs(workdir)
+
+else:
+    opt_tmpdir = True
+    workdir = tempfile.mkdtemp()
 
 job = SbyJob(sbyfile, workdir, early_logmsgs)
 
@@ -119,8 +126,10 @@ for k, v in exe_paths.items():
 
 job.run()
 
-if not sbyfile:
+if opt_tmpdir:
+    job.log("Removing direcory '%s'." % (workdir))
     shutil.rmtree(workdir, ignore_errors=True)
 
+job.log("DONE (%s, rc=%d)" % (job.status, job.retcode))
 sys.exit(job.retcode)
 

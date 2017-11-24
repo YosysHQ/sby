@@ -520,8 +520,6 @@ class SbyJob:
             if self.status == "UNKNOWN": self.retcode = 4
             if self.status == "TIMEOUT": self.retcode = 5
 
-        self.log("DONE (%s, rc=%d)" % (self.status, self.retcode))
-
         with open("%s/%s" % (self.workdir, self.status), "w") as f:
             for line in self.summary:
                 print(line, file=f)
