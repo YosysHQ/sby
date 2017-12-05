@@ -22,11 +22,13 @@ from sby_core import SbyTask
 def run(mode, job, engine_idx, engine):
     smtbmc_opts = []
     nomem_opt = False
+    presat_opt = True
+    unroll_opt = True
     syn_opt = False
     stbv_opt = False
     dumpsmt2 = False
 
-    opts, args = getopt.getopt(engine[1:], "", ["nomem", "syn", "stbv", "presat", "unroll", "dumpsmt2"])
+    opts, args = getopt.getopt(engine[1:], "", ["nomem", "syn", "stbv", "presat", "nopresat", "unroll", "nounroll", "dumpsmt2"])
 
     for o, a in opts:
         if o == "--nomem":
@@ -36,13 +38,23 @@ def run(mode, job, engine_idx, engine):
         elif o == "--stbv":
             stbv_opt = True
         elif o == "--presat":
-            smtbmc_opts += ["--presat"]
+            presat_opt = True
+        elif o == "--nopresat":
+            presat_opt = False
         elif o == "--unroll":
-            smtbmc_opts += ["--unroll"]
+            unroll_opt = True
+        elif o == "--nounroll":
+            unroll_opt = False
         elif o == "--dumpsmt2":
             dumpsmt2 = True
         else:
             assert False
+
+    if presat_opt:
+        smtbmc_opts += ["--presat"]
+
+    if unroll_opt:
+        smtbmc_opts += ["--unroll"]
 
     for i, a in enumerate(args):
         smtbmc_opts += ["-s" if i == 0 else "-S", a]
