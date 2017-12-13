@@ -1,0 +1,17 @@
+[options]
+mode bmc
+depth 15
+
+[engines]
+smtbmc
+
+[script]
+read_verilog -sv -formal dpmem.sv
+prep -nordff -top top
+memory_map
+chformal -early -assume
+clk2fflogic
+opt_clean
+
+[files]
+dpmem.sv
