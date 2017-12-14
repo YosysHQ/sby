@@ -23,7 +23,7 @@ def run(mode, job, engine_idx, engine):
     smtbmc_opts = []
     nomem_opt = False
     presat_opt = True
-    unroll_opt = True
+    unroll_opt = None
     syn_opt = False
     stbv_opt = False
     dumpsmt2 = False
@@ -50,14 +50,16 @@ def run(mode, job, engine_idx, engine):
         else:
             assert False
 
+    for i, a in enumerate(args):
+        if i == 0 and a == "z3" and unroll_opt is None:
+                unroll_opt = False
+        smtbmc_opts += ["-s" if i == 0 else "-S", a]
+
     if presat_opt:
         smtbmc_opts += ["--presat"]
 
-    if unroll_opt:
+    if unroll_opt is None or unroll_opt:
         smtbmc_opts += ["--unroll"]
-
-    for i, a in enumerate(args):
-        smtbmc_opts += ["-s" if i == 0 else "-S", a]
 
     if job.opt_smtc is not None:
         smtbmc_opts += ["--smtc", "src/%s" % job.opt_smtc]

@@ -8,7 +8,6 @@ smtbmc
 [script]
 read_verilog -sv -formal dpmem.sv
 prep -nordff -top top
-memory_map
 chformal -early -assume
 clk2fflogic
 opt_clean
