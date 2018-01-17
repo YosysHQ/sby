@@ -1,4 +1,7 @@
 
+DESTDIR =
+PREFIX = /usr/local
+
 help:
 	@echo ""
 	@echo "sudo make install"
@@ -12,9 +15,9 @@ help:
 	@echo ""
 
 install:
-	cp sbysrc/sby_*.py /usr/local/share/yosys/python3/
-	sed 's|##yosys-sys-path##|sys.path += [os.path.dirname(__file__) + p for p in ["/share/python3", "/../share/yosys/python3"]]|;' < sbysrc/sby.py > /usr/local/bin/sby
-	chmod +x /usr/local/bin/sby
+	cp sbysrc/sby_*.py $(DESTDIR)$(PREFIX)/share/yosys/python3/
+	sed 's|##yosys-sys-path##|sys.path += [os.path.dirname(__file__) + p for p in ["/share/python3", "/../share/yosys/python3"]]|;' < sbysrc/sby.py > $(DESTDIR)$(PREFIX)/bin/sby
+	chmod +x $(DESTDIR)$(PREFIX)/bin/sby
 
 html:
 	make -C docs html
