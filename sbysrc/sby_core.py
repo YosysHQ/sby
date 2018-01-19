@@ -188,11 +188,13 @@ class SbyJob:
         with open("%s/config.sby" % workdir, "r") as f:
             for line in f:
                 raw_line = line
-                line = line.strip()
+                if mode in ["options", "engines", "files"]:
+                    line = re.sub(r"\s*(\s#.*)?$", "", line)
+                    if line == "" or line[0] == "#":
+                        continue
+                else:
+                    line = line.rstrip()
                 # print(line)
-
-                if line == "" or line[0] == "#":
-                    continue
 
                 match = re.match(r"^\s*\[(.*)\]\s*$", line)
                 if match:
