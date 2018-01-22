@@ -195,7 +195,8 @@ class SbyJob:
                 else:
                     line = line.rstrip()
                 # print(line)
-
+                if mode is None and (len(line) == 0 or line[0] == "#"):
+                    continue
                 match = re.match(r"^\s*\[(.*)\]\s*$", line)
                 if match:
                     entries = match.group(1).split()
@@ -525,4 +526,3 @@ class SbyJob:
         with open("%s/%s" % (self.workdir, self.status), "w") as f:
             for line in self.summary:
                 print(line, file=f)
-
