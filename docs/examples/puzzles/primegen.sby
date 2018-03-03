@@ -1,0 +1,13 @@
+[options]
+mode cover
+depth 1
+
+[engines]
+smtbmc --dumpsmt2 --stbv z3
+
+[script]
+read_verilog -formal primegen.v
+prep -top primegen
+
+[files]
+primegen.v
