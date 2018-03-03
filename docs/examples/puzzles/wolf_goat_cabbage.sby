@@ -1,0 +1,13 @@
+[options]
+mode cover
+depth 100
+
+[engines]
+smtbmc
+
+[script]
+read_verilog -formal wolf_goat_cabbage.v
+prep -top wolf_goat_cabbage
+
+[files]
+wolf_goat_cabbage.v
