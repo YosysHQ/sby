@@ -96,7 +96,7 @@ def run(mode, job, engine_idx, engine):
         trace_prefix += "%"
 
     if dumpsmt2:
-        smtbmc_opts += ["--dump-smt2", trace_prefix + ".smt2"]
+        smtbmc_opts += ["--dump-smt2", trace_prefix.replace("%", "") + ".smt2"]
 
     task = SbyTask(job, taskname, job.model(model_name),
             "cd %s; %s --noprogress %s -t %d --append %d --dump-vcd %s.vcd --dump-vlogtb %s_tb.v --dump-smtc %s.smtc model/design_%s.smt2" %
