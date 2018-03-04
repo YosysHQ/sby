@@ -26,9 +26,10 @@ def run(mode, job, engine_idx, engine):
     unroll_opt = None
     syn_opt = False
     stbv_opt = False
+    stdt_opt = False
     dumpsmt2 = False
 
-    opts, args = getopt.getopt(engine[1:], "", ["nomem", "syn", "stbv", "presat", "nopresat", "unroll", "nounroll", "dumpsmt2"])
+    opts, args = getopt.getopt(engine[1:], "", ["nomem", "syn", "stbv", "stdt", "presat", "nopresat", "unroll", "nounroll", "dumpsmt2"])
 
     for o, a in opts:
         if o == "--nomem":
@@ -37,6 +38,8 @@ def run(mode, job, engine_idx, engine):
             syn_opt = True
         elif o == "--stbv":
             stbv_opt = True
+        elif o == "--stdt":
+            stdt_opt = True
         elif o == "--presat":
             presat_opt = True
         elif o == "--nopresat":
@@ -71,6 +74,7 @@ def run(mode, job, engine_idx, engine):
     if syn_opt: model_name += "_syn"
     if nomem_opt: model_name += "_nomem"
     if stbv_opt: model_name += "_stbv"
+    if stdt_opt: model_name += "_stdt"
 
     if mode == "prove":
         run("prove_basecase", job, engine_idx, engine)

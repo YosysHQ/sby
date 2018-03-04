@@ -110,6 +110,8 @@ the following options:
 | ``--stbv``      | Use large bit vectors (instead of uninterpreted         |
 |                 | functions) to represent the circuit state.              |
 +-----------------+---------------------------------------------------------+
+| ``--stdt``      | Use SMT-LIB 2.6 datatypes to represent states.          |
++-----------------+---------------------------------------------------------+
 | ``--nopresat``  | Do not run "presat" SMT queries that make sure that     |
 |                 | assumptions are non-conflicting (and potentially        |
 |                 | warmup the SMT solver).                                 |

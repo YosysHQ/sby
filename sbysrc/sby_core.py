@@ -368,7 +368,7 @@ class SbyJob:
 
             return [task]
 
-        if re.match(r"^smt2(_syn)?(_nomem)?(_stbv)?$", model_name):
+        if re.match(r"^smt2(_syn)?(_nomem)?(_stbv|_stdt)?$", model_name):
             with open("%s/model/design_%s.ys" % (self.workdir, model_name), "w") as f:
                 print("# running in %s/model/" % (self.workdir), file=f)
                 print("read_ilang design.il", file=f)
@@ -383,6 +383,8 @@ class SbyJob:
                 print("stat", file=f)
                 if "_stbv" in model_name:
                     print("write_smt2 -stbv -wires design_%s.smt2" % model_name, file=f)
+                elif "_stdt" in model_name:
+                    print("write_smt2 -stdt -wires design_%s.smt2" % model_name, file=f)
                 else:
                     print("write_smt2 -wires design_%s.smt2" % model_name, file=f)
 
