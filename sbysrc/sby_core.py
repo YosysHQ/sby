@@ -351,6 +351,11 @@ class SbyJob:
                 print("# running in %s/src/" % self.workdir, file=f)
                 for cmd in self.script:
                     print(cmd, file=f)
+                if self.opt_multiclock:
+                    print("clk2fflogic", file=f)
+                else:
+                    print("techmap -map +/adff2dff.v", file=f)
+                    print("chformal -assume -early", file=f)
                 if self.opt_mode in ["bmc", "prove"]:
                     print("chformal -live -fair -cover -remove", file=f)
                 if self.opt_mode == "cover":
@@ -463,6 +468,7 @@ class SbyJob:
         for s in self.expect:
             assert s in ["PASS", "FAIL", "UNKNOWN", "ERROR", "TIMEOUT"]
 
+        self.handle_bool_option("multiclock", False)
         self.handle_bool_option("wait", False)
         self.handle_int_option("timeout", None)
 
