@@ -173,6 +173,7 @@ class SbyJob:
                 task_tags_active = set()
                 task_tags_all = set()
                 task_skip_block = False
+                task_skiping_blocks = False
                 for line in f:
                     line = line.rstrip("\n")
                     line = line.rstrip("\r")
@@ -180,28 +181,33 @@ class SbyJob:
                     if tasks_section and line.startswith("["):
                         tasks_section = False
 
-                    tasks_skip = False
-                    if task_skip_block:
-                        if line == "":
+                    if task_skiping_blocks:
+                        if line == "--":
                             task_skip_block = False
-                    else:
-                        for t in task_tags_all:
-                            if line.startswith(t+":"):
-                                line = line[len(t)+1:].lstrip()
-                                if t not in task_tags_active:
-                                    if line == "":
-                                        task_skip_block = True
-                                    tasks_skip = True
-                                break
-                            if line.startswith("~"+t+":"):
-                                line = line[len(t)+2:].lstrip()
-                                if t in task_tags_active:
-                                    if line == "":
-                                        task_skip_block = True
-                                    tasks_skip = True
-                                break
+                            task_skiping_blocks = False
+                            continue
 
-                    if tasks_skip or task_skip_block:
+                    task_skip_line = False
+                    for t in task_tags_all:
+                        if line.startswith(t+":"):
+                            line = line[len(t)+1:].lstrip()
+                            match = t in task_tags_active
+                        elif line.startswith("~"+t+":"):
+                            line = line[len(t)+2:].lstrip()
+                            match = t not in task_tags_active
+                        else:
+                            continue
+
+                        if line == "":
+                            task_skiping_blocks = True
+                            task_skip_block = not match
+                            task_skip_line = True
+                        else:
+                            task_skip_line = not match
+
+                        break
+
+                    if task_skip_line or task_skip_block:
                         continue
 
                     if tasks_section:

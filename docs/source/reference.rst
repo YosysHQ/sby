@@ -10,8 +10,8 @@ is for the most part irrelevant, but by convention the usual order is
 Tasks section
 -------------
 
-The ``[tasks]`` section can be used to configure multiple verification tasks in only
-one ``.sby`` file. Each line in the ``[tasks]`` section configures one task. For example:
+The optional ``[tasks]`` section can be used to configure multiple verification tasks in
+a single ``.sby`` file. Each line in the ``[tasks]`` section configures one task. For example:
 
 .. code-block:: text
 
@@ -43,8 +43,8 @@ tasks or task groups:
    task_1_or_2: depth 100
    task3: mode prove
 
-If the tag ``<taskname>:`` is used on a line by itself then the following block
-until the next blank line is conditional.
+If the tag ``<taskname>:`` is used on a line by itself then the conditional string
+extends until the next conditional block or ``--`` on a line by itself.
 
 .. code-block:: text
 
@@ -55,6 +55,7 @@ until the next blank line is conditional.
 
    task3:
    mode prove
+   --
 
 The tag ``~<taskname>:`` can be used for a line or block that should not be used when
 the given task is active:
@@ -68,6 +69,7 @@ the given task is active:
 
    task3:
    mode prove
+   --
 
 The following example demonstrates how to configure safety and liveness checks for all
 combinations of some host implementations A and B and device implementations X and Y:
