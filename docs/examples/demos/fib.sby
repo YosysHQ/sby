@@ -1,0 +1,28 @@
+[tasks]
+cover
+prove
+live
+
+[options]
+cover: mode cover
+prove: mode prove
+live:  mode live
+
+[engines]
+
+cover:
+smtbmc z3
+
+prove:
+abc pdr
+
+live:
+aiger suprove
+--
+
+[script]
+read_verilog -formal fib.v
+prep -top fib
+
+[files]
+fib.v
