@@ -4,8 +4,104 @@ Reference for .sby file format
 
 A ``.sby`` file consists of sections. Each section start with a single-line
 section header in square brackets. The order of sections in a ``.sby`` file
-is irrelevant, but by convention the usual order is ``[options]``,
-``[engines]``, ``[script]``, and ``[files]``.
+is for the most part irrelevant, but by convention the usual order is
+``[tasks]``, ``[options]``, ``[engines]``, ``[script]``,  and ``[files]``.
+
+Tasks section
+-------------
+
+The ``[tasks]`` section can be used to configure multiple verification tasks in only
+one ``.sby`` file. Each line in the ``[tasks]`` section configures one task. For example:
+
+.. code-block:: text
+
+   [tasks]
+   task1 task_1_or_2 task_1_or_3
+   task2 task_1_or_2
+   task3 task_1_or_3
+
+Each task can be assigned additional group aliases, such as ``task_1_or_2``
+and ``task_1_or_3`` in the above example.
+
+A task can be specified as additional command line argument when calling
+``sby`` on a ``.sby`` file:
+
+.. code-block:: text
+
+   sby example.sby task2
+
+If no task is specified then the configuration for the first task in the
+``[tasks]`` section is used.
+
+After the ``[tasks]`` section individual lines can be specified for specific
+tasks or task groups:
+
+.. code-block:: text
+
+   [options]
+   task_1_or_2: mode bmc
+   task_1_or_2: depth 100
+   task3: mode prove
+
+If the tag ``<taskname>:`` is used on a line by itself then the following block
+until the next blank line is conditional.
+
+.. code-block:: text
+
+   [options]
+   task_1_or_2:
+   mode bmc
+   depth 100
+
+   task3:
+   mode prove
+
+The tag ``~<taskname>:`` can be used for a line or block that should not be used when
+the given task is active:
+
+.. code-block:: text
+
+   [options]
+   ~task3:
+   mode bmc
+   depth 100
+
+   task3:
+   mode prove
+
+The following example demonstrates how to configure safety and liveness checks for all
+combinations of some host implementations A and B and device implementations X and Y:
+
+.. code-block:: text
+
+   [tasks]
+   prove_hAdX prove hostA deviceX
+   prove_hBdX prove hostB deviceX
+   prove_hAdY prove hostA deviceY
+   prove_hBdY prove hostB deviceY
+   live_hAdX live hostA deviceX
+   live_hBdX live hostB deviceX
+   live_hAdY live hostA deviceY
+   live_hBdY live hostB deviceY
+
+
+   [options]
+   prove: mode prove
+   live: mode live
+
+   [engines]
+   prove: abc pdr
+   live: aiger suprove
+
+   [script]
+   hostA: read_verilog hostA.v
+   hostB: read_verilog hostB.v
+   deviceX: read_verilog deviceX.v
+   deviceY: read_verilog deviceY.v
+   ...
+
+The ``[tasks]`` section must appear in the ``.sby`` file before the first
+``<taskname>:`` or ``~<taskname>:`` tag.
 
 Options section
 ---------------
@@ -183,6 +279,16 @@ Script section
 TBD
 
 Files section
+-------------
+
+TBD
+
+File sections
+-------------
+
+TBD
+
+Pycode blocks
 -------------
 
 TBD
