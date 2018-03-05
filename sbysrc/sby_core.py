@@ -126,7 +126,7 @@ class SbyTask:
 
 
 class SbyJob:
-    def __init__(self, filename, workdir, early_logs):
+    def __init__(self, filename, taskname, workdir, early_logs):
         self.options = dict()
         self.used_options = set()
         self.engines = list()
@@ -169,16 +169,66 @@ class SbyJob:
         with (open(filename, "r") if filename else sys.stdin) as f:
             with open("%s/config.sby" % workdir, "w") as cfgfile:
                 pycode = None
+                tasks_section = False
+                task_tags_active = set()
+                task_tags_all = set()
+                task_skip_block = False
                 for line in f:
                     line = line.rstrip("\n")
                     line = line.rstrip("\r")
-                    if line == "--pycode-begin--":
+
+                    if tasks_section and line.startswith("["):
+                        tasks_section = False
+
+                    tasks_skip = False
+                    if task_skip_block:
+                        if line == "":
+                            task_skip_block = False
+                    else:
+                        for t in task_tags_all:
+                            if line.startswith(t+":"):
+                                line = line[len(t)+1:].lstrip()
+                                if t not in task_tags_active:
+                                    if line == "":
+                                        task_skip_block = True
+                                    tasks_skip = True
+                                break
+                            if line.startswith("~"+t+":"):
+                                line = line[len(t)+2:].lstrip()
+                                if t in task_tags_active:
+                                    if line == "":
+                                        task_skip_block = True
+                                    tasks_skip = True
+                                break
+
+                    if tasks_skip or task_skip_block:
+                        continue
+
+                    if tasks_section:
+                        line = line.split()
+                        if len(line) > 0:
+                            if taskname is None:
+                                taskname = line[0]
+                                self.log("Configuration file contains tasks. Running default task '%s'." % taskname)
+                        for t in line:
+                            if taskname == line[0]:
+                                task_tags_active.add(t)
+                            task_tags_all.add(t)
+
+                    elif line == "[tasks]":
+                        tasks_section = True
+
+                    elif line == "--pycode-begin--":
                         pycode = ""
+
                     elif line == "--pycode-end--":
                         gdict = globals().copy()
                         gdict["cfgfile"] = cfgfile
+                        gdict["filename"] = filename
+                        gdict["taskname"] = taskname
                         exec("def output(*args, **kwargs):\n  print(*args, **kwargs, file=cfgfile)\n" + pycode, gdict)
                         pycode = None
+
                     else:
                         if pycode is None:
                             print(line, file=cfgfile)

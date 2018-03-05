@@ -23,6 +23,7 @@ from sby_core import SbyJob
 
 sbyfile = None
 workdir = None
+taskname = None
 opt_force = False
 opt_backup = False
 opt_tmpdir = False
@@ -30,7 +31,7 @@ exe_paths = dict()
 
 def usage():
     print("""
-sby [options] [<jobname>.sby]
+sby [options] [<jobname>.sby [taskname]]
 
     -d <dirname>
         set workdir name. default: <jobname> (without .sby)
@@ -44,6 +45,9 @@ sby [options] [<jobname>.sby]
     -t
         run in a temporary workdir (remove when finished)
 
+    -T taskname
+        set the taskname (useful when sby file is read from stdin)
+
     --yosys <path_to_executable>
     --abc <path_to_executable>
     --smtbmc <path_to_executable>
@@ -55,7 +59,7 @@ sby [options] [<jobname>.sby]
     sys.exit(1)
 
 try:
-    opts, args = getopt.getopt(sys.argv[1:], "d:btf", ["yosys=",
+    opts, args = getopt.getopt(sys.argv[1:], "d:btfT:", ["yosys=",
             "abc=", "smtbmc=", "suprove=", "aigbmc=", "avy="])
 except:
     usage()
@@ -69,6 +73,8 @@ for o, a in opts:
         opt_backup = True
     elif o == "-t":
         opt_tmpdir = True
+    elif o == "-T":
+        taskname = a
     elif o == "--yosys":
         exe_paths["yosys"] = a
     elif o == "--abc":
@@ -84,12 +90,16 @@ for o, a in opts:
     else:
         usage()
 
-if len(args) > 1:
+if len(args) > 2:
     usage()
 
-if len(args) == 1:
+if len(args) > 0:
     sbyfile = args[0]
     assert sbyfile.endswith(".sby")
+
+if len(args) > 1:
+    assert taskname is None
+    taskname = args[1]
 
 early_logmsgs = list()
 
@@ -99,6 +109,8 @@ def early_log(msg):
 
 if workdir is None and sbyfile is not None and not opt_tmpdir:
     workdir = sbyfile[:-4]
+    if taskname is not None:
+        workdir += "_" + taskname
 
 if workdir is not None:
     if opt_backup:
@@ -119,7 +131,7 @@ else:
     opt_tmpdir = True
     workdir = tempfile.mkdtemp()
 
-job = SbyJob(sbyfile, workdir, early_logmsgs)
+job = SbyJob(sbyfile, taskname, workdir, early_logmsgs)
 
 for k, v in exe_paths.items():
     job.exe_paths[k] = v
