@@ -23,15 +23,14 @@ a single ``.sby`` file. Each line in the ``[tasks]`` section configures one task
 Each task can be assigned additional group aliases, such as ``task_1_or_2``
 and ``task_1_or_3`` in the above example.
 
-A task can be specified as additional command line argument when calling
-``sby`` on a ``.sby`` file:
+One or more tasks can be specified as additional command line arguments when
+calling ``sby`` on a ``.sby`` file:
 
 .. code-block:: text
 
    sby example.sby task2
 
-If no task is specified then the configuration for the first task in the
-``[tasks]`` section is used.
+If no task is specified then all tasks in the ``[tasks]`` section are run.
 
 After the ``[tasks]`` section individual lines can be specified for specific
 tasks or task groups:

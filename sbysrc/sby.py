@@ -23,7 +23,7 @@ from sby_core import SbyJob
 
 sbyfile = None
 workdir = None
-taskname = None
+tasknames = list()
 opt_force = False
 opt_backup = False
 opt_tmpdir = False
@@ -31,7 +31,7 @@ exe_paths = dict()
 
 def usage():
     print("""
-sby [options] [<jobname>.sby [taskname]]
+sby [options] [<jobname>.sby [tasknames]]
 
     -d <dirname>
         set workdir name. default: <jobname> (without .sby)
@@ -46,7 +46,7 @@ sby [options] [<jobname>.sby [taskname]]
         run in a temporary workdir (remove when finished)
 
     -T taskname
-        set the taskname (useful when sby file is read from stdin)
+        add taskname (useful when sby file is read from stdin)
 
     --yosys <path_to_executable>
     --abc <path_to_executable>
@@ -74,7 +74,7 @@ for o, a in opts:
     elif o == "-t":
         opt_tmpdir = True
     elif o == "-T":
-        taskname = a
+        tasknames.append(a)
     elif o == "--yosys":
         exe_paths["yosys"] = a
     elif o == "--abc":
@@ -90,58 +90,160 @@ for o, a in opts:
     else:
         usage()
 
-if len(args) > 2:
-    usage()
-
 if len(args) > 0:
     sbyfile = args[0]
     assert sbyfile.endswith(".sby")
 
 if len(args) > 1:
-    assert taskname is None
-    taskname = args[1]
+    tasknames = args[1:]
+
 
 early_logmsgs = list()
 
-def early_log(msg):
+def early_log(workdir, msg):
     early_logmsgs.append("SBY [%s] %s" % (workdir, msg))
     print(early_logmsgs[-1])
 
-if workdir is None and sbyfile is not None and not opt_tmpdir:
-    workdir = sbyfile[:-4]
-    if taskname is not None:
-        workdir += "_" + taskname
 
-if workdir is not None:
-    if opt_backup:
-        backup_idx = 0
-        while os.path.exists("%s.bak%03d" % (workdir, backup_idx)):
-            backup_idx += 1
-        early_log("Moving direcory '%s' to '%s'." % (workdir, "%s.bak%03d" % (workdir, backup_idx)))
-        shutil.move(workdir, "%s.bak%03d" % (workdir, backup_idx))
+def read_sbyconfig(sbydata, taskname):
+    cfgdata = list()
+    tasklist = list()
 
-    if opt_force:
-        early_log("Removing direcory '%s'." % (workdir))
-        if sbyfile:
-            shutil.rmtree(workdir, ignore_errors=True)
+    pycode = None
+    tasks_section = False
+    task_tags_active = set()
+    task_tags_all = set()
+    task_skip_block = False
+    task_skiping_blocks = False
 
-    os.makedirs(workdir)
+    for line in sbydata:
+        line = line.rstrip("\n")
+        line = line.rstrip("\r")
 
-else:
-    opt_tmpdir = True
-    workdir = tempfile.mkdtemp()
+        if tasks_section and line.startswith("["):
+            tasks_section = False
 
-job = SbyJob(sbyfile, taskname, workdir, early_logmsgs)
+        if task_skiping_blocks:
+            if line == "--":
+                task_skip_block = False
+                task_skiping_blocks = False
+                continue
 
-for k, v in exe_paths.items():
-    job.exe_paths[k] = v
+        task_skip_line = False
+        for t in task_tags_all:
+            if line.startswith(t+":"):
+                line = line[len(t)+1:].lstrip()
+                match = t in task_tags_active
+            elif line.startswith("~"+t+":"):
+                line = line[len(t)+2:].lstrip()
+                match = t not in task_tags_active
+            else:
+                continue
 
-job.run()
+            if line == "":
+                task_skiping_blocks = True
+                task_skip_block = not match
+                task_skip_line = True
+            else:
+                task_skip_line = not match
 
-if opt_tmpdir:
-    job.log("Removing direcory '%s'." % (workdir))
-    shutil.rmtree(workdir, ignore_errors=True)
+            break
 
-job.log("DONE (%s, rc=%d)" % (job.status, job.retcode))
-sys.exit(job.retcode)
+        if task_skip_line or task_skip_block:
+            continue
+
+        if tasks_section:
+            line = line.split()
+            if len(line) > 0:
+                tasklist.append(line[0])
+            for t in line:
+                if taskname == line[0]:
+                    task_tags_active.add(t)
+                task_tags_all.add(t)
+
+        elif line == "[tasks]":
+            tasks_section = True
+
+        elif line == "--pycode-begin--":
+            pycode = ""
+
+        elif line == "--pycode-end--":
+            gdict = globals().copy()
+            gdict["cfgdata"] = cfgdata
+            gdict["taskname"] = taskname
+            exec("def output(line):\n  cfgdata.append(line)\n" + pycode, gdict)
+            pycode = None
+
+        else:
+            if pycode is None:
+                cfgdata.append(line)
+            else:
+                pycode += line + "\n"
+
+    return cfgdata, tasklist
+
+
+sbydata = list()
+with (open(sbyfile, "r") if sbyfile is not None else sys.stdin) as f:
+    for line in f:
+        sbydata.append(line)
+
+if len(tasknames) == 0:
+    _, tasknames = read_sbyconfig(sbydata, None)
+    if len(tasknames) == 0:
+        tasknames = [None]
+
+assert (workdir is None) or (len(tasknames) == 1)
+
+
+def run_job(taskname):
+    my_workdir = workdir
+    my_opt_tmpdir = opt_tmpdir
+
+    if my_workdir is None and sbyfile is not None and not my_opt_tmpdir:
+        my_workdir = sbyfile[:-4]
+        if taskname is not None:
+            my_workdir += "_" + taskname
+
+    if my_workdir is not None:
+        if opt_backup:
+            backup_idx = 0
+            while os.path.exists("%s.bak%03d" % (my_workdir, backup_idx)):
+                backup_idx += 1
+            early_log(my_workdir, "Moving direcory '%s' to '%s'." % (my_workdir, "%s.bak%03d" % (my_workdir, backup_idx)))
+            shutil.move(my_workdir, "%s.bak%03d" % (my_workdir, backup_idx))
+
+        if opt_force:
+            early_log(my_workdir, "Removing direcory '%s'." % (my_workdir))
+            if sbyfile:
+                shutil.rmtree(my_workdir, ignore_errors=True)
+
+        os.makedirs(my_workdir)
+
+    else:
+        my_opt_tmpdir = True
+        my_workdir = tempfile.mkdtemp()
+
+    sbyconfig, _ = read_sbyconfig(sbydata, taskname)
+    job = SbyJob(sbyconfig, taskname, my_workdir, early_logmsgs)
+
+    for k, v in exe_paths.items():
+        job.exe_paths[k] = v
+
+    job.run()
+
+    if my_opt_tmpdir:
+        job.log("Removing direcory '%s'." % (my_workdir))
+        shutil.rmtree(my_workdir, ignore_errors=True)
+
+    job.log("DONE (%s, rc=%d)" % (job.status, job.retcode))
+    return job.retcode
+
+
+retcode = 0
+for t in tasknames:
+    assert (t is None) or (t in tasknames)
+    retcode += run_job(t)
+
+sys.exit(retcode)
 
