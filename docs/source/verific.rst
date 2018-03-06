@@ -53,14 +53,10 @@ Additionally the ``<sequence>.triggered`` syntax for checking if the end of
 any given sequence matches the current cycle is supported in expressions.
 
 Finally the usual SystemVerilog functions such as ``$countones``, ``$onehot``,
-and ``$onehot0`` are supported, further simplifying writing formal properties.
+and ``$onehot0`` are also supported.
 
 Sequences
 ~~~~~~~~~
-
-The following sequence operators are currently supported. Note that some of
-them only allow expressions in places where complete SVA would allow sequences
-as well.
 
 Most importantly, expressions and variable-length concatenation are supported:
 
@@ -73,13 +69,13 @@ Most importantly, expressions and variable-length concatenation are supported:
 
 Also variable-length repetition:
 
-  * *expression* ``[*]``
-  * *expression* ``[+]``
-  * *expression* ``[*N]``
-  * *expression* ``[*N:M]``
-  * *expression* ``[*N:$]``
+  * *sequence* ``[*]``
+  * *sequence* ``[+]``
+  * *sequence* ``[*N]``
+  * *sequence* ``[*N:M]``
+  * *sequence* ``[*N:$]``
 
-And some additional more complex operators:
+And the following more complex operators:
 
   * *sequence* ``or`` *sequence*
   * *sequence* ``and`` *sequence*
@@ -119,9 +115,9 @@ And *until_condition* is one of:
 Clocking and Reset
 ~~~~~~~~~~~~~~~~~~
 
-The following constructs are supported for clocking in reset in most of the
-places the SystemVerilog standard permits them, but properties spanning
-multiple different clock domains are currently not supported.
+The following constructs are supported for clocking and reset in most of the
+places the SystemVerilog standard permits them. However, properties spanning
+multiple different clock domains are currently unsupported.
 
   * ``@(posedge`` *clock* ``)``
   * ``@(negedge`` *clock* ``)``
