@@ -21,5 +21,7 @@ at the moment.)
 
    quickstart.rst
    reference.rst
+   verilog.rst
+   verific.rst
    license.rst
 
