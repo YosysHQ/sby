@@ -30,10 +30,11 @@ such as
   * ``default disable iff`` ... ``;``
   * ``property`` ... ``endproperty``
   * ``sequence`` ... ``endsequence``
-  * Parameters to sequences and properties
-  * Storing sequences and properties in packages
+  * ``checker`` ... ``endchecker``
+  * Arguments to sequences, properties, and checkers
+  * Storing sequences, properties, and checkers in packages
 
-In addition the SVA-specific fetures, the SystemVerilog ``bind`` statement and
+In addition the SVA-specific features, the SystemVerilog ``bind`` statement and
 deep hierarchical references are supported, simplifying the integration of
 formal properties with the design under test.
 
@@ -44,13 +45,15 @@ SystemVerilog formal test-bench into a VHDL design under test.
 Expressions in Sequences
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-Any standard Verilog boolean expression is supported, as well as the SystemVerilog
-functions ``$past``, ``$stable``, ``$rose``, and ``$fell``. This functions can
-also be used outside of SVA sequences.
+Any standard Verilog boolean expression is supported, as well as the
+SystemVerilog functions ``$past``, ``$stable``, ``$changed``, ``$rose``, and
+``$fell``. This functions can also be used outside of SVA sequences.
 
 Additionally the ``<sequence>.triggered`` syntax for checking if the end of
-any given sequence matches the current cycle is supported everywhere in expressions
-used in SVA sequences.
+any given sequence matches the current cycle is supported in expressions.
+
+Finally the usual SystemVerilog functions such as ``$countones``, ``$onehot``,
+and ``$onehot0`` are supported, further simplifying writing formal properties.
 
 Sequences
 ~~~~~~~~~
@@ -81,17 +84,15 @@ And some additional more complex operators:
   * *sequence* ``or`` *sequence*
   * *sequence* ``and`` *sequence*
   * *expression* ``throughout`` *sequence*
-
-The following operators are currently **unsupported** but support for them is
-planned for the near future:
-
-  * ``first_match(`` *sequence* ``)``
   * *sequence* ``intersect`` *sequence*
   * *sequence* ``within`` *sequence*
+  * ``first_match(`` *sequence* ``)``
   * *expression* ``[=N]``
   * *expression* ``[=N:M]``
+  * *expression* ``[=N:$]``
   * *expression* ``[->N]``
   * *expression* ``[->N:M]``
+  * *expression* ``[->N:$]``
 
 Properties
 ~~~~~~~~~~
@@ -118,7 +119,7 @@ And *until_condition* is one of:
 Clocking and Reset
 ~~~~~~~~~~~~~~~~~~
 
-The following cunstructs are supported for clocking in reset in most of the
+The following constructs are supported for clocking in reset in most of the
 places the SystemVerilog standard permits them, but properties spanning
 multiple different clock domains are currently not supported.
 
