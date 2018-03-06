@@ -88,10 +88,10 @@ planned for the near future:
   * ``first_match(`` *sequence* ``)``
   * *sequence* ``intersect`` *sequence*
   * *sequence* ``within`` *sequence*
-  * *expression* [=N]
-  * *expression* [=N:M]
-  * *expression* [->N]
-  * *expression* [->N:M]
+  * *expression* ``[=N]``
+  * *expression* ``[=N:M]``
+  * *expression* ``[->N]``
+  * *expression* ``[->N:M]``
 
 Properties
 ~~~~~~~~~~
