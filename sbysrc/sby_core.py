@@ -407,6 +407,7 @@ class SbyJob:
                 print("# running in %s/src/" % self.workdir, file=f)
                 for cmd in self.script:
                     print(cmd, file=f)
+                print("memory_nordff", file=f)
                 if self.opt_multiclock:
                     print("clk2fflogic", file=f)
                 else:
@@ -421,6 +422,8 @@ class SbyJob:
                     print("chformal -cover -remove", file=f)
                 print("opt_clean", file=f)
                 print("setundef -anyseq", file=f)
+                print("opt -keepdc -fast", file=f)
+                print("check", file=f)
                 print("write_ilang ../model/design.il", file=f)
 
             task = SbyTask(self, "script", [],
