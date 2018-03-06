@@ -84,17 +84,15 @@ And some additional more complex operators:
   * *sequence* ``or`` *sequence*
   * *sequence* ``and`` *sequence*
   * *expression* ``throughout`` *sequence*
-
-The following operators are currently **unsupported** but support for them is
-planned for the near future:
-
-  * ``first_match(`` *sequence* ``)``
   * *sequence* ``intersect`` *sequence*
   * *sequence* ``within`` *sequence*
+  * ``first_match(`` *sequence* ``)``
   * *expression* ``[=N]``
   * *expression* ``[=N:M]``
+  * *expression* ``[=N:$]``
   * *expression* ``[->N]``
   * *expression* ``[->N:M]``
+  * *expression* ``[->N:$]``
 
 Properties
 ~~~~~~~~~~
