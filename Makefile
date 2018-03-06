@@ -15,7 +15,7 @@ help:
 	@echo ""
 
 install:
-	cp sbysrc/sby_*.py $(DESTDIR)$(PREFIX)/share/yosys/python3/
+	install -D -t $(DESTDIR)$(PREFIX)/share/yosys/python3/ sbysrc/sby_*.py
 	sed 's|##yosys-sys-path##|sys.path += [os.path.dirname(__file__) + p for p in ["/share/python3", "/../share/yosys/python3"]]|;' < sbysrc/sby.py > $(DESTDIR)$(PREFIX)/bin/sby
 	chmod +x $(DESTDIR)$(PREFIX)/bin/sby
 
