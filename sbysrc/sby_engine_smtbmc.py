@@ -29,9 +29,11 @@ def run(mode, job, engine_idx, engine):
     stdt_opt = False
     dumpsmt2 = False
     progress = False
+    basecase_only = False
+    induction_only = False
 
     opts, args = getopt.getopt(engine[1:], "", ["nomem", "syn", "stbv", "stdt", "presat",
-            "nopresat", "unroll", "nounroll", "dumpsmt2", "progress"])
+            "nopresat", "unroll", "nounroll", "dumpsmt2", "progress", "basecase", "induction"])
 
     for o, a in opts:
         if o == "--nomem":
@@ -54,6 +56,12 @@ def run(mode, job, engine_idx, engine):
             dumpsmt2 = True
         elif o == "--progress":
             progress = True
+        elif o == "--basecase":
+            assert not induction_only
+            basecase_only = True
+        elif o == "--induction":
+            assert not basecase_only
+            induction_only = True
         else:
             assert False
 
@@ -81,8 +89,10 @@ def run(mode, job, engine_idx, engine):
     if stdt_opt: model_name += "_stdt"
 
     if mode == "prove":
-        run("prove_basecase", job, engine_idx, engine)
-        run("prove_induction", job, engine_idx, engine)
+        if not induction_only:
+            run("prove_basecase", job, engine_idx, engine)
+        if not basecase_only:
+            run("prove_induction", job, engine_idx, engine)
         return
 
     taskname = "engine_%d" % engine_idx
