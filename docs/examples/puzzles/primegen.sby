@@ -1,13 +1,21 @@
+[tasks]
+primegen
+primes_fail
+primes_pass
+
 [options]
 mode cover
 depth 1
+primes_fail: expect fail
 
 [engines]
-smtbmc --dumpsmt2 --stbv z3
+smtbmc --dumpsmt2 --progress --stbv z3
 
 [script]
 read_verilog -formal primegen.v
-prep -top primegen
+primes_fail: chparam -set offset 7 primes
+primegen: prep -top primegen
+~primegen: prep -top primes
 
 [files]
 primegen.v
