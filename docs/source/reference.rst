@@ -222,6 +222,8 @@ the following options:
 | ``--dumpsmt2``  | Write the SMT2 trace to an additional output file.      |
 |                 | (Useful for benchmarking and troubleshooting.)          |
 +-----------------+---------------------------------------------------------+
+| ``--progress``  | Enable Yosys-SMTBMC timer display.                      |
++-----------------+---------------------------------------------------------+
 
 Any SMT2 solver that is compatible with ``yosys-smtbmc`` can be passed as
 argument to the ``smtbmc`` engine. The solver options are passed to the solver

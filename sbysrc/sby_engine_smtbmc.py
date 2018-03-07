@@ -28,8 +28,10 @@ def run(mode, job, engine_idx, engine):
     stbv_opt = False
     stdt_opt = False
     dumpsmt2 = False
+    progress = False
 
-    opts, args = getopt.getopt(engine[1:], "", ["nomem", "syn", "stbv", "stdt", "presat", "nopresat", "unroll", "nounroll", "dumpsmt2"])
+    opts, args = getopt.getopt(engine[1:], "", ["nomem", "syn", "stbv", "stdt", "presat",
+            "nopresat", "unroll", "nounroll", "dumpsmt2", "progress"])
 
     for o, a in opts:
         if o == "--nomem":
@@ -50,6 +52,8 @@ def run(mode, job, engine_idx, engine):
             unroll_opt = False
         elif o == "--dumpsmt2":
             dumpsmt2 = True
+        elif o == "--progress":
+            progress = True
         else:
             assert False
 
@@ -102,10 +106,13 @@ def run(mode, job, engine_idx, engine):
     if dumpsmt2:
         smtbmc_opts += ["--dump-smt2", trace_prefix.replace("%", "") + ".smt2"]
 
+    if not progress:
+        smtbmc_opts.append("--noprogress")
+
     task = SbyTask(job, taskname, job.model(model_name),
-            "cd %s; %s --noprogress %s -t %d --append %d --dump-vcd %s.vcd --dump-vlogtb %s_tb.v --dump-smtc %s.smtc model/design_%s.smt2" %
+            "cd %s; %s %s -t %d --append %d --dump-vcd %s.vcd --dump-vlogtb %s_tb.v --dump-smtc %s.smtc model/design_%s.smt2" %
                     (job.workdir, job.exe_paths["smtbmc"], " ".join(smtbmc_opts), job.opt_depth, job.opt_append, trace_prefix, trace_prefix, trace_prefix, model_name),
-            logfile=open(logfile_prefix + ".txt", "w"))
+            logfile=open(logfile_prefix + ".txt", "w"), logstderr=(not progress))
 
     if mode == "prove_basecase":
         job.basecase_tasks.append(task)

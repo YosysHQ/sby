@@ -23,7 +23,7 @@ from select import select
 from time import time
 
 class SbyTask:
-    def __init__(self, job, info, deps, cmdline, logfile=None):
+    def __init__(self, job, info, deps, cmdline, logfile=None, logstderr=True):
         self.running = False
         self.finished = False
         self.terminated = False
@@ -36,6 +36,7 @@ class SbyTask:
         self.noprintregex = None
         self.notify = []
         self.linebuffer = ""
+        self.logstderr = logstderr
 
         for dep in self.deps:
             dep.register_dep(self)
@@ -88,7 +89,8 @@ class SbyTask:
                     return
 
             self.job.log("%s: starting process \"%s\"" % (self.info, self.cmdline))
-            self.p = subprocess.Popen(self.cmdline, shell=True, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            self.p = subprocess.Popen(self.cmdline, shell=True, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+                    stderr=(subprocess.STDOUT if self.logstderr else None))
             fl = fcntl.fcntl(self.p.stdout, fcntl.F_GETFL)
             fcntl.fcntl(self.p.stdout, fcntl.F_SETFL, fl | os.O_NONBLOCK)
             self.job.tasks_running.append(self)
