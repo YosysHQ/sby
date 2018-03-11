@@ -20,7 +20,7 @@ import os, re, resource, sys
 import subprocess, fcntl
 from shutil import copyfile
 from select import select
-from time import time
+from time import time, localtime
 
 class SbyTask:
     def __init__(self, job, info, deps, cmdline, logfile=None, logstderr=True):
@@ -156,7 +156,6 @@ class SbyJob:
         ru = resource.getrusage(resource.RUSAGE_CHILDREN)
         self.start_process_time = ru.ru_utime + ru.ru_stime
 
-        self.logprefix = "SBY [%s]" % self.workdir
         self.summary = list()
 
         self.logfile = open("%s/logfile.txt" % workdir, "w")
@@ -279,8 +278,9 @@ class SbyJob:
                     self.terminate(timeout=True)
 
     def log(self, logmessage):
-        print("%s %s" % (self.logprefix, logmessage))
-        print("%s %s" % (self.logprefix, logmessage), file=self.logfile)
+        tm = localtime()
+        print("SBY %2d:%02d:%02d [%s] %s" % (tm.tm_hour, tm.tm_min, tm.tm_sec, self.workdir, logmessage))
+        print("SBY %2d:%02d:%02d [%s] %s" % (tm.tm_hour, tm.tm_min, tm.tm_sec, self.workdir, logmessage), file=self.logfile)
         self.logfile.flush()
 
     def copy_src(self):
