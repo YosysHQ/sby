@@ -20,6 +20,7 @@
 import os, sys, getopt, shutil, tempfile
 ##yosys-sys-path##
 from sby_core import SbyJob
+from time import localtime
 
 sbyfile = None
 workdir = None
@@ -101,7 +102,8 @@ if len(args) > 1:
 early_logmsgs = list()
 
 def early_log(workdir, msg):
-    early_logmsgs.append("SBY [%s] %s" % (workdir, msg))
+    tm = localtime()
+    early_logmsgs.append("SBY %2d:%02d:%02d [%s] %s" % (tm.tm_hour, tm.tm_min, tm.tm_sec, workdir, msg))
     print(early_logmsgs[-1])
 
 
