@@ -333,12 +333,15 @@ class SbyJob:
         if not os.path.exists("%s/model" % self.workdir):
             os.makedirs("%s/model" % self.workdir)
 
-        if model_name == "ilang":
-            with open("%s/model/design.ys" % (self.workdir), "w") as f:
+        if model_name in ["base", "nomem"]:
+            with open("%s/model/design%s.ys" % (self.workdir, "" if model_name == "base" else "_nomem"), "w") as f:
                 print("# running in %s/src/" % self.workdir, file=f)
                 for cmd in self.script:
                     print(cmd, file=f)
-                print("memory_nordff", file=f)
+                if model_name == "base":
+                    print("memory_nordff", file=f)
+                else:
+                    print("memory_map", file=f)
                 if self.opt_multiclock:
                     print("clk2fflogic", file=f)
                 else:
@@ -355,10 +358,11 @@ class SbyJob:
                 print("setundef -anyseq", file=f)
                 print("opt -keepdc -fast", file=f)
                 print("check", file=f)
-                print("write_ilang ../model/design.il", file=f)
+                print("write_ilang ../model/design%s.il" % ("" if model_name == "base" else "_nomem"), file=f)
 
-            task = SbyTask(self, "script", [],
-                    "cd %s/src; %s -ql ../model/design.log ../model/design.ys" % (self.workdir, self.exe_paths["yosys"]))
+            task = SbyTask(self, model_name, [],
+                    "cd %s/src; %s -ql ../model/design%s.log ../model/design%s.ys" % (self.workdir, self.exe_paths["yosys"],
+                    "" if model_name == "base" else "_nomem", "" if model_name == "base" else "_nomem"))
             task.checkretcode = True
 
             return [task]
@@ -366,10 +370,7 @@ class SbyJob:
         if re.match(r"^smt2(_syn)?(_nomem)?(_stbv|_stdt)?$", model_name):
             with open("%s/model/design_%s.ys" % (self.workdir, model_name), "w") as f:
                 print("# running in %s/model/" % (self.workdir), file=f)
-                print("read_ilang design.il", file=f)
-                if "_nomem" in model_name:
-                    print("memory_map", file=f)
-                    print("opt -keepdc -fast", file=f)
+                print("read_ilang design%s.il" % ("_nomem" if "_nomem" in model_name else ""), file=f)
                 if "_syn" in model_name:
                     print("techmap", file=f)
                     print("opt -fast", file=f)
@@ -383,7 +384,7 @@ class SbyJob:
                 else:
                     print("write_smt2 -wires design_%s.smt2" % model_name, file=f)
 
-            task = SbyTask(self, model_name, self.model("ilang"),
+            task = SbyTask(self, model_name, self.model("nomem" if "_nomem" in model_name else "base"),
                     "cd %s/model; %s -ql design_%s.log design_%s.ys" % (self.workdir, self.exe_paths["yosys"], model_name, model_name))
             task.checkretcode = True
 
@@ -392,13 +393,11 @@ class SbyJob:
         if model_name == "aig":
             with open("%s/model/design_aiger.ys" % (self.workdir), "w") as f:
                 print("# running in %s/model/" % (self.workdir), file=f)
-                print("read_ilang design.il", file=f)
+                print("read_ilang design_nomem.il", file=f)
                 print("flatten", file=f)
                 print("setattr -unset keep", file=f)
                 print("delete -output", file=f)
                 print("opt -full", file=f)
-                print("memory_map", file=f)
-                print("opt -fast", file=f)
                 print("techmap", file=f)
                 print("opt -fast", file=f)
                 print("abc -g AND -fast", file=f)
@@ -406,7 +405,7 @@ class SbyJob:
                 print("stat", file=f)
                 print("write_aiger -zinit -map design_aiger.aim design_aiger.aig", file=f)
 
-            task = SbyTask(self, "aig", self.model("ilang"),
+            task = SbyTask(self, "aig", self.model("nomem"),
                     "cd %s/model; %s -ql design_aiger.log design_aiger.ys" % (self.workdir, self.exe_paths["yosys"]))
             task.checkretcode = True
 
