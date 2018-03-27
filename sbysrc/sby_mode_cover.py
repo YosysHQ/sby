@@ -35,5 +35,5 @@ def run(job):
             sby_engine_smtbmc.run("cover", job, engine_idx, engine)
 
         else:
-            assert False
+            job.error("Invalid engine '%s' for cover mode." % engine[0])
 

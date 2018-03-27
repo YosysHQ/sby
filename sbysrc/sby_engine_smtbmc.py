@@ -57,13 +57,15 @@ def run(mode, job, engine_idx, engine):
         elif o == "--progress":
             progress = True
         elif o == "--basecase":
-            assert not induction_only
+            if induction_only:
+                job.error("smtbmc options --basecase and --induction are exclusive.")
             basecase_only = True
         elif o == "--induction":
-            assert not basecase_only
+            if basecase_only:
+                job.error("smtbmc options --basecase and --induction are exclusive.")
             induction_only = True
         else:
-            assert False
+            job.error("Invalid smtbmc options %s." % o)
 
     for i, a in enumerate(args):
         if i == 0 and a == "z3" and unroll_opt is None:

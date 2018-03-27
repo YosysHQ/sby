@@ -40,5 +40,5 @@ def run(job):
             sby_engine_abc.run("bmc", job, engine_idx, engine)
 
         else:
-            assert False
+            job.error("Invalid engine '%s' for bmc mode." % engine[0])
 

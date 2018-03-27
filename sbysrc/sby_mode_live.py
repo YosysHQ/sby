@@ -36,5 +36,5 @@ def run(job):
             sby_engine_aiger.run("live", job, engine_idx, engine)
 
         else:
-            assert False
+            job.error("Invalid engine '%s' for live mode." % engine[0])
 

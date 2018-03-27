@@ -21,25 +21,29 @@ from sby_core import SbyTask
 
 def run(mode, job, engine_idx, engine):
     abc_opts, abc_command = getopt.getopt(engine[1:], "", [])
-    assert len(abc_command) > 0
+
+    if len(abc_command) == 0:
+        job.error("Missing ABC command.")
 
     for o, a in abc_opts:
-        assert False
+        job.error("Unexpected ABC engine options.")
 
     if abc_command[0] == "bmc3":
-        assert mode == "bmc"
-        assert len(abc_command) == 1
+        if mode != "bmc":
+            job.error("ABC command 'bmc3' is only valid in bmc mode.")
         abc_command[0] += " -F %d -v" % job.opt_depth
 
     elif abc_command[0] == "sim3":
-        assert mode == "bmc"
+        if mode != "bmc":
+            job.error("ABC command 'sim3' is only valid in bmc mode.")
         abc_command[0] += " -F %d -v" % job.opt_depth
 
     elif abc_command[0] == "pdr":
-        assert mode == "prove"
+        if mode != "prove":
+            job.error("ABC command 'pdr' is only valid in prove mode.")
 
     else:
-        assert False
+        job.error("Invalid ABC command %s." % abc_command[0])
 
     task = SbyTask(job, "engine_%d" % engine_idx, job.model("aig"),
             ("cd %s; %s -c 'read_aiger model/design_aiger.aig; fold; strash; %s; write_cex -a engine_%d/trace.aiw'") %

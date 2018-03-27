@@ -51,5 +51,5 @@ def run(job):
             sby_engine_abc.run("prove", job, engine_idx, engine)
 
         else:
-            assert False
+            job.error("Invalid engine '%s' for prove mode." % engine[0])
 

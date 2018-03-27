@@ -21,10 +21,12 @@ from sby_core import SbyTask
 
 def run(mode, job, engine_idx, engine):
     opts, solver_args = getopt.getopt(engine[1:], "", [])
-    assert len(solver_args) > 0
+
+    if len(solver_args) == 0:
+        job.error("Missing solver command.")
 
     for o, a in opts:
-        assert False
+        job.error("Unexpected AIGER engine options.")
 
     if solver_args[0] == "suprove":
         if mode == "live" and (len(solver_args) == 1 or solver_args[1][0] != "+"):
@@ -38,7 +40,7 @@ def run(mode, job, engine_idx, engine):
         solver_cmd = " ".join([job.exe_paths["aigbmc"]] + solver_args[1:])
 
     else:
-        assert False
+        job.error("Invalid solver command %s." % solver_args[0])
 
     task = SbyTask(job, "engine_%d" % engine_idx, job.model("aig"),
             "cd %s; %s model/design_aiger.aig" % (job.workdir, solver_cmd),
