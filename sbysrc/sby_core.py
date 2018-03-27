@@ -127,8 +127,12 @@ class SbyTask:
             return
 
 
+class SbyAbort(BaseException):
+    pass
+
+
 class SbyJob:
-    def __init__(self, sbyconfig, taskname, workdir, early_logs):
+    def __init__(self, sbyconfig, workdir, early_logs):
         self.options = dict()
         self.used_options = set()
         self.engines = list()
@@ -138,6 +142,7 @@ class SbyJob:
         self.models = dict()
         self.workdir = workdir
         self.status = "UNKNOWN"
+        self.expect = []
 
         self.exe_paths = {
             "yosys": "yosys",
@@ -164,93 +169,9 @@ class SbyJob:
             print(line, file=self.logfile)
         self.logfile.flush()
 
-        mode = None
-        key = None
-
         with open("%s/config.sby" % workdir, "w") as f:
             for line in sbyconfig:
                 print(line, file=f)
-
-        with open("%s/config.sby" % workdir, "r") as f:
-            for line in f:
-                raw_line = line
-                if mode in ["options", "engines", "files"]:
-                    line = re.sub(r"\s*(\s#.*)?$", "", line)
-                    if line == "" or line[0] == "#":
-                        continue
-                else:
-                    line = line.rstrip()
-                # print(line)
-                if mode is None and (len(line) == 0 or line[0] == "#"):
-                    continue
-                match = re.match(r"^\s*\[(.*)\]\s*$", line)
-                if match:
-                    entries = match.group(1).split()
-                    assert len(entries) > 0
-
-                    if entries[0] == "options":
-                        mode = "options"
-                        assert len(self.options) == 0
-                        assert len(entries) == 1
-                        continue
-
-                    if entries[0] == "engines":
-                        mode = "engines"
-                        assert len(self.engines) == 0
-                        assert len(entries) == 1
-                        continue
-
-                    if entries[0] == "script":
-                        mode = "script"
-                        assert len(self.script) == 0
-                        assert len(entries) == 1
-                        continue
-
-                    if entries[0] == "file":
-                        mode = "file"
-                        assert len(entries) == 2
-                        current_verbatim_file = entries[1]
-                        assert current_verbatim_file not in self.verbatim_files
-                        self.verbatim_files[current_verbatim_file] = list()
-                        continue
-
-                    if entries[0] == "files":
-                        mode = "files"
-                        assert len(entries) == 1
-                        continue
-
-                    assert False
-
-                if mode == "options":
-                    entries = line.split()
-                    assert len(entries) == 2
-                    self.options[entries[0]] = entries[1]
-                    continue
-
-                if mode == "engines":
-                    entries = line.split()
-                    self.engines.append(entries)
-                    continue
-
-                if mode == "script":
-                    self.script.append(line)
-                    continue
-
-                if mode == "files":
-                    entries = line.split()
-                    if len(entries) == 1:
-                        self.files[os.path.basename(entries[0])] = entries[0]
-                    elif len(entries) == 2:
-                        self.files[entries[0]] = entries[1]
-                    else:
-                        assert False
-                    continue
-
-                if mode == "file":
-                    self.verbatim_files[current_verbatim_file].append(raw_line)
-                    continue
-
-                assert False
 
     def taskloop(self):
         for task in self.tasks_all:
@@ -282,6 +203,19 @@ class SbyJob:
         print("SBY %2d:%02d:%02d [%s] %s" % (tm.tm_hour, tm.tm_min, tm.tm_sec, self.workdir, logmessage))
         print("SBY %2d:%02d:%02d [%s] %s" % (tm.tm_hour, tm.tm_min, tm.tm_sec, self.workdir, logmessage), file=self.logfile)
         self.logfile.flush()
+
+    def error(self, logmessage):
+        tm = localtime()
+        print("SBY %2d:%02d:%02d [%s] ERROR: %s" % (tm.tm_hour, tm.tm_min, tm.tm_sec, self.workdir, logmessage))
+        print("SBY %2d:%02d:%02d [%s] ERROR: %s" % (tm.tm_hour, tm.tm_min, tm.tm_sec, self.workdir, logmessage), file=self.logfile)
+        self.logfile.flush()
+        self.status = "ERROR"
+        if "ERROR" not in self.expect:
+            self.retcode = 16
+        self.terminate()
+        with open("%s/%s" % (self.workdir, self.status), "w") as f:
+            print("ERROR: %s" % logmessage, file=f)
+        raise SbyAbort(logmessage)
 
     def copy_src(self):
         os.makedirs(self.workdir + "/src")
@@ -323,7 +257,8 @@ class SbyJob:
 
     def handle_bool_option(self, option_name, default_value):
         if option_name in self.options:
-            assert self.options[option_name] in ["on", "off"]
+            if self.options[option_name] not in ["on", "off"]:
+                self.error("Invalid value '%s' for boolean option %s." % (self.options[option_name], option_name))
             self.__dict__["opt_" + option_name] = self.options[option_name] == "on"
             self.used_options.add(option_name)
         else:
@@ -446,8 +381,99 @@ class SbyJob:
             assert 0
 
     def run(self):
+        mode = None
+        key = None
+
+        with open("%s/config.sby" % self.workdir, "r") as f:
+            for line in f:
+                raw_line = line
+                if mode in ["options", "engines", "files"]:
+                    line = re.sub(r"\s*(\s#.*)?$", "", line)
+                    if line == "" or line[0] == "#":
+                        continue
+                else:
+                    line = line.rstrip()
+                # print(line)
+                if mode is None and (len(line) == 0 or line[0] == "#"):
+                    continue
+                match = re.match(r"^\s*\[(.*)\]\s*$", line)
+                if match:
+                    entries = match.group(1).split()
+                    if len(entries) == 0:
+                        self.error("sby file syntax error: %s" % line)
+
+                    if entries[0] == "options":
+                        mode = "options"
+                        if len(self.options) != 0 or len(entries) != 1:
+                            self.error("sby file syntax error: %s" % line)
+                        continue
+
+                    if entries[0] == "engines":
+                        mode = "engines"
+                        if len(self.engines) != 0 or len(entries) != 1:
+                            self.error("sby file syntax error: %s" % line)
+                        continue
+
+                    if entries[0] == "script":
+                        mode = "script"
+                        if len(self.script) != 0 or len(entries) != 1:
+                            self.error("sby file syntax error: %s" % line)
+                        continue
+
+                    if entries[0] == "file":
+                        mode = "file"
+                        if len(entries) != 2:
+                            self.error("sby file syntax error: %s" % line)
+                        current_verbatim_file = entries[1]
+                        if current_verbatim_file in self.verbatim_files:
+                            self.error("duplicate file: %s" % entries[1])
+                        self.verbatim_files[current_verbatim_file] = list()
+                        continue
+
+                    if entries[0] == "files":
+                        mode = "files"
+                        if len(entries) != 1:
+                            self.error("sby file syntax error: %s" % line)
+                        continue
+
+                    self.error("sby file syntax error: %s" % line)
+
+                if mode == "options":
+                    entries = line.split()
+                    if len(entries) != 2:
+                        self.error("sby file syntax error: %s" % line)
+                    self.options[entries[0]] = entries[1]
+                    continue
+
+                if mode == "engines":
+                    entries = line.split()
+                    self.engines.append(entries)
+                    continue
+
+                if mode == "script":
+                    self.script.append(line)
+                    continue
+
+                if mode == "files":
+                    entries = line.split()
+                    if len(entries) == 1:
+                        self.files[os.path.basename(entries[0])] = entries[0]
+                    elif len(entries) == 2:
+                        self.files[entries[0]] = entries[1]
+                    else:
+                        self.error("sby file syntax error: %s" % line)
+                    continue
+
+                if mode == "file":
+                    self.verbatim_files[current_verbatim_file].append(raw_line)
+                    continue
+
+                self.error("sby file syntax error: %s" % line)
+
         self.handle_str_option("mode", None)
-        assert self.opt_mode in ["bmc", "prove", "cover", "live"]
+
+        if self.opt_mode not in ["bmc", "prove", "cover", "live"]:
+            self.error("Invalid mode: %s" % self.opt_mode)
 
         self.expect = ["PASS"]
         if "expect" in self.options:
@@ -455,7 +481,8 @@ class SbyJob:
             self.used_options.add("expect")
 
         for s in self.expect:
-            assert s in ["PASS", "FAIL", "UNKNOWN", "ERROR", "TIMEOUT"]
+            if s not in ["PASS", "FAIL", "UNKNOWN", "ERROR", "TIMEOUT"]:
+                self.error("Invalid expect value: %s" % s)
 
         self.handle_bool_option("multiclock", False)
         self.handle_bool_option("wait", False)
@@ -466,7 +493,8 @@ class SbyJob:
 
         if self.opt_smtc is not None:
             for engine in self.engines:
-                assert engine[0] == "smtbmc"
+                if engine[0] != "smtbmc":
+                    self.error("Option smtc is only valid for smtbmc engine.")
 
         self.copy_src()
 
@@ -490,7 +518,8 @@ class SbyJob:
             assert False
 
         for opt in self.options.keys():
-            assert opt in self.used_options
+            if opt not in self.used_options:
+                self.error("Unused option: %s" % opt)
 
         self.taskloop()
 
@@ -516,9 +545,9 @@ class SbyJob:
         else:
             if self.status == "PASS": self.retcode = 1
             if self.status == "FAIL": self.retcode = 2
-            if self.status == "ERROR": self.retcode = 3
             if self.status == "UNKNOWN": self.retcode = 4
-            if self.status == "TIMEOUT": self.retcode = 5
+            if self.status == "TIMEOUT": self.retcode = 8
+            if self.status == "ERROR": self.retcode = 16
 
         with open("%s/%s" % (self.workdir, self.status), "w") as f:
             for line in self.summary:

@@ -19,7 +19,7 @@
 
 import os, sys, getopt, shutil, tempfile
 ##yosys-sys-path##
-from sby_core import SbyJob
+from sby_core import SbyJob, SbyAbort
 from time import localtime
 
 sbyfile = None
@@ -29,6 +29,7 @@ opt_force = False
 opt_backup = False
 opt_tmpdir = False
 exe_paths = dict()
+throw_err = False
 
 def usage():
     print("""
@@ -49,6 +50,9 @@ sby [options] [<jobname>.sby [tasknames]]
     -T taskname
         add taskname (useful when sby file is read from stdin)
 
+    -E
+        throw an exception (incl stack trace) for most errors
+
     --yosys <path_to_executable>
     --abc <path_to_executable>
     --smtbmc <path_to_executable>
@@ -60,7 +64,7 @@ sby [options] [<jobname>.sby [tasknames]]
     sys.exit(1)
 
 try:
-    opts, args = getopt.getopt(sys.argv[1:], "d:btfT:", ["yosys=",
+    opts, args = getopt.getopt(sys.argv[1:], "d:btfT:E", ["yosys=",
             "abc=", "smtbmc=", "suprove=", "aigbmc=", "avy="])
 except:
     usage()
@@ -76,6 +80,8 @@ for o, a in opts:
         opt_tmpdir = True
     elif o == "-T":
         tasknames.append(a)
+    elif o == "-E":
+        throw_err = True
     elif o == "--yosys":
         exe_paths["yosys"] = a
     elif o == "--abc":
@@ -93,7 +99,9 @@ for o, a in opts:
 
 if len(args) > 0:
     sbyfile = args[0]
-    assert sbyfile.endswith(".sby")
+    if not sbyfile.endswith(".sby"):
+        print("ERROR: Sby file does not have .sby file extension.", file=sys.stderr)
+        sys.exit(1)
 
 if len(args) > 1:
     tasknames = args[1:]
@@ -195,8 +203,9 @@ if len(tasknames) == 0:
     if len(tasknames) == 0:
         tasknames = [None]
 
-assert (workdir is None) or (len(tasknames) == 1)
-
+if (workdir is not None) and (len(tasknames) != 1):
+    print("ERROR: Exactly one task is required when workdir is specified.", file=sys.stderr)
+    sys.exit(1)
 
 def run_job(taskname):
     my_workdir = workdir
@@ -227,12 +236,18 @@ def run_job(taskname):
         my_workdir = tempfile.mkdtemp()
 
     sbyconfig, _ = read_sbyconfig(sbydata, taskname)
-    job = SbyJob(sbyconfig, taskname, my_workdir, early_logmsgs)
+    job = SbyJob(sbyconfig, my_workdir, early_logmsgs)
 
     for k, v in exe_paths.items():
         job.exe_paths[k] = v
 
-    job.run()
+    if throw_err:
+        job.run()
+    else:
+        try:
+            job.run()
+        except SbyAbort:
+            pass
 
     if my_opt_tmpdir:
         job.log("Removing direcory '%s'." % (my_workdir))
@@ -244,8 +259,7 @@ def run_job(taskname):
 
 retcode = 0
 for t in tasknames:
-    assert (t is None) or (t in tasknames)
-    retcode += run_job(t)
+    retcode |= run_job(t)
 
 sys.exit(retcode)
 
