@@ -235,6 +235,18 @@ def run_job(taskname):
         my_opt_tmpdir = True
         my_workdir = tempfile.mkdtemp()
 
+    junit_ts_name = os.path.basename(sbyfile[:-4]) if sbyfile is not None else workdir if workdir is not None else "stdin"
+    junit_tc_name = taskname if taskname is not None else "default"
+
+    if sbyfile is not None:
+        junit_filename = os.path.basename(sbyfile[:-4])
+        if taskname is not None:
+            junit_filename += "_" + taskname
+    elif taskname is not None:
+        junit_filename = taskname
+    else:
+        junit_filename = "junit"
+
     sbyconfig, _ = read_sbyconfig(sbydata, taskname)
     job = SbyJob(sbyconfig, my_workdir, early_logmsgs)
 
@@ -254,6 +266,28 @@ def run_job(taskname):
         shutil.rmtree(my_workdir, ignore_errors=True)
 
     job.log("DONE (%s, rc=%d)" % (job.status, job.retcode))
+    job.logfile.close()
+
+    if not my_opt_tmpdir:
+        with open("%s/%s.xml" % (job.workdir, junit_filename), "w") as f:
+            junit_errors = 1 if job.retcode == 16 else 0
+            junit_failures = 1 if job.retcode != 0 and junit_errors == 0 else 0
+            print('<?xml version="1.0" encoding="UTF-8"?>', file=f)
+            print('<testsuites disabled="0" errors="%d" failures="%d" tests="1" time="%d">' % (junit_errors, junit_failures, job.total_time), file=f)
+            print('<testsuite disabled="0" errors="%d" failures="%d" name="%s" skipped="0" tests="1" time="%d">' % (junit_errors, junit_failures, junit_ts_name, job.total_time), file=f)
+            print('<testcase classname="%s" name="%s" status="%s" time="%d">' % (junit_ts_name, junit_tc_name, job.status, job.total_time), file=f)
+            if junit_errors:
+                print('<error message="%s" type="%s"/>' % (job.status, job.status), file=f)
+            if junit_failures:
+                print('<failure message="%s" type="%s"/>' % (job.status, job.status), file=f)
+            print('<system-out>', end="", file=f)
+            with open("%s/logfile.txt" % (job.workdir), "r") as logf:
+                for line in logf:
+                    print(line.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;"), end="", file=f)
+            print('</system-out></testcase></testsuite></testsuites>', file=f)
+        with open("%s/.stamp" % (job.workdir), "w") as f:
+            print("%s %d %d" % (job.status, job.retcode, job.total_time), file=f)
+
     return job.retcode
 
 

@@ -142,6 +142,7 @@ class SbyJob:
         self.models = dict()
         self.workdir = workdir
         self.status = "UNKNOWN"
+        self.total_time = 0
         self.expect = []
 
         self.exe_paths = {
@@ -527,6 +528,7 @@ class SbyJob:
 
         ru = resource.getrusage(resource.RUSAGE_CHILDREN)
         total_process_time = int((ru.ru_utime + ru.ru_stime) - self.start_process_time)
+        self.total_time = total_process_time
 
         self.summary = [
             "Elapsed clock time [H:MM:SS (secs)]: %d:%02d:%02d (%d)" %
