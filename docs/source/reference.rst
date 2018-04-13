@@ -284,15 +284,46 @@ TBD
 Files section
 -------------
 
-TBD
+The files section lists the source files for the proof. ``sby`` copies
+these files to ``<outdir>/src/`` before running the Yosys script.
+
+For example:
+
+.. code-block:: text
+
+   [engines]
+   top.sv
+   ../common/defines.vh
+   /data/prj42/modules/foobar.sv
+
+Will copy these files as ``top.v``, ``defines.vh``, and ``foobar.sv``
+to ``<outdir>/src/``.
+
+If the name of the file in ``<outdir>/src/`` should be different from the
+basename of the specified file, then the new file name can be specified before
+the source file name. For example:
+
+.. code-block:: text
+
+   [engines]
+   top.sv
+   defines.vh ../common/defines_footest.vh
+   /data/prj42/modules/foobar.sv
 
 File sections
 -------------
 
-TBD
+File sections can be used to create additional files in ``<outdir>/src/`` from
+the literal content of the ``[file <filename>]`` section ("here document"). For
+example:
+
+.. code-block:: text
+
+   [file params.vh]
+   `define RESET_LEN 42
+   `define FAULT_CYCLE 57
 
 Pycode blocks
 -------------
 
 TBD
-
