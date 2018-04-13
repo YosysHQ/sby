@@ -230,6 +230,8 @@ class SbyJob:
                     f.write(line)
 
         for dstfile, srcfile in self.files.items():
+            if dstfile.startswith("/") or dstfile.startswith("../") or ("/../" in dstfile):
+                self.error("destination filename must be a relative path without /../: %s" % dstfile)
             dstfile = self.workdir + "/src/" + dstfile
 
             if srcfile.startswith("~/"):
