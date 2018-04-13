@@ -291,7 +291,7 @@ For example:
 
 .. code-block:: text
 
-   [engines]
+   [files]
    top.sv
    ../common/defines.vh
    /data/prj42/modules/foobar.sv
@@ -305,7 +305,7 @@ the source file name. For example:
 
 .. code-block:: text
 
-   [engines]
+   [files]
    top.sv
    defines.vh ../common/defines_footest.vh
    /data/prj42/modules/foobar.sv
