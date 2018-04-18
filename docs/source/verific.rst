@@ -2,15 +2,15 @@
 SystemVerilog, VHDL, SVA
 ========================
 
-TBD
+Run ``verific -sv <files>`` in the ``[script]`` section of you ``.sby`` file
+to read a SystemVerilog source file, and ``verific -vhdl <files>`` to read a
+VHDL source file.
 
-``verific -sv <files>``
+After all source files have been read, run ``verific -import <topmodule>``
+to import the design elaborated at the specified top module.
 
-``verific -vhdl <files>``
-
-``verific -import <top>``
-
-TBD
+Run ``yosys -h verific`` in a terminal window and enter for more information
+on the ``verific`` script command.
 
 Supported SVA Property Syntax
 -----------------------------

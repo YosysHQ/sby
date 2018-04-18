@@ -279,7 +279,28 @@ implementing the solver.
 Script section
 --------------
 
-TBD
+The ``[script]`` section contains the Yosys script that reads and elaborates
+the design under test. For example, for a simple project contained in a single
+design file ``mytest.sv`` with the top-module ``mytest``:
+
+.. code-block:: text
+
+   [script]
+   read_verilog -sv mytest.sv
+   prep -top mytest
+
+Or using the Verific SystemVerilog parser:
+
+.. code-block:: text
+
+   [script]
+   verific -sv mytest.sv
+   verific -import mytest
+   prep -top mytest
+
+Run ``yosys`` in a terminal window and enter ``help`` on the Yosys prompt
+for a command list. Run ``help <command>`` for a detailed description of the
+command, for example ``help prep``.
 
 Files section
 -------------
