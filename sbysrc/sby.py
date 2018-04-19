@@ -163,6 +163,8 @@ def read_sbyconfig(sbydata, taskname):
             continue
 
         if tasks_section:
+            if line.startswith("#"):
+                continue
             line = line.split()
             if len(line) > 0:
                 tasklist.append(line[0])
