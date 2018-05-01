@@ -38,13 +38,13 @@ class SbyTask:
         self.linebuffer = ""
         self.logstderr = logstderr
 
+        self.job.tasks_pending.append(self)
+
         for dep in self.deps:
             dep.register_dep(self)
 
         self.output_callback = None
         self.exit_callback = None
-
-        self.job.tasks_pending.append(self)
 
     def register_dep(self, next_task):
         if self.finished:
@@ -179,7 +179,7 @@ class SbyJob:
         for task in self.tasks_pending:
             task.poll()
 
-        while len(self.tasks_running) or len(self.tasks_pending):
+        while len(self.tasks_running):
             fds = []
             for task in self.tasks_running:
                 if task.running:
