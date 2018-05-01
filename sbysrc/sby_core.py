@@ -44,7 +44,7 @@ class SbyTask:
         self.output_callback = None
         self.exit_callback = None
 
-        self.job.tasks_all.append(self)
+        self.job.tasks_pending.append(self)
 
     def register_dep(self, next_task):
         if self.finished:
@@ -93,6 +93,7 @@ class SbyTask:
                     stderr=(subprocess.STDOUT if self.logstderr else None))
             fl = fcntl.fcntl(self.p.stdout, fcntl.F_GETFL)
             fcntl.fcntl(self.p.stdout, fcntl.F_SETFL, fl | os.O_NONBLOCK)
+            self.job.tasks_pending.remove(self)
             self.job.tasks_running.append(self)
             self.running = True
             return
@@ -155,7 +156,7 @@ class SbyJob:
         }
 
         self.tasks_running = []
-        self.tasks_all = []
+        self.tasks_pending = []
 
         self.start_clock_time = time()
 
@@ -175,10 +176,10 @@ class SbyJob:
                 print(line, file=f)
 
     def taskloop(self):
-        for task in self.tasks_all:
+        for task in self.tasks_pending:
             task.poll()
 
-        while len(self.tasks_running):
+        while len(self.tasks_running) or len(self.tasks_pending):
             fds = []
             for task in self.tasks_running:
                 if task.running:
@@ -190,6 +191,9 @@ class SbyJob:
                 pass
 
             for task in self.tasks_running:
+                task.poll()
+
+            for task in self.tasks_pending:
                 task.poll()
 
             if self.opt_timeout is not None:
