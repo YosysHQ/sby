@@ -146,7 +146,8 @@ def run(mode, job, engine_idx, engine):
         return line
 
     def exit_callback(retcode):
-        assert task_status is not None
+        if task_status is None:
+            job.error("engine_%d: Engine terminated without status." % engine_idx)
 
         if mode == "bmc" or mode == "cover":
             job.update_status(task_status)

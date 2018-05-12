@@ -300,6 +300,7 @@ class SbyJob:
                 print("setundef -anyseq", file=f)
                 print("opt -keepdc -fast", file=f)
                 print("check", file=f)
+                print("hierarchy -simcheck", file=f)
                 print("write_ilang ../model/design%s.il" % ("" if model_name == "base" else "_nomem"), file=f)
 
             task = SbyTask(self, model_name, [],
