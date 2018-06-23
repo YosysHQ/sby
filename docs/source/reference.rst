@@ -95,10 +95,10 @@ combinations of some host implementations A and B and device implementations X a
    live: aiger suprove
 
    [script]
-   hostA: read_verilog hostA.v
-   hostB: read_verilog hostB.v
-   deviceX: read_verilog deviceX.v
-   deviceY: read_verilog deviceY.v
+   hostA: read -sv hostA.v
+   hostB: read -sv hostB.v
+   deviceX: read -sv deviceX.v
+   deviceY: read -sv deviceY.v
    ...
 
 The ``[tasks]`` section must appear in the ``.sby`` file before the first
@@ -286,16 +286,26 @@ design file ``mytest.sv`` with the top-module ``mytest``:
 .. code-block:: text
 
    [script]
-   read_verilog -sv mytest.sv
+   read -sv mytest.sv
    prep -top mytest
 
-Or using the Verific SystemVerilog parser:
+Or explicitly using the Verific SystemVerilog parser (default for ``read -sv``
+when Yosys is built with Verific support):
 
 .. code-block:: text
 
    [script]
    verific -sv mytest.sv
    verific -import mytest
+   prep -top mytest
+
+Or explicitly using the native Yosys Verilog parser (default for ``read -sv``
+when Yosys is not built with Verific support):
+
+.. code-block:: text
+
+   [script]
+   read_verilog -sv mytest.sv
    prep -top mytest
 
 Run ``yosys`` in a terminal window and enter ``help`` on the Yosys prompt

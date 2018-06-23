@@ -4,7 +4,9 @@ Formal extensions to Verilog
 
 TBD
 
-``read_verilog -formal``
+``read -sv``
+
+``read_verilog -sv``
 
 SystemVerilog Immediate Assertions
 ----------------------------------
@@ -33,17 +35,32 @@ Liveness and Fairness
 
 TBD
 
-``assert(eventually <expr>);``
+``assert property (eventually <expr>);``
 
-``assume(eventually <expr>);``
+``assume property (eventually <expr>);``
 
 Unconstrained Variables
 -----------------------
 
 TBD
 
-Nonstandard Extensions in Yosys
--------------------------------
+``(* anyconst *)``
+
+``(* anyseq *)``
+
+``(* allconst *)``
+
+``(* allseq *)``
+
+Global Clock
+------------
 
 TBD
+
+``(* gclk *)``
+
+SystemVerilog Concurrent Assertions
+-----------------------------------
+
+TBD, see :ref:`sva`.
 

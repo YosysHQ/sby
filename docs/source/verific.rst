@@ -7,10 +7,17 @@ to read a SystemVerilog source file, and ``verific -vhdl <files>`` to read a
 VHDL source file.
 
 After all source files have been read, run ``verific -import <topmodule>``
-to import the design elaborated at the specified top module.
+to import the design elaborated at the specified top module. This step is
+optional (will be performed automatically) if the top-level module of
+your design has been read using Verific.
+
+Use ``read -sv`` to automatically use Verific to read a source file if Yosys
+has been built with Verific.
 
 Run ``yosys -h verific`` in a terminal window and enter for more information
 on the ``verific`` script command.
+
+.. _sva:
 
 Supported SVA Property Syntax
 -----------------------------
