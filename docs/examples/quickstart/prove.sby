@@ -5,8 +5,8 @@ mode prove
 smtbmc
 
 [script]
-read_verilog -formal prove.v
+read -formal prove.sv
 prep -top testbench
 
 [files]
-prove.v
+prove.sv

@@ -5,8 +5,8 @@ mode cover
 smtbmc
 
 [script]
-read_verilog -formal cover.v
+read -formal cover.sv
 prep -top top
 
 [files]
-cover.v
+cover.sv

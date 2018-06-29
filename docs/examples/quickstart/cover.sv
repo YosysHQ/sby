@@ -8,6 +8,10 @@ module top (
 		state <= ((state << 5) + state) ^ din;
 	end
 
-	cover property (state == 'd 12345678);
-	cover property (state == 'h 12345678);
+`ifdef FORMAL
+	always @(posedge clk) begin
+		cover (state == 'd 12345678);
+		cover (state == 'h 12345678);
+	end
+`endif
 endmodule

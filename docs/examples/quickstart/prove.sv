@@ -8,11 +8,15 @@ module testbench (
     .clk  (clk  ),
     .reset(reset),
     .din  (din  ),
-    .dout (dout ),
+    .dout (dout )
   );
 
-  initial assume (reset);
-  assert property (reset || !dout[1:0]);
+  reg init = 1;
+  always @(posedge clk) begin
+    if (init) assume (reset);
+    if (!reset) assert (!dout[1:0]);
+    init <= 0;
+  end
 endmodule
 
 module demo (

@@ -12,7 +12,7 @@ module testbench (
     .rdata(rdata)
   );
 
-  wire [9:0] test_addr = $anyconst;
+  (* anyconst *) reg [9:0] test_addr;
   reg test_data_valid = 0;
   reg [7:0] test_data;
 

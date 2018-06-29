@@ -190,7 +190,7 @@ also be a useful method for evaluating engines.)
 
 Let's consider the following example:
 
-.. literalinclude:: ../examples/quickstart/memory.v
+.. literalinclude:: ../examples/quickstart/memory.sv
    :language: systemverilog
 
 This example is expected to fail verification (see the BUG comment).
@@ -224,7 +224,7 @@ Bounded model checks only prove that the safety properties hold for the first
 and we need to prove that the safety properties hold forever, not just the first
 *N* cycles. Let us consider the following example:
 
-.. literalinclude:: ../examples/quickstart/prove.v
+.. literalinclude:: ../examples/quickstart/prove.sv
    :language: systemverilog
 
 Proving this design in an unbounded manner can be achieved using the following
