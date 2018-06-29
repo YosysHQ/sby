@@ -6,8 +6,8 @@ depth 100
 smtbmc
 
 [script]
-read_verilog -formal demo.v
+read -formal demo.sv
 prep -top demo
 
 [files]
-demo.v
+demo.sv

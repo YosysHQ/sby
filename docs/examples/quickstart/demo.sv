@@ -5,11 +5,15 @@ module demo (
   reg [5:0] counter = 0;
 
   always @(posedge clk) begin
-    if (counter == 15)
+    if (counter == 50)
       counter <= 0;
     else
       counter <= counter + 1;
   end
 
-  assert property (counter < 32);
+`ifdef FORMAL
+  always @(posedge clk) begin
+    assert (counter < 32);
+  end
+`endif
 endmodule

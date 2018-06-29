@@ -129,7 +129,7 @@ First step: A simple BMC example
 
 Here is a simple example design with a safety property (assertion).
 
-.. literalinclude:: ../examples/quickstart/demo.v
+.. literalinclude:: ../examples/quickstart/demo.sv
    :language: systemverilog
 
 The property in this example is true. We'd like to verify this using a bounded
@@ -141,7 +141,7 @@ configure SymbiYosys to run a BMC for 100 cycles on the design:
 .. literalinclude:: ../examples/quickstart/demo.sby
    :language: text
 
-Simply create a text file ``demo.v`` with the example design and another text
+Simply create a text file ``demo.sv`` with the example design and another text
 file ``demo.sby`` with the SymbiYosys configuration. Then run::
 
    sby demo.sby
