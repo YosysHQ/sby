@@ -6,8 +6,8 @@ depth 100
 smtbmc
 
 [script]
-read_verilog -formal wolf_goat_cabbage.v
+read -formal wolf_goat_cabbage.sv
 prep -top wolf_goat_cabbage
 
 [files]
-wolf_goat_cabbage.v
+wolf_goat_cabbage.sv

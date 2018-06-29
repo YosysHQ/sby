@@ -41,14 +41,17 @@ module top (
 
 	reg shadow_valid = 0;
 	reg [3:0] shadow_data;
-	const rand reg [3:0] shadow_addr;
+	(* anyconst *) reg [3:0] shadow_addr;
 
-	always @($global_clock) begin
-		assume($stable(rc) || $stable(wc));
+	reg init = 1;
+	(* gclk *) reg gclk;
 
-		if (!$initstate) begin
+	always @(posedge gclk) begin
+		assume ($stable(rc) || $stable(wc));
+
+		if (!init) begin
 			if ($rose(rc) && shadow_valid && shadow_addr == $past(ra)) begin
-				assert(shadow_data == rd);
+				assert (shadow_data == rd);
 			end
 
 			if ($rose(wc) && $past(we) && shadow_addr == $past(wa)) begin
@@ -56,5 +59,7 @@ module top (
 				shadow_valid <= 1;
 			end
 		end
+
+		init <= 0;
 	end
 endmodule

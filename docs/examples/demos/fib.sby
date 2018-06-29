@@ -21,8 +21,8 @@ aiger suprove
 --
 
 [script]
-read_verilog -formal fib.v
+read -formal fib.sv
 prep -top fib
 
 [files]
-fib.v
+fib.sv

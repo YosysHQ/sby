@@ -54,10 +54,10 @@ module fib (
 			cover ($past(n) == 15);
 		end
 
-		assume (s_eventually !pause);
+		assume property (s_eventually !pause);
 
 		if (start && !pause)
-			assert (s_eventually done);
+			assert property (s_eventually done);
 	end
 `endif
 endmodule

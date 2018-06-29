@@ -14,19 +14,19 @@ module wolf_goat_cabbage (input clk, input w, g, c);
 
 	always @(posedge clk) begin
 		// maximum one of the control signals must be high
-		assume(w+g+c <= 1);
+		assume (w+g+c <= 1);
 
 		// we want wolf, goat, and cabbage on the 2nd river bank
-		cover(bank_w && bank_g && bank_c);
+		cover (bank_w && bank_g && bank_c);
 
 		// don't leave wolf and goat unattended
 		if (bank_w != bank_m) begin
-			assume(bank_w != bank_g);
+			assume (bank_w != bank_g);
 		end
 
 		// don't leave goat and cabbage unattended
 		if (bank_g != bank_m) begin
-			assume(bank_g != bank_c);
+			assume (bank_g != bank_c);
 		end
 
 		// man travels and takes the selected item with him
