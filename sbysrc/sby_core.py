@@ -287,7 +287,7 @@ class SbyJob:
                 if self.opt_multiclock:
                     print("clk2fflogic", file=f)
                 else:
-                    print("techmap -map +/adff2dff.v", file=f)
+                    print("async2sync", file=f)
                     print("chformal -assume -early", file=f)
                 if self.opt_mode in ["bmc", "prove"]:
                     print("chformal -live -fair -cover -remove", file=f)
