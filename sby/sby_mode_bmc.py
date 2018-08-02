@@ -17,11 +17,12 @@
 #
 
 import re, os, getopt
-from sby_core import SbyTask
+from sby.sby_core import SbyTask
 
 def run(job):
     job.handle_int_option("depth", 20)
     job.handle_int_option("append", 0)
+    job.handle_str_option("aigsmt", "yices")
 
     for engine_idx in range(len(job.engines)):
         engine = job.engines[engine_idx]
@@ -31,9 +32,13 @@ def run(job):
         os.makedirs("%s/engine_%d" % (job.workdir, engine_idx))
 
         if engine[0] == "smtbmc":
-            import sby_engine_smtbmc
-            sby_engine_smtbmc.run("cover", job, engine_idx, engine)
+            from sby import sby_engine_smtbmc
+            sby_engine_smtbmc.run("bmc", job, engine_idx, engine)
+
+        elif engine[0] == "abc":
+            from sby import sby_engine_abc
+            sby_engine_abc.run("bmc", job, engine_idx, engine)
 
         else:
-            job.error("Invalid engine '%s' for cover mode." % engine[0])
+            job.error("Invalid engine '%s' for bmc mode." % engine[0])
 

@@ -19,7 +19,7 @@
 
 import os, sys, getopt, shutil, tempfile
 ##yosys-sys-path##
-from sby_core import SbyJob, SbyAbort
+from sby.sby_core import SbyJob, SbyAbort
 from time import localtime
 
 sbyfile = None

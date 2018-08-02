@@ -17,7 +17,7 @@
 #
 
 import re, os, getopt
-from sby_core import SbyTask
+from sby.sby_core import SbyTask
 
 def run(mode, job, engine_idx, engine):
     smtbmc_opts = []
