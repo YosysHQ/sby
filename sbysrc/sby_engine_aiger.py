@@ -128,7 +128,8 @@ def run(mode, job, engine_idx, engine):
                     else:
                         assert task2_status == "FAIL"
 
-                    job.summary.append("counterexample trace: %s/engine_%d/trace.vcd" % (job.workdir, engine_idx))
+                    if os.path.exists("%s/engine_%d/trace.vcd" % (job.workdir, engine_idx)):
+                        job.summary.append("counterexample trace: %s/engine_%d/trace.vcd" % (job.workdir, engine_idx))
 
                 task2.output_callback = output_callback2
                 task2.exit_callback = exit_callback2

@@ -155,7 +155,8 @@ def run(mode, job, engine_idx, engine):
             job.summary.append("engine_%d (%s) returned %s" % (engine_idx, " ".join(engine), task_status))
 
             if task_status == "FAIL" and mode != "cover":
-                job.summary.append("counterexample trace: %s/engine_%d/trace.vcd" % (job.workdir, engine_idx))
+                if os.path.exists("%s/engine_%d/trace.vcd" % (job.workdir, engine_idx)):
+                    job.summary.append("counterexample trace: %s/engine_%d/trace.vcd" % (job.workdir, engine_idx))
 
             job.terminate()
 
@@ -172,7 +173,8 @@ def run(mode, job, engine_idx, engine):
 
                 else:
                     job.update_status(task_status)
-                    job.summary.append("counterexample trace: %s/engine_%d/trace.vcd" % (job.workdir, engine_idx))
+                    if os.path.exists("%s/engine_%d/trace.vcd" % (job.workdir, engine_idx)):
+                        job.summary.append("counterexample trace: %s/engine_%d/trace.vcd" % (job.workdir, engine_idx))
                     job.terminate()
 
             elif mode == "prove_induction":
