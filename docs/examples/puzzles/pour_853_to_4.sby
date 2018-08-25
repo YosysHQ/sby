@@ -1,0 +1,13 @@
+[options]
+mode cover
+depth 100
+
+[engines]
+smtbmc
+
+[script]
+read -formal pour_853_to_4.sv
+prep -top pour_853_to_4
+
+[files]
+pour_853_to_4.sv
