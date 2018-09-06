@@ -315,8 +315,14 @@ command, for example ``help prep``.
 Files section
 -------------
 
-The files section lists the source files for the proof. ``sby`` copies
-these files to ``<outdir>/src/`` before running the Yosys script.
+The files section lists the source files for the proof, meaning all the
+files Yosys will need to access when reading the design, including for
+example data files for ``$readmemh`` and ``$readmemb``.
+
+``sby`` copies these files to ``<outdir>/src/`` before running the Yosys
+script. When the Yosys script is executed, it will use the copies in
+``<outdir>/src/``. (Alternatively absolute filenames can be used in the
+Yosys script for files not listed in the files section.)
 
 For example:
 
@@ -339,7 +345,7 @@ the source file name. For example:
    [files]
    top.sv
    defines.vh ../common/defines_footest.vh
-   /data/prj42/modules/foobar.sv
+   foo/bar.sv /data/prj42/modules/foobar.sv
 
 File sections
 -------------
