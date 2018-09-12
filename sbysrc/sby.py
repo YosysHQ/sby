@@ -139,7 +139,9 @@ def read_sbyconfig(sbydata, taskname):
                 task_skiping_blocks = False
                 continue
 
+        found_task_tag = False
         task_skip_line = False
+
         for t in task_tags_all:
             if line.startswith(t+":"):
                 line = line[len(t)+1:].lstrip()
@@ -157,7 +159,14 @@ def read_sbyconfig(sbydata, taskname):
             else:
                 task_skip_line = not match
 
+            found_task_tag = True
             break
+
+        if len(task_tags_all) and not found_task_tag:
+            tokens = line.split()
+            if len(tokens) > 0 and tokens[0].endswith(":"):
+                print("ERROR: Invalid task specifier \"%s\"." % tokens[0], file=sys.stderr)
+                sys.exit(1)
 
         if task_skip_line or task_skip_block:
             continue
