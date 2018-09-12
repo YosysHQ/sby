@@ -164,7 +164,7 @@ def read_sbyconfig(sbydata, taskname):
 
         if len(task_tags_all) and not found_task_tag:
             tokens = line.split()
-            if len(tokens) > 0 and tokens[0].endswith(":"):
+            if len(tokens) > 0 and tokens[0][0] == line[0] and tokens[0].endswith(":"):
                 print("ERROR: Invalid task specifier \"%s\"." % tokens[0], file=sys.stderr)
                 sys.exit(1)
 
