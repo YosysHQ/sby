@@ -159,6 +159,10 @@ options are:
 |                  |            | engine. Other engines ignore this option in ``prove``   |
 |                  |            | mode. Default: ``20``                                   |
 +------------------+------------+---------------------------------------------------------+
+| ``skip``         | ``bmc``,   | Skip the specified number of time steps. Only valid     |
+|                  | ``cover``  | with smtbmc engine. All other engines are disabled when |
+|                  |            | this option is used. Default: None                      |
++------------------+------------+---------------------------------------------------------+
 | ``append``       | ``bmc``,   | When generating a counter-example trace, add the        |
 |                  | ``prove``, | specified number of cycles at the end of the trace.     |
 |                  | ``cover``  | Default: ``0``                                          |

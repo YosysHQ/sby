@@ -121,9 +121,15 @@ def run(mode, job, engine_idx, engine):
     if not progress:
         smtbmc_opts.append("--noprogress")
 
+
+    if job.opt_skip is not None:
+        t_opt = "%d:%d" % (job.opt_skip, job.opt_depth)
+    else:
+        t_opt = "%d" % job.opt_depth
+
     task = SbyTask(job, taskname, job.model(model_name),
-            "cd %s; %s %s -t %d --append %d --dump-vcd %s.vcd --dump-vlogtb %s_tb.v --dump-smtc %s.smtc model/design_%s.smt2" %
-                    (job.workdir, job.exe_paths["smtbmc"], " ".join(smtbmc_opts), job.opt_depth, job.opt_append, trace_prefix, trace_prefix, trace_prefix, model_name),
+            "cd %s; %s %s -t %s --append %d --dump-vcd %s.vcd --dump-vlogtb %s_tb.v --dump-smtc %s.smtc model/design_%s.smt2" %
+                    (job.workdir, job.exe_paths["smtbmc"], " ".join(smtbmc_opts), t_opt, job.opt_append, trace_prefix, trace_prefix, trace_prefix, model_name),
             logfile=open(logfile_prefix + ".txt", "w"), logstderr=(not progress))
 
     if mode == "prove_basecase":

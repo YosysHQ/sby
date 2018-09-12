@@ -497,12 +497,21 @@ class SbyJob:
         self.handle_int_option("timeout", None)
 
         self.handle_str_option("smtc", None)
+        self.handle_int_option("skip", None)
         self.handle_str_option("tbtop", None)
 
         if self.opt_smtc is not None:
             for engine in self.engines:
                 if engine[0] != "smtbmc":
                     self.error("Option smtc is only valid for smtbmc engine.")
+
+        if self.opt_skip is not None:
+            if self.opt_skip == 0:
+                self.opt_skip = None
+            else:
+                for engine in self.engines:
+                    if engine[0] != "smtbmc":
+                        self.error("Option skip is only valid for smtbmc engine.")
 
         self.copy_src()
 
