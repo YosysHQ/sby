@@ -85,7 +85,7 @@ def run(mode, job, engine_idx, engine):
 
         if task_status == "FAIL" and job.opt_aigsmt != "none":
             task2 = SbyTask(job, "engine_%d" % engine_idx, job.model("smt2"),
-                    ("cd %s; %s -s %s%s --noprogress --append %d --dump-vcd engine_%d/trace.vcd --dump-vlogtb engine_%d/trace_tb.v " +
+                    ("cd %s; %s -s %s%s --noprogress --append %d -g --dump-vcd engine_%d/trace.vcd --dump-vlogtb engine_%d/trace_tb.v " +
                      "--dump-smtc engine_%d/trace.smtc --aig model/design_aiger.aim:engine_%d/trace.aiw --aig-noheader model/design_smt2.smt2") %
                             (job.workdir, job.exe_paths["smtbmc"], job.opt_aigsmt,
                             "" if job.opt_tbtop is None else " --vlogtb-top %s" % job.opt_tbtop,

@@ -93,7 +93,7 @@ def run(mode, job, engine_idx, engine):
             if produced_cex:
                 if mode == "live":
                     task2 = SbyTask(job, "engine_%d" % engine_idx, job.model("smt2"),
-                            ("cd %s; %s -g -s %s%s --noprogress --dump-vcd engine_%d/trace.vcd --dump-vlogtb engine_%d/trace_tb.v " +
+                            ("cd %s; %s -g -s %s%s --noprogress -g --dump-vcd engine_%d/trace.vcd --dump-vlogtb engine_%d/trace_tb.v " +
                              "--dump-smtc engine_%d/trace.smtc --aig model/design_aiger.aim:engine_%d/trace.aiw model/design_smt2.smt2") %
                                     (job.workdir, job.exe_paths["smtbmc"], job.opt_aigsmt,
                                     "" if job.opt_tbtop is None else " --vlogtb-top %s" % job.opt_tbtop,
@@ -101,7 +101,7 @@ def run(mode, job, engine_idx, engine):
                             logfile=open("%s/engine_%d/logfile2.txt" % (job.workdir, engine_idx), "w"))
                 else:
                     task2 = SbyTask(job, "engine_%d" % engine_idx, job.model("smt2"),
-                            ("cd %s; %s -s %s%s --noprogress --append %d --dump-vcd engine_%d/trace.vcd --dump-vlogtb engine_%d/trace_tb.v " +
+                            ("cd %s; %s -s %s%s --noprogress --append %d -g --dump-vcd engine_%d/trace.vcd --dump-vlogtb engine_%d/trace_tb.v " +
                              "--dump-smtc engine_%d/trace.smtc --aig model/design_aiger.aim:engine_%d/trace.aiw model/design_smt2.smt2") %
                                     (job.workdir, job.exe_paths["smtbmc"], job.opt_aigsmt,
                                     "" if job.opt_tbtop is None else " --vlogtb-top %s" % job.opt_tbtop,
