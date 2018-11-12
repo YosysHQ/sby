@@ -346,7 +346,7 @@ class SbyJob:
                 print("abc -g AND -fast", file=f)
                 print("opt_clean", file=f)
                 print("stat", file=f)
-                print("write_aiger -zinit -map design_aiger.aim design_aiger.aig", file=f)
+                print("write_aiger -I -B -zinit -map design_aiger.aim design_aiger.aig", file=f)
 
             task = SbyTask(self, "aig", self.model("nomem"),
                     "cd %s/model; %s -ql design_aiger.log design_aiger.ys" % (self.workdir, self.exe_paths["yosys"]))
