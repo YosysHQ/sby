@@ -241,6 +241,8 @@ The following solvers are currently supported by ``yosys-smtbmc``:
   * mathsat
   * cvc4
 
+Any additional options after ``--`` are passed to ``yosys-smtbmc`` as-is.
+
 ``aiger`` engine
 ~~~~~~~~~~~~~~~~
 

@@ -67,10 +67,17 @@ def run(mode, job, engine_idx, engine):
         else:
             job.error("Invalid smtbmc options %s." % o)
 
+    xtra_opts = False
     for i, a in enumerate(args):
         if i == 0 and a == "z3" and unroll_opt is None:
                 unroll_opt = False
-        smtbmc_opts += ["-s" if i == 0 else "-S", a]
+        if a == "--":
+            xtra_opts = True
+            continue
+        if xtra_opts:
+            smtbmc_opts.append(a)
+        else:
+            smtbmc_opts += ["-s" if i == 0 else "-S", a]
 
     if presat_opt:
         smtbmc_opts += ["--presat"]
