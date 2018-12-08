@@ -118,11 +118,13 @@ http://fmv.jku.at/boolector/
 
 .. code-block:: text
 
-   wget http://fmv.jku.at/boolector/boolector-2.4.1-with-lingeling-bbc.tar.bz2
-   tar xvjf boolector-2.4.1-with-lingeling-bbc.tar.bz2
-   cd boolector-2.4.1-with-lingeling-bbc/
-   make
-   sudo cp boolector/bin/boolector /usr/local/bin/boolector
+   git clone https://github.com/boolector/boolector
+   git clone https://github.com/arminbiere/lingeling boolector/deps/lingeling
+   git clone https://github.com/boolector/btor2tools boolector/deps/btor2tools
+   ( cd boolector/deps/lingeling  && ./configure.sh -fPIC && make -j$(nproc); )
+   ( cd boolector/deps/btor2tools && ./configure.sh -fPIC && make -j$(nproc); )
+   ( cd boolector && ./configure.sh && cd build && make -j$(nproc); )
+   sudo cp boolector/build/bin/{boolector,btor*} /usr/local/bin/
 
 First step: A simple BMC example
 --------------------------------
