@@ -59,13 +59,14 @@ sby [options] [<jobname>.sby [tasknames]]
     --suprove <path_to_executable>
     --aigbmc <path_to_executable>
     --avy <path_to_executable>
+    --btormc <path_to_executable>
         configure which executable to use for the respective tool
 """)
     sys.exit(1)
 
 try:
     opts, args = getopt.getopt(sys.argv[1:], "d:btfT:E", ["yosys=",
-            "abc=", "smtbmc=", "suprove=", "aigbmc=", "avy="])
+            "abc=", "smtbmc=", "suprove=", "aigbmc=", "avy=", "btormc="])
 except:
     usage()
 
@@ -94,6 +95,8 @@ for o, a in opts:
         exe_paths["aigbmc"] = a
     elif o == "--avy":
         exe_paths["avy"] = a
+    elif o == "--btormc":
+        exe_paths["btormc"] = a
     else:
         usage()
 
