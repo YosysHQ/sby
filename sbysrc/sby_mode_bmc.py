@@ -39,6 +39,10 @@ def run(job):
             import sby_engine_abc
             sby_engine_abc.run("bmc", job, engine_idx, engine)
 
+        elif engine[0] == "btor":
+            import sby_engine_btor
+            sby_engine_btor.run("bmc", job, engine_idx, engine)
+
         else:
             job.error("Invalid engine '%s' for bmc mode." % engine[0])
 

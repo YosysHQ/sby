@@ -153,6 +153,7 @@ class SbyJob:
             "suprove": "suprove",
             "aigbmc": "aigbmc",
             "avy": "avy",
+            "btormc": "btormc",
         }
 
         self.tasks_running = []
@@ -326,6 +327,28 @@ class SbyJob:
                     print("write_smt2 -stdt -wires design_%s.smt2" % model_name, file=f)
                 else:
                     print("write_smt2 -wires design_%s.smt2" % model_name, file=f)
+
+            task = SbyTask(self, model_name, self.model("nomem" if "_nomem" in model_name else "base"),
+                    "cd %s/model; %s -ql design_%s.log design_%s.ys" % (self.workdir, self.exe_paths["yosys"], model_name, model_name))
+            task.checkretcode = True
+
+            return [task]
+
+        if re.match(r"^btor(_syn)?(_nomem)?$", model_name):
+            with open("%s/model/design_%s.ys" % (self.workdir, model_name), "w") as f:
+                print("# running in %s/model/" % (self.workdir), file=f)
+                print("read_ilang design%s.il" % ("_nomem" if "_nomem" in model_name else ""), file=f)
+                print("flatten", file=f)
+                print("setattr -unset keep", file=f)
+                print("delete -output", file=f)
+                print("opt -full", file=f)
+                if "_syn" in model_name:
+                    print("techmap", file=f)
+                    print("opt -fast", file=f)
+                    print("abc", file=f)
+                    print("opt_clean", file=f)
+                print("stat", file=f)
+                print("write_btor design_%s.btor" % model_name, file=f)
 
             task = SbyTask(self, model_name, self.model("nomem" if "_nomem" in model_name else "base"),
                     "cd %s/model; %s -ql design_%s.log design_%s.ys" % (self.workdir, self.exe_paths["yosys"], model_name, model_name))
