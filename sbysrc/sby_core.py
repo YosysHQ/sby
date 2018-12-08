@@ -338,6 +338,10 @@ class SbyJob:
             with open("%s/model/design_%s.ys" % (self.workdir, model_name), "w") as f:
                 print("# running in %s/model/" % (self.workdir), file=f)
                 print("read_ilang design%s.il" % ("_nomem" if "_nomem" in model_name else ""), file=f)
+                print("flatten", file=f)
+                print("setattr -unset keep", file=f)
+                print("delete -output", file=f)
+                print("opt -full", file=f)
                 if "_syn" in model_name:
                     print("techmap", file=f)
                     print("opt -fast", file=f)

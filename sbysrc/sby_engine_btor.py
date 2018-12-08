@@ -29,7 +29,7 @@ def run(mode, job, engine_idx, engine):
         job.error("Unexpected BTOR engine options.")
 
     if solver_args[0] == "btormc":
-        solver_cmd = job.exe_paths["btormc"] + " --stop-first -kmax %d" % job.opt_depth
+        solver_cmd = job.exe_paths["btormc"] + " --stop-first -v 1 -kmax %d" % job.opt_depth
         if job.opt_skip is not None:
             solver_cmd += " -kmin %d" % job.opt_skip
         solver_cmd += " ".join([""] + solver_args[1:])
@@ -44,39 +44,43 @@ def run(mode, job, engine_idx, engine):
     task_status = None
     produced_cex = False
     end_of_cex = False
-    aiw_file = open("%s/engine_%d/trace.aiw" % (job.workdir, engine_idx), "w")
+    wit_file = open("%s/engine_%d/trace.wit" % (job.workdir, engine_idx), "w")
 
     def output_callback(line):
         nonlocal task_status
         nonlocal produced_cex
         nonlocal end_of_cex
 
-        if task_status is not None:
-            if not end_of_cex and not produced_cex and line.isdigit():
-                produced_cex = True
-            if not end_of_cex:
-                print(line, file=aiw_file)
+        if not end_of_cex and not produced_cex and line == "sat":
+            produced_cex = True
+            task_status = "FAIL"
+
+        if produced_cex and not end_of_cex:
+            print(line, file=wit_file)
             if line == ".":
                 end_of_cex = True
-            return None
 
         if line.startswith("u"):
             return "No CEX up to depth %d." % (int(line[1:])-1)
 
-        if line in ["0", "1", "2"]:
-            print(line, file=aiw_file)
-            if line == "0": task_status = "PASS"
-            if line == "1": task_status = "FAIL"
-            if line == "2": task_status = "UNKNOWN"
+        if solver_args[0] == "btormc":
+            if "bad state properties at bound" in line:
+                return line
+            if "deleting model checker:" in line:
+                if task_status is None:
+                    task_status = "PASS"
+                return line
+
+        if not produced_cex or end_of_cex:
+            print(line, file=task.logfile)
 
         return None
 
     def exit_callback(retcode):
-        if solver_args[0] not in ["avy"]:
-            assert retcode == 0
+        assert retcode == 0
         assert task_status is not None
 
-        aiw_file.close()
+        wit_file.close()
 
         job.update_status(task_status)
         job.log("engine_%d: Status returned by engine: %s" % (engine_idx, task_status))
@@ -89,7 +93,7 @@ def run(mode, job, engine_idx, engine):
                 if mode == "live":
                     task2 = SbyTask(job, "engine_%d" % engine_idx, job.model("smt2"),
                             ("cd %s; %s -g -s %s%s --noprogress --dump-vcd engine_%d/trace.vcd --dump-vlogtb engine_%d/trace_tb.v " +
-                             "--dump-smtc engine_%d/trace.smtc --aig model/design_btor.aim:engine_%d/trace.aiw model/design_smt2.smt2") %
+                             "--dump-smtc engine_%d/trace.smtc --btorwit model/design_btor.btor:engine_%d/trace.wit model/design_smt2.smt2") %
                                     (job.workdir, job.exe_paths["smtbmc"], job.opt_aigsmt,
                                     "" if job.opt_tbtop is None else " --vlogtb-top %s" % job.opt_tbtop,
                                     engine_idx, engine_idx, engine_idx, engine_idx),
@@ -97,7 +101,7 @@ def run(mode, job, engine_idx, engine):
                 else:
                     task2 = SbyTask(job, "engine_%d" % engine_idx, job.model("smt2"),
                             ("cd %s; %s -s %s%s --noprogress --append %d --dump-vcd engine_%d/trace.vcd --dump-vlogtb engine_%d/trace_tb.v " +
-                             "--dump-smtc engine_%d/trace.smtc --aig model/design_btor.aim:engine_%d/trace.aiw model/design_smt2.smt2") %
+                             "--dump-smtc engine_%d/trace.smtc --btorwit model/design_btor.btor:engine_%d/trace.wit model/design_smt2.smt2") %
                                     (job.workdir, job.exe_paths["smtbmc"], job.opt_aigsmt,
                                     "" if job.opt_tbtop is None else " --vlogtb-top %s" % job.opt_tbtop,
                                     job.opt_append, engine_idx, engine_idx, engine_idx, engine_idx),
