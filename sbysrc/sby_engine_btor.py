@@ -29,7 +29,7 @@ def run(mode, job, engine_idx, engine):
         job.error("Unexpected BTOR engine options.")
 
     if solver_args[0] == "btormc":
-        solver_cmd = job.exe_paths["btormc"] + " --stop-first -v 1 -kmax %d" % job.opt_depth
+        solver_cmd = job.exe_paths["btormc"] + " --stop-first -v 1 -kmax %d" % (job.opt_depth - 1)
         if job.opt_skip is not None:
             solver_cmd += " -kmin %d" % job.opt_skip
         solver_cmd += " ".join([""] + solver_args[1:])
@@ -64,6 +64,10 @@ def run(mode, job, engine_idx, engine):
             return "No CEX up to depth %d." % (int(line[1:])-1)
 
         if solver_args[0] == "btormc":
+            if "calling BMC on" in line:
+                return line
+            if "SATISFIABLE" in line:
+                return line
             if "bad state properties at bound" in line:
                 return line
             if "deleting model checker:" in line:

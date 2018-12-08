@@ -533,8 +533,8 @@ class SbyJob:
                 self.opt_skip = None
             else:
                 for engine in self.engines:
-                    if engine[0] != "smtbmc":
-                        self.error("Option skip is only valid for smtbmc engine.")
+                    if engine[0] not in ["smtbmc", "btor"]:
+                        self.error("Option skip is only valid for smtbmc and btor engines.")
 
         self.copy_src()
 
