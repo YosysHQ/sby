@@ -125,6 +125,7 @@ http://fmv.jku.at/boolector/
    ( cd boolector/deps/btor2tools && ./configure.sh -fPIC && make -j$(nproc); )
    ( cd boolector && ./configure.sh && cd build && make -j$(nproc); )
    sudo cp boolector/build/bin/{boolector,btor*} /usr/local/bin/
+   sudo cp boolector/deps/btor2tools/bin/btorsim /usr/local/bin/
 
 First step: A simple BMC example
 --------------------------------
