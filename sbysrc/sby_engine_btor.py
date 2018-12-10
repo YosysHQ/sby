@@ -84,6 +84,8 @@ def run(mode, job, engine_idx, engine):
         assert retcode == 0
         assert task_status is not None
 
+        if task_status == "PASS":
+            print("unsat", file=wit_file)
         wit_file.close()
 
         job.update_status(task_status)
@@ -96,19 +98,21 @@ def run(mode, job, engine_idx, engine):
             if produced_cex:
                 if mode == "live":
                     task2 = SbyTask(job, "engine_%d" % engine_idx, job.model("smt2"),
-                            ("cd %s; %s -g -s %s%s --noprogress --dump-vcd engine_%d/trace.vcd --dump-vlogtb engine_%d/trace_tb.v " +
-                             "--dump-smtc engine_%d/trace.smtc --btorwit model/design_btor.btor:engine_%d/trace.wit model/design_smt2.smt2") %
-                                    (job.workdir, job.exe_paths["smtbmc"], job.opt_aigsmt,
-                                    "" if job.opt_tbtop is None else " --vlogtb-top %s" % job.opt_tbtop,
-                                    engine_idx, engine_idx, engine_idx, engine_idx),
+                            ("cd %s; btorsim --states model/design_btor.btor engine_%d/trace.wit > engine_%d/simtrace.wit && " +
+                             "%s -g -s %s%s --noprogress --dump-vcd engine_%d/trace.vcd --dump-vlogtb engine_%d/trace_tb.v " +
+                             "--dump-smtc engine_%d/trace.smtc --btorwit engine_%d/simtrace.wit model/design_smt2.smt2") %
+                                    (job.workdir, engine_idx, engine_idx, job.exe_paths["smtbmc"], job.opt_aigsmt,
+                                     "" if job.opt_tbtop is None else " --vlogtb-top %s" % job.opt_tbtop,
+                                     engine_idx, engine_idx, engine_idx, engine_idx),
                             logfile=open("%s/engine_%d/logfile2.txt" % (job.workdir, engine_idx), "w"))
                 else:
                     task2 = SbyTask(job, "engine_%d" % engine_idx, job.model("smt2"),
-                            ("cd %s; %s -s %s%s --noprogress --append %d --dump-vcd engine_%d/trace.vcd --dump-vlogtb engine_%d/trace_tb.v " +
-                             "--dump-smtc engine_%d/trace.smtc --btorwit model/design_btor.btor:engine_%d/trace.wit model/design_smt2.smt2") %
-                                    (job.workdir, job.exe_paths["smtbmc"], job.opt_aigsmt,
-                                    "" if job.opt_tbtop is None else " --vlogtb-top %s" % job.opt_tbtop,
-                                    job.opt_append, engine_idx, engine_idx, engine_idx, engine_idx),
+                            ("cd %s; btorsim --states model/design_btor.btor engine_%d/trace.wit > engine_%d/simtrace.wit && " +
+                             "%s -s %s%s --noprogress --append %d --dump-vcd engine_%d/trace.vcd --dump-vlogtb engine_%d/trace_tb.v " +
+                             "--dump-smtc engine_%d/trace.smtc --btorwit engine_%d/simtrace.wit model/design_smt2.smt2") %
+                                    (job.workdir, engine_idx, engine_idx, job.exe_paths["smtbmc"], job.opt_aigsmt,
+                                     "" if job.opt_tbtop is None else " --vlogtb-top %s" % job.opt_tbtop,
+                                     job.opt_append, engine_idx, engine_idx, engine_idx, engine_idx),
                             logfile=open("%s/engine_%d/logfile2.txt" % (job.workdir, engine_idx), "w"))
 
                 task2_status = None
