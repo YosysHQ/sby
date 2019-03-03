@@ -30,6 +30,8 @@ opt_backup = False
 opt_tmpdir = False
 exe_paths = dict()
 throw_err = False
+dump_cfg = False
+dump_tasks = False
 
 def usage():
     print("""
@@ -61,12 +63,19 @@ sby [options] [<jobname>.sby [tasknames]]
     --avy <path_to_executable>
     --btormc <path_to_executable>
         configure which executable to use for the respective tool
+
+    --dumpcfg
+        print the pre-processed configuration file
+
+    --dumptasks
+        print the list of tasks
 """)
     sys.exit(1)
 
 try:
     opts, args = getopt.getopt(sys.argv[1:], "d:btfT:E", ["yosys=",
-            "abc=", "smtbmc=", "suprove=", "aigbmc=", "avy=", "btormc="])
+            "abc=", "smtbmc=", "suprove=", "aigbmc=", "avy=", "btormc=",
+            "dumpcfg", "dumptasks"])
 except:
     usage()
 
@@ -97,6 +106,10 @@ for o, a in opts:
         exe_paths["avy"] = a
     elif o == "--btormc":
         exe_paths["btormc"] = a
+    elif o == "--dumpcfg":
+        dump_cfg = True
+    elif o == "--dumptasks":
+        dump_tasks = True
     else:
         usage()
 
@@ -212,10 +225,22 @@ with (open(sbyfile, "r") if sbyfile is not None else sys.stdin) as f:
     for line in f:
         sbydata.append(line)
 
+if dump_cfg:
+    assert len(tasknames) < 2
+    sbyconfig, _ = read_sbyconfig(sbydata, tasknames[0] if len(tasknames) else None)
+    print("\n".join(sbyconfig))
+    sys.exit(0)
+
 if len(tasknames) == 0:
     _, tasknames = read_sbyconfig(sbydata, None)
     if len(tasknames) == 0:
         tasknames = [None]
+
+if dump_tasks:
+    for task in tasknames:
+        if task is not None:
+            print(task)
+    sys.exit(0)
 
 if (workdir is not None) and (len(tasknames) != 1):
     print("ERROR: Exactly one task is required when workdir is specified.", file=sys.stderr)
