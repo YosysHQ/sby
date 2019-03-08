@@ -369,4 +369,38 @@ example:
 Pycode blocks
 -------------
 
-TBD
+Blocks enclosed in ``--pycode-begin--`` and ``--pycode-end--`` lines are interpreted
+as Python code. The function ``output(line)`` can be used to add configuration
+file lines from the python code. The variable ``task`` contains the current task name,
+if any, and ``None`` otherwise. The variable ``tags`` contains a set of all tags
+associated with the current task.
+
+.. code-block:: text
+
+   [tasks]
+   --pycode-begin--
+   for uut in "rotate reflect".split():
+     for op in "SRL SRA SLL SRO SLO ROR ROL FSR FSL".split():
+       output("%s_%s %s %s" % (uut, op, uut, op))
+   --pycode-end--
+
+   ...
+
+   [script]
+   --pycode-begin--
+   for op in "SRL SRA SLL SRO SLO ROR ROL FSR FSL".split():
+     if op in tags:
+       output("read -define %s" % op)
+   --pycode-end--
+   rotate: read -define UUT=shifter_rotate
+   reflect: read -define UUT=shifter_reflect
+   read -sv test.v
+   read -sv shifter_reflect.v
+   read -sv shifter_rotate.v
+   prep -top test
+
+   ...
+
+The command ``sby --dumpcfg <sby_file>`` can be used to print the configuration without
+specialization for any particular task, and ``sby --dumpcfg <sby_file> <task_name>`` can
+be used to print the configuration with specialization for a particular task.

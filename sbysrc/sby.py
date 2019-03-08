@@ -142,9 +142,30 @@ def read_sbyconfig(sbydata, taskname):
     task_skip_block = False
     task_skiping_blocks = False
 
-    for line in sbydata:
+    def handle_line(line):
+        nonlocal pycode, tasks_section, task_tags_active, task_tags_all
+        nonlocal task_skip_block, task_skiping_blocks
+
         line = line.rstrip("\n")
         line = line.rstrip("\r")
+
+        if pycode is not None:
+            if line == "--pycode-end--":
+                gdict = globals().copy()
+                gdict["task"] = taskname
+                gdict["tags"] = set(task_tags_active)
+                gdict["output_lines"] = list()
+                exec("def output(line):\n  output_lines.append(line)\n" + pycode, gdict)
+                pycode = None
+                for line in gdict["output_lines"]:
+                    handle_line(line)
+                return
+            pycode += line + "\n"
+            return
+
+        if line == "--pycode-begin--":
+            pycode = ""
+            return
 
         if tasks_section and line.startswith("["):
             tasks_section = False
@@ -153,7 +174,7 @@ def read_sbyconfig(sbydata, taskname):
             if line == "--":
                 task_skip_block = False
                 task_skiping_blocks = False
-                continue
+                return
 
         found_task_tag = False
         task_skip_line = False
@@ -185,11 +206,13 @@ def read_sbyconfig(sbydata, taskname):
                 sys.exit(1)
 
         if task_skip_line or task_skip_block:
-            continue
+            return
 
         if tasks_section:
+            if taskname is None:
+                cfgdata.append(line)
             if line.startswith("#"):
-                continue
+                return
             line = line.split()
             if len(line) > 0:
                 tasklist.append(line[0])
@@ -199,23 +222,15 @@ def read_sbyconfig(sbydata, taskname):
                 task_tags_all.add(t)
 
         elif line == "[tasks]":
+            if taskname is None:
+                cfgdata.append(line)
             tasks_section = True
 
-        elif line == "--pycode-begin--":
-            pycode = ""
-
-        elif line == "--pycode-end--":
-            gdict = globals().copy()
-            gdict["cfgdata"] = cfgdata
-            gdict["taskname"] = taskname
-            exec("def output(line):\n  cfgdata.append(line)\n" + pycode, gdict)
-            pycode = None
-
         else:
-            if pycode is None:
-                cfgdata.append(line)
-            else:
-                pycode += line + "\n"
+            cfgdata.append(line)
+
+    for line in sbydata:
+        handle_line(line)
 
     return cfgdata, tasklist
 
