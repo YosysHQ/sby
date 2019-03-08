@@ -104,6 +104,9 @@ combinations of some host implementations A and B and device implementations X a
 The ``[tasks]`` section must appear in the ``.sby`` file before the first
 ``<taskname>:`` or ``~<taskname>:`` tag.
 
+The command ``sby --dumptasks <sby_file>`` prints the list of all tasks defined in
+a given ``.sby`` file.
+
 Options section
 ---------------
 
