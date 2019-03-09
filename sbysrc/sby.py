@@ -135,6 +135,10 @@ if len(args) > 0:
         if setupmode:
             print("ERROR: Can't use --setup with existing directory.", file=sys.stderr)
             sys.exit(1)
+        if opt_force:
+            for f in "PASS FAIL UNKNOWN ERROR TIMEOUT".split():
+                if os.path.exists(workdir + "/" + f):
+                    os.remove(workdir + "/" + f)
     elif not sbyfile.endswith(".sby"):
         print("ERROR: Sby file does not have .sby file extension.", file=sys.stderr)
         sys.exit(1)
@@ -318,7 +322,9 @@ def run_job(taskname):
     junit_ts_name = os.path.basename(sbyfile[:-4]) if sbyfile is not None else workdir if workdir is not None else "stdin"
     junit_tc_name = taskname if taskname is not None else "default"
 
-    if sbyfile is not None:
+    if reusedir:
+        junit_filename = os.path.basename(my_workdir)
+    elif sbyfile is not None:
         junit_filename = os.path.basename(sbyfile[:-4])
         if taskname is not None:
             junit_filename += "_" + taskname
