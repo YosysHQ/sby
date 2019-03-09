@@ -36,7 +36,7 @@ def run(job):
         assert len(engine) > 0
 
         job.log("engine_%d: %s" % (engine_idx, " ".join(engine)))
-        os.makedirs("%s/engine_%d" % (job.workdir, engine_idx))
+        job.makedirs("%s/engine_%d" % (job.workdir, engine_idx))
 
         if engine[0] == "smtbmc":
             import sby_engine_smtbmc

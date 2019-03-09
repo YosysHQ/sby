@@ -32,10 +32,12 @@ exe_paths = dict()
 throw_err = False
 dump_cfg = False
 dump_tasks = False
+reusedir = False
+setupmode = False
 
 def usage():
     print("""
-sby [options] [<jobname>.sby [tasknames]]
+sby [options] [<jobname>.sby [tasknames] | <dirname>]
 
     -d <dirname>
         set workdir name. default: <jobname> (without .sby)
@@ -69,13 +71,16 @@ sby [options] [<jobname>.sby [tasknames]]
 
     --dumptasks
         print the list of tasks
+
+    --setup
+        set up the working directory and exit
 """)
     sys.exit(1)
 
 try:
     opts, args = getopt.getopt(sys.argv[1:], "d:btfT:E", ["yosys=",
             "abc=", "smtbmc=", "suprove=", "aigbmc=", "avy=", "btormc=",
-            "dumpcfg", "dumptasks"])
+            "dumpcfg", "dumptasks", "setup"])
 except:
     usage()
 
@@ -110,12 +115,27 @@ for o, a in opts:
         dump_cfg = True
     elif o == "--dumptasks":
         dump_tasks = True
+    elif o == "--setup":
+        setupmode = True
     else:
         usage()
 
 if len(args) > 0:
     sbyfile = args[0]
-    if not sbyfile.endswith(".sby"):
+    if os.path.isdir(sbyfile):
+        workdir = sbyfile
+        sbyfile += "/config.sby"
+        reusedir = True
+        if not opt_force and os.path.exists(workdir + "/model"):
+            print("ERROR: Use -f to re-run in existing directory.", file=sys.stderr)
+            sys.exit(1)
+        if len(args) > 1:
+            print("ERROR: Can't use tasks when running in existing directory.", file=sys.stderr)
+            sys.exit(1)
+        if setupmode:
+            print("ERROR: Can't use --setup with existing directory.", file=sys.stderr)
+            sys.exit(1)
+    elif not sbyfile.endswith(".sby"):
         print("ERROR: Sby file does not have .sby file extension.", file=sys.stderr)
         sys.exit(1)
 
@@ -278,12 +298,18 @@ def run_job(taskname):
             early_log(my_workdir, "Moving direcory '%s' to '%s'." % (my_workdir, "%s.bak%03d" % (my_workdir, backup_idx)))
             shutil.move(my_workdir, "%s.bak%03d" % (my_workdir, backup_idx))
 
-        if opt_force:
+        if opt_force and not reusedir:
             early_log(my_workdir, "Removing direcory '%s'." % (my_workdir))
             if sbyfile:
                 shutil.rmtree(my_workdir, ignore_errors=True)
 
-        os.makedirs(my_workdir)
+        if reusedir:
+            pass
+        elif os.path.isdir(my_workdir):
+            print("ERROR: Direcory '%s' already exists." % (my_workdir))
+            sys.exit(1)
+        else:
+            os.makedirs(my_workdir)
 
     else:
         my_opt_tmpdir = True
@@ -302,16 +328,16 @@ def run_job(taskname):
         junit_filename = "junit"
 
     sbyconfig, _ = read_sbyconfig(sbydata, taskname)
-    job = SbyJob(sbyconfig, my_workdir, early_logmsgs)
+    job = SbyJob(sbyconfig, my_workdir, early_logmsgs, reusedir)
 
     for k, v in exe_paths.items():
         job.exe_paths[k] = v
 
     if throw_err:
-        job.run()
+        job.run(setupmode)
     else:
         try:
-            job.run()
+            job.run(setupmode)
         except SbyAbort:
             pass
 
@@ -319,10 +345,13 @@ def run_job(taskname):
         job.log("Removing direcory '%s'." % (my_workdir))
         shutil.rmtree(my_workdir, ignore_errors=True)
 
-    job.log("DONE (%s, rc=%d)" % (job.status, job.retcode))
+    if setupmode:
+        job.log("SETUP COMPLETE (rc=%d)" % (job.retcode))
+    else:
+        job.log("DONE (%s, rc=%d)" % (job.status, job.retcode))
     job.logfile.close()
 
-    if not my_opt_tmpdir:
+    if not my_opt_tmpdir and not setupmode:
         with open("%s/%s.xml" % (job.workdir, junit_filename), "w") as f:
             junit_errors = 1 if job.retcode == 16 else 0
             junit_failures = 1 if job.retcode != 0 and junit_errors == 0 else 0

@@ -18,7 +18,7 @@
 
 import os, re, resource, sys
 import subprocess, fcntl
-from shutil import copyfile
+from shutil import copyfile, rmtree
 from select import select
 from time import time, localtime
 
@@ -133,7 +133,7 @@ class SbyAbort(BaseException):
 
 
 class SbyJob:
-    def __init__(self, sbyconfig, workdir, early_logs):
+    def __init__(self, sbyconfig, workdir, early_logs, reusedir):
         self.options = dict()
         self.used_options = set()
         self.engines = list()
@@ -142,6 +142,7 @@ class SbyJob:
         self.verbatim_files = dict()
         self.models = dict()
         self.workdir = workdir
+        self.reusedir = reusedir
         self.status = "UNKNOWN"
         self.total_time = 0
         self.expect = []
@@ -166,7 +167,7 @@ class SbyJob:
 
         self.summary = list()
 
-        self.logfile = open("%s/logfile.txt" % workdir, "w")
+        self.logfile = open("%s/logfile.txt" % workdir, "a")
 
         for line in early_logs:
             print(line, file=self.logfile)
@@ -223,6 +224,11 @@ class SbyJob:
             print("ERROR: %s" % logmessage, file=f)
         raise SbyAbort(logmessage)
 
+    def makedirs(self, path):
+        if self.reusedir and os.path.isdir(path):
+            rmtree(path, ignore_errors=True)
+        os.makedirs(path)
+
     def copy_src(self):
         os.makedirs(self.workdir + "/src")
 
@@ -273,7 +279,7 @@ class SbyJob:
             self.__dict__["opt_" + option_name] = default_value
 
     def make_model(self, model_name):
-        if not os.path.exists("%s/model" % self.workdir):
+        if not os.path.isdir("%s/model" % self.workdir):
             os.makedirs("%s/model" % self.workdir)
 
         if model_name in ["base", "nomem"]:
@@ -411,7 +417,7 @@ class SbyJob:
         else:
             assert 0
 
-    def run(self):
+    def run(self, setupmode):
         mode = None
         key = None
 
@@ -536,7 +542,14 @@ class SbyJob:
                     if engine[0] not in ["smtbmc", "btor"]:
                         self.error("Option skip is only valid for smtbmc and btor engines.")
 
-        self.copy_src()
+        if self.reusedir:
+            rmtree("%s/model" % self.workdir, ignore_errors=True)
+        else:
+            self.copy_src()
+
+        if setupmode:
+            self.retcode = 0
+            return
 
         if self.opt_mode == "bmc":
             import sby_mode_bmc
