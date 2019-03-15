@@ -374,7 +374,7 @@ def run_job(taskname):
                 for line in logf:
                     print(line.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;"), end="", file=f)
             print('</system-out></testcase></testsuite></testsuites>', file=f)
-        with open("%s/.stamp" % (job.workdir), "w") as f:
+        with open("%s/status" % (job.workdir), "w") as f:
             print("%s %d %d" % (job.status, job.retcode, job.total_time), file=f)
 
     return job.retcode
