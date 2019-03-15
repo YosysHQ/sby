@@ -191,9 +191,10 @@ class SbyJob:
             print(line, file=self.logfile)
         self.logfile.flush()
 
-        with open("%s/config.sby" % workdir, "w") as f:
-            for line in sbyconfig:
-                print(line, file=f)
+        if not reusedir:
+            with open("%s/config.sby" % workdir, "w") as f:
+                for line in sbyconfig:
+                    print(line, file=f)
 
     def taskloop(self):
         for task in self.tasks_pending:
