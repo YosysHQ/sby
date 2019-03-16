@@ -119,10 +119,8 @@ http://fmv.jku.at/boolector/
 .. code-block:: text
 
    git clone https://github.com/boolector/boolector
-   git clone https://github.com/arminbiere/lingeling boolector/deps/lingeling
-   git clone https://github.com/boolector/btor2tools boolector/deps/btor2tools
-   ( cd boolector/deps/lingeling  && ./configure.sh -fPIC && make -j$(nproc); )
-   ( cd boolector/deps/btor2tools && ./configure.sh -fPIC && make -j$(nproc); )
+   ( cd boolector && ./contrib/setup-btor2tools.sh; )
+   ( cd boolector && ./contrib/setup-lingeling.sh; )
    ( cd boolector && ./configure.sh && cd build && make -j$(nproc); )
    sudo cp boolector/build/bin/{boolector,btor*} /usr/local/bin/
    sudo cp boolector/deps/btor2tools/bin/btorsim /usr/local/bin/
