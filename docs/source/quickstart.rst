@@ -23,7 +23,7 @@ Installing prerequisites (this command is for Ubuntu 16.04):
                         gawk tcl-dev libffi-dev git mercurial graphviz   \
                         xdot pkg-config python python3 libftdi-dev gperf \
                         libboost-program-options-dev autoconf libgmp-dev \
-                        cmake
+                        cmake cython3
 
 Yosys, Yosys-SMTBMC and ABC
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -119,13 +119,12 @@ http://fmv.jku.at/boolector/
 .. code-block:: text
 
    git clone https://github.com/boolector/boolector
-   git clone https://github.com/arminbiere/lingeling boolector/deps/lingeling
-   git clone https://github.com/boolector/btor2tools boolector/deps/btor2tools
-   ( cd boolector/deps/lingeling  && ./configure.sh -fPIC && make -j$(nproc); )
-   ( cd boolector/deps/btor2tools && ./configure.sh -fPIC && make -j$(nproc); )
-   ( cd boolector && ./configure.sh && cd build && make -j$(nproc); )
-   sudo cp boolector/build/bin/{boolector,btor*} /usr/local/bin/
-   sudo cp boolector/deps/btor2tools/bin/btorsim /usr/local/bin/
+   cd boolector
+   ./contrib/setup-lingeling.sh
+   ./contrib/setup-btor2tools.sh
+   ./configure.sh --python && ( cd build && make -j$(nproc); )
+   sudo cp build/bin/{boolector,btor*} /usr/local/bin/
+   sudo cp deps/btor2tools/bin/btorsim /usr/local/bin/
 
 First step: A simple BMC example
 --------------------------------
