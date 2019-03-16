@@ -33,7 +33,19 @@ class SbyTask:
         self.job = job
         self.info = info
         self.deps = deps
-        self.cmdline = cmdline
+        if os.name == "posix":
+            self.cmdline = cmdline
+        else:
+            replacements = {
+                ";" : "&",
+                "{" : "(",
+                "}" : ")",
+            }
+
+            cmdline_copy = cmdline
+            for u, w in replacements.items():
+                cmdline_copy = cmdline_copy.replace(u, w)
+            self.cmdline = cmdline_copy
         self.logfile = logfile
         self.noprintregex = None
         self.notify = []
