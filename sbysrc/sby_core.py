@@ -36,6 +36,8 @@ class SbyTask:
         if os.name == "posix":
             self.cmdline = cmdline
         else:
+            # Windows command interpreter equivalents for sequential
+            # commands (; => &) command grouping ({} => ()).
             replacements = {
                 ";" : "&",
                 "{" : "(",
@@ -598,15 +600,19 @@ class SbyJob:
             ru = resource.getrusage(resource.RUSAGE_CHILDREN)
             total_process_time = int((ru.ru_utime + ru.ru_stime) - self.start_process_time)
             self.total_time = total_process_time
-        else:
-            total_process_time = 0
 
-        self.summary = [
-            "Elapsed clock time [H:MM:SS (secs)]: %d:%02d:%02d (%d)" %
-                    (total_clock_time // (60*60), (total_clock_time // 60) % 60, total_clock_time % 60, total_clock_time),
-            "Elapsed process time [H:MM:SS (secs)]: %d:%02d:%02d (%d)" %
-                    (total_process_time // (60*60), (total_process_time // 60) % 60, total_process_time % 60, total_process_time),
-        ] + self.summary
+            self.summary = [
+                "Elapsed clock time [H:MM:SS (secs)]: %d:%02d:%02d (%d)" %
+                        (total_clock_time // (60*60), (total_clock_time // 60) % 60, total_clock_time % 60, total_clock_time),
+                "Elapsed process time [H:MM:SS (secs)]: %d:%02d:%02d (%d)" %
+                        (total_process_time // (60*60), (total_process_time // 60) % 60, total_process_time % 60, total_process_time),
+            ] + self.summary
+        else:
+            self.summary = [
+                "Elapsed clock time [H:MM:SS (secs)]: %d:%02d:%02d (%d)" %
+                        (total_clock_time // (60*60), (total_clock_time // 60) % 60, total_clock_time % 60, total_clock_time),
+                "Elapsed process time unvailable on Windows"
+            ] + self.summary
 
         for line in self.summary:
             self.log("summary: %s" % line)
