@@ -16,9 +16,11 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #
 
-import os, re, resource, sys
-import subprocess, fcntl
-from shutil import copyfile, rmtree
+import os, re, sys
+if os.name == "posix":
+    import resource, fcntl
+import subprocess
+from shutil import copyfile
 from select import select
 from time import time, localtime
 
@@ -31,7 +33,21 @@ class SbyTask:
         self.job = job
         self.info = info
         self.deps = deps
-        self.cmdline = cmdline
+        if os.name == "posix":
+            self.cmdline = cmdline
+        else:
+            # Windows command interpreter equivalents for sequential
+            # commands (; => &) command grouping ({} => ()).
+            replacements = {
+                ";" : "&",
+                "{" : "(",
+                "}" : ")",
+            }
+
+            cmdline_copy = cmdline
+            for u, w in replacements.items():
+                cmdline_copy = cmdline_copy.replace(u, w)
+            self.cmdline = cmdline_copy
         self.logfile = logfile
         self.noprintregex = None
         self.notify = []
@@ -91,8 +107,9 @@ class SbyTask:
             self.job.log("%s: starting process \"%s\"" % (self.info, self.cmdline))
             self.p = subprocess.Popen(self.cmdline, shell=True, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
                     stderr=(subprocess.STDOUT if self.logstderr else None))
-            fl = fcntl.fcntl(self.p.stdout, fcntl.F_GETFL)
-            fcntl.fcntl(self.p.stdout, fcntl.F_SETFL, fl | os.O_NONBLOCK)
+            if os.name == "posix":
+                fl = fcntl.fcntl(self.p.stdout, fcntl.F_GETFL)
+                fcntl.fcntl(self.p.stdout, fcntl.F_SETFL, fl | os.O_NONBLOCK)
             self.job.tasks_pending.remove(self)
             self.job.tasks_running.append(self)
             self.running = True
@@ -162,8 +179,9 @@ class SbyJob:
 
         self.start_clock_time = time()
 
-        ru = resource.getrusage(resource.RUSAGE_CHILDREN)
-        self.start_process_time = ru.ru_utime + ru.ru_stime
+        if os.name == "posix":
+            ru = resource.getrusage(resource.RUSAGE_CHILDREN)
+            self.start_process_time = ru.ru_utime + ru.ru_stime
 
         self.summary = list()
 
@@ -578,16 +596,23 @@ class SbyJob:
 
         total_clock_time = int(time() - self.start_clock_time)
 
-        ru = resource.getrusage(resource.RUSAGE_CHILDREN)
-        total_process_time = int((ru.ru_utime + ru.ru_stime) - self.start_process_time)
-        self.total_time = total_process_time
+        if os.name == "posix":
+            ru = resource.getrusage(resource.RUSAGE_CHILDREN)
+            total_process_time = int((ru.ru_utime + ru.ru_stime) - self.start_process_time)
+            self.total_time = total_process_time
 
-        self.summary = [
-            "Elapsed clock time [H:MM:SS (secs)]: %d:%02d:%02d (%d)" %
-                    (total_clock_time // (60*60), (total_clock_time // 60) % 60, total_clock_time % 60, total_clock_time),
-            "Elapsed process time [H:MM:SS (secs)]: %d:%02d:%02d (%d)" %
-                    (total_process_time // (60*60), (total_process_time // 60) % 60, total_process_time % 60, total_process_time),
-        ] + self.summary
+            self.summary = [
+                "Elapsed clock time [H:MM:SS (secs)]: %d:%02d:%02d (%d)" %
+                        (total_clock_time // (60*60), (total_clock_time // 60) % 60, total_clock_time % 60, total_clock_time),
+                "Elapsed process time [H:MM:SS (secs)]: %d:%02d:%02d (%d)" %
+                        (total_process_time // (60*60), (total_process_time // 60) % 60, total_process_time % 60, total_process_time),
+            ] + self.summary
+        else:
+            self.summary = [
+                "Elapsed clock time [H:MM:SS (secs)]: %d:%02d:%02d (%d)" %
+                        (total_clock_time // (60*60), (total_clock_time // 60) % 60, total_clock_time % 60, total_clock_time),
+                "Elapsed process time unvailable on Windows"
+            ] + self.summary
 
         for line in self.summary:
             self.log("summary: %s" % line)

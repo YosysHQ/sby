@@ -364,6 +364,9 @@ def run_job(taskname):
             print('<?xml version="1.0" encoding="UTF-8"?>', file=f)
             print('<testsuites disabled="0" errors="%d" failures="%d" tests="1" time="%d">' % (junit_errors, junit_failures, job.total_time), file=f)
             print('<testsuite disabled="0" errors="%d" failures="%d" name="%s" skipped="0" tests="1" time="%d">' % (junit_errors, junit_failures, junit_ts_name, job.total_time), file=f)
+            print('<properties>', file=f)
+            print('<property name="os" value="%s"/>' % os.name, file=f)
+            print('</properties>', file=f)
             print('<testcase classname="%s" name="%s" status="%s" time="%d">' % (junit_ts_name, junit_tc_name, job.status, job.total_time), file=f)
             if junit_errors:
                 print('<error message="%s" type="%s"/>' % (job.status, job.status), file=f)
@@ -385,4 +388,3 @@ for t in tasknames:
     retcode |= run_job(t)
 
 sys.exit(retcode)
-
