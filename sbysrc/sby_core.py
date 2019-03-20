@@ -188,8 +188,7 @@ class SbyJob:
         self.logfile = open("%s/logfile.txt" % workdir, "a")
 
         for line in early_logs:
-            print(line, file=self.logfile)
-        self.logfile.flush()
+            print(line, file=self.logfile, flush=True)
 
         if not reusedir:
             with open("%s/config.sby" % workdir, "w") as f:
@@ -226,15 +225,13 @@ class SbyJob:
 
     def log(self, logmessage):
         tm = localtime()
-        print("SBY %2d:%02d:%02d [%s] %s" % (tm.tm_hour, tm.tm_min, tm.tm_sec, self.workdir, logmessage))
-        print("SBY %2d:%02d:%02d [%s] %s" % (tm.tm_hour, tm.tm_min, tm.tm_sec, self.workdir, logmessage), file=self.logfile)
-        self.logfile.flush()
+        print("SBY %2d:%02d:%02d [%s] %s" % (tm.tm_hour, tm.tm_min, tm.tm_sec, self.workdir, logmessage), flush=True)
+        print("SBY %2d:%02d:%02d [%s] %s" % (tm.tm_hour, tm.tm_min, tm.tm_sec, self.workdir, logmessage), file=self.logfile, flush=True)
 
     def error(self, logmessage):
         tm = localtime()
-        print("SBY %2d:%02d:%02d [%s] ERROR: %s" % (tm.tm_hour, tm.tm_min, tm.tm_sec, self.workdir, logmessage))
-        print("SBY %2d:%02d:%02d [%s] ERROR: %s" % (tm.tm_hour, tm.tm_min, tm.tm_sec, self.workdir, logmessage), file=self.logfile)
-        self.logfile.flush()
+        print("SBY %2d:%02d:%02d [%s] ERROR: %s" % (tm.tm_hour, tm.tm_min, tm.tm_sec, self.workdir, logmessage), flush=True)
+        print("SBY %2d:%02d:%02d [%s] ERROR: %s" % (tm.tm_hour, tm.tm_min, tm.tm_sec, self.workdir, logmessage), file=self.logfile, flush=True)
         self.status = "ERROR"
         if "ERROR" not in self.expect:
             self.retcode = 16
