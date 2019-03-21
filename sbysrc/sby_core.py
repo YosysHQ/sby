@@ -18,11 +18,24 @@
 
 import os, re, sys
 if os.name == "posix":
-    import resource, fcntl
+    import resource, fcntl, signal
 import subprocess
 from shutil import copyfile
 from select import select
 from time import time, localtime
+
+all_tasks_running = []
+
+def force_shutdown(signum, frame):
+    print("SBY ---- Keyboard interrupt or external termination signal ----", flush=True)
+    for task in list(all_tasks_running):
+        task.terminate()
+    sys.exit(1)
+
+if os.name == "posix":
+    signal.signal(signal.SIGHUP, force_shutdown)
+signal.signal(signal.SIGINT, force_shutdown)
+signal.signal(signal.SIGTERM, force_shutdown)
 
 class SbyTask:
     def __init__(self, job, info, deps, cmdline, logfile=None, logstderr=True):
@@ -91,8 +104,11 @@ class SbyTask:
             return
         if self.running:
             self.job.log("%s: terminating process" % self.info)
+            if os.name == "posix":
+                os.killpg(self.p.pid, signal.SIGTERM)
             self.p.terminate()
             self.job.tasks_running.remove(self)
+            all_tasks_running.remove(self)
         self.terminated = True
 
     def poll(self):
@@ -105,13 +121,25 @@ class SbyTask:
                     return
 
             self.job.log("%s: starting process \"%s\"" % (self.info, self.cmdline))
-            self.p = subprocess.Popen(self.cmdline, shell=True, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
-                    stderr=(subprocess.STDOUT if self.logstderr else None))
+
             if os.name == "posix":
+                def preexec_fn():
+                    signal.signal(signal.SIGINT, signal.SIG_IGN)
+                    os.setpgrp()
+
+                self.p = subprocess.Popen(["/bin/bash", "-c", self.cmdline], stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+                        stderr=(subprocess.STDOUT if self.logstderr else None), preexec_fn=preexec_fn)
+
                 fl = fcntl.fcntl(self.p.stdout, fcntl.F_GETFL)
                 fcntl.fcntl(self.p.stdout, fcntl.F_SETFL, fl | os.O_NONBLOCK)
+
+            else:
+                self.p = subprocess.Popen(self.cmdline, shell=True, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+                        stderr=(subprocess.STDOUT if self.logstderr else None))
+
             self.job.tasks_pending.remove(self)
             self.job.tasks_running.append(self)
+            all_tasks_running.append(self)
             self.running = True
             return
 
@@ -128,6 +156,7 @@ class SbyTask:
         if self.p.poll() is not None:
             self.job.log("%s: finished (returncode=%d)" % (self.info, self.p.returncode))
             self.job.tasks_running.remove(self)
+            all_tasks_running.remove(self)
             self.running = False
 
             self.handle_exit(self.p.returncode)
@@ -205,10 +234,7 @@ class SbyJob:
                 if task.running:
                     fds.append(task.p.stdout)
 
-            try:
-                select(fds, [], [], 1.0) == ([], [], [])
-            except:
-                pass
+            select(fds, [], [], 1.0) == ([], [], [])
 
             for task in self.tasks_running:
                 task.poll()
