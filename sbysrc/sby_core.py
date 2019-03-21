@@ -234,7 +234,10 @@ class SbyJob:
                 if task.running:
                     fds.append(task.p.stdout)
 
-            select(fds, [], [], 1.0) == ([], [], [])
+            try:
+                select(fds, [], [], 1.0) == ([], [], [])
+            except InterruptedError:
+                pass
 
             for task in self.tasks_running:
                 task.poll()
