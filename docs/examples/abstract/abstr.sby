@@ -1,0 +1,16 @@
+[options]
+mode prove
+
+[engines]
+smtbmc
+
+[script]
+read -verific
+read -define demo_counter_abstr_mode=assert
+read -sv abstr.sv
+read -sv demo.v
+prep -top demo
+
+[files]
+abstr.sv
+demo.v

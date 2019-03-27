@@ -1,0 +1,25 @@
+[tasks]
+cvr
+prv
+
+[options]
+cvr: mode cover
+prv: mode prove
+
+[engines]
+cvr: smtbmc
+prv: abc pdr
+
+[script]
+read -verific
+read -define demo_counter_abstr_mode=assume
+read -sv abstr.sv
+read -sv props.sv
+read -sv demo.v
+prep -top demo
+cutpoint demo/counter
+
+[files]
+abstr.sv
+props.sv
+demo.v
