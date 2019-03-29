@@ -59,16 +59,11 @@ class SbyTask:
         self.job.tasks_pending.append(self)
 
         for dep in self.deps:
-            dep.register_dep(self)
+            if not dep.finished:
+                dep.notify.append(self)
 
         self.output_callback = None
         self.exit_callback = None
-
-    def register_dep(self, next_task):
-        if self.finished:
-            next_task.poll()
-        else:
-            self.notify.append(next_task)
 
     def handle_output(self, line):
         if self.terminated or len(line) == 0:
