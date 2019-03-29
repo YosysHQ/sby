@@ -19,7 +19,7 @@
 import re, os, getopt
 from sby_core import SbyTask
 
-def run(job):
+def init(job):
     job.handle_int_option("depth", 20)
     job.handle_int_option("append", 0)
     job.handle_str_option("aigsmt", "yices")
@@ -33,15 +33,15 @@ def run(job):
 
         if engine[0] == "smtbmc":
             import sby_engine_smtbmc
-            sby_engine_smtbmc.run("bmc", job, engine_idx, engine)
+            sby_engine_smtbmc.init("bmc", job, engine_idx, engine)
 
         elif engine[0] == "abc":
             import sby_engine_abc
-            sby_engine_abc.run("bmc", job, engine_idx, engine)
+            sby_engine_abc.init("bmc", job, engine_idx, engine)
 
         elif engine[0] == "btor":
             import sby_engine_btor
-            sby_engine_btor.run("bmc", job, engine_idx, engine)
+            sby_engine_btor.init("bmc", job, engine_idx, engine)
 
         else:
             job.error("Invalid engine '{}' for bmc mode.".format(engine[0]))

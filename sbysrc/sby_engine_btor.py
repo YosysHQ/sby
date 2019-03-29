@@ -20,7 +20,7 @@ import re, os, getopt
 from types import SimpleNamespace
 from sby_core import SbyTask
 
-def run(mode, job, engine_idx, engine):
+def init(mode, job, engine_idx, engine):
     random_seed = None
 
     opts, solver_args = getopt.getopt(engine[1:], "", ["seed="])

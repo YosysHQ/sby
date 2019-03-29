@@ -19,7 +19,7 @@
 import re, os, getopt
 from sby_core import SbyTask
 
-def run(job):
+def init(job):
     job.handle_int_option("depth", 20)
     job.handle_int_option("append", 0)
 
@@ -32,7 +32,7 @@ def run(job):
 
         if engine[0] == "smtbmc":
             import sby_engine_smtbmc
-            sby_engine_smtbmc.run("cover", job, engine_idx, engine)
+            sby_engine_smtbmc.init("cover", job, engine_idx, engine)
 
         elif engine[0] == "btor":
             import sby_engine_btor

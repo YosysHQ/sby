@@ -19,7 +19,7 @@
 import re, os, getopt
 from sby_core import SbyTask
 
-def run(mode, job, engine_idx, engine):
+def init(mode, job, engine_idx, engine):
     smtbmc_opts = []
     nomem_opt = False
     presat_opt = True
@@ -102,9 +102,9 @@ def run(mode, job, engine_idx, engine):
 
     if mode == "prove":
         if not induction_only:
-            run("prove_basecase", job, engine_idx, engine)
+            init("prove_basecase", job, engine_idx, engine)
         if not basecase_only:
-            run("prove_induction", job, engine_idx, engine)
+            init("prove_induction", job, engine_idx, engine)
         return
 
     taskname = "engine_{}".format(engine_idx)

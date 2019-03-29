@@ -623,19 +623,19 @@ class SbyJob:
 
         if self.opt_mode == "bmc":
             import sby_mode_bmc
-            sby_mode_bmc.run(self)
+            sby_mode_bmc.init(self)
 
         elif self.opt_mode == "prove":
             import sby_mode_prove
-            sby_mode_prove.run(self)
+            sby_mode_prove.init(self)
 
         elif self.opt_mode == "live":
             import sby_mode_live
-            sby_mode_live.run(self)
+            sby_mode_live.init(self)
 
         elif self.opt_mode == "cover":
             import sby_mode_cover
-            sby_mode_cover.run(self)
+            sby_mode_cover.init(self)
 
         else:
             assert False
