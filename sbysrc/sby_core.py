@@ -92,56 +92,7 @@ class SbyTask:
             self.job.tasks_running.remove(self)
         self.terminated = True
 
-    def poll(self):
-        if self.finished or self.terminated:
-            return
-
-        if not self.running:
-            for dep in self.deps:
-                if not dep.finished:
-                    return
-
-            self.job.log("%s: starting process \"%s\"" % (self.info, self.cmdline))
-            self.p = subprocess.Popen(self.cmdline, shell=True, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
-                    stderr=(subprocess.STDOUT if self.logstderr else None))
-            if os.name == "posix":
-                fl = fcntl.fcntl(self.p.stdout, fcntl.F_GETFL)
-                fcntl.fcntl(self.p.stdout, fcntl.F_SETFL, fl | os.O_NONBLOCK)
-            self.job.tasks_pending.remove(self)
-            self.job.tasks_running.append(self)
-            self.running = True
-            return
-
-        while True:
-            outs = self.p.stdout.readline().decode("utf-8")
-            if len(outs) == 0: break
-            if outs[-1] != '\n':
-                self.linebuffer += outs
-                break
-            outs = (self.linebuffer + outs).strip()
-            self.linebuffer = ""
-            self.handle_output(outs)
-
-        if self.p.poll() is not None:
-            self.job.log("%s: finished (returncode=%d)" % (self.info, self.p.returncode))
-            self.job.tasks_running.remove(self)
-            self.running = False
-
-            self.handle_exit(self.p.returncode)
-
-            if self.checkretcode and self.p.returncode != 0:
-                self.job.status = "ERROR"
-                self.job.log("%s: job failed. ERROR." % self.info)
-                self.terminated = True
-                self.job.terminate()
-                return
-
-            self.finished = True
-            for next_task in self.notify:
-                next_task.poll()
-            return
-
-    async def output_async(self):
+    async def output(self):
         while True:
             outs = await self.p.stdout.readline()
             await asyncio.sleep(0) # https://bugs.python.org/issue24532
@@ -154,7 +105,7 @@ class SbyTask:
             self.linebuffer = ""
             self.handle_output(outs)
 
-    async def maybe_spawn_async(self):
+    async def maybe_spawn(self):
         if self.finished or self.terminated:
             return
 
@@ -170,10 +121,10 @@ class SbyTask:
             self.job.tasks_pending.remove(self)
             self.job.tasks_running.append(self)
             self.running = True
-            asyncio.ensure_future(self.output_async())
+            asyncio.ensure_future(self.output())
             self.fut = asyncio.ensure_future(self.p.wait())
 
-    async def shutdown_and_notify_async(self):
+    async def shutdown_and_notify(self):
         self.job.log("%s: finished (returncode=%d)" % (self.info, self.p.returncode))
         self.job.tasks_running.remove(self)
         self.running = False
@@ -189,7 +140,7 @@ class SbyTask:
 
         self.finished = True
         for next_task in self.notify:
-            await next_task.maybe_spawn_async()
+            await next_task.maybe_spawn()
         return
 
 class SbyAbort(BaseException):
@@ -243,34 +194,6 @@ class SbyJob:
                 print(line, file=f)
 
     def taskloop(self):
-        for task in self.tasks_pending:
-            task.poll()
-
-        while len(self.tasks_running):
-            fds = []
-            for task in self.tasks_running:
-                if task.running:
-                    fds.append(task.p.stdout)
-
-            try:
-                select(fds, [], [], 1.0) == ([], [], [])
-            except:
-                pass
-
-            for task in self.tasks_running:
-                task.poll()
-
-            for task in self.tasks_pending:
-                task.poll()
-
-            if self.opt_timeout is not None:
-                total_clock_time = int(time() - self.start_clock_time)
-                if total_clock_time > self.opt_timeout:
-                    self.log("Reached TIMEOUT (%d seconds). Terminating all tasks." % self.opt_timeout)
-                    self.status = "TIMEOUT"
-                    self.terminate(timeout=True)
-
-    def taskloop_async(self):
         if os.name != "posix":
             loop = asyncio.ProactorEventLoop()
             asyncio.set_event_loop(loop)
@@ -300,7 +223,7 @@ class SbyJob:
             timer_fut.add_done_callback(partial(SbyJob.timeout, self))
 
         for task in self.tasks_pending:
-            await task.maybe_spawn_async()
+            await task.maybe_spawn()
 
         while len(self.tasks_running):
             task_futs = []
@@ -311,7 +234,7 @@ class SbyJob:
 
             for task in self.tasks_running:
                 if task.fut in done:
-                    await task.shutdown_and_notify_async()
+                    await task.shutdown_and_notify()
 
         if self.opt_timeout is not None:
             timer_fut.cancel()
@@ -685,9 +608,7 @@ class SbyJob:
             if opt not in self.used_options:
                 self.error("Unused option: %s" % opt)
 
-        # self.taskloop()
-        self.taskloop_async()
-
+        self.taskloop()
 
         total_clock_time = int(time() - self.start_clock_time)
 
