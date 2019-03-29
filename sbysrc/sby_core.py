@@ -21,6 +21,7 @@ if os.name == "posix":
     import resource, fcntl
 import subprocess
 import asyncio
+from functools import partial
 from shutil import copyfile, rmtree
 from select import select
 from time import time, localtime, sleep
@@ -343,7 +344,26 @@ class SbyJob:
         poll_fut = asyncio.ensure_future(self.task_poller())
         loop.run_until_complete(poll_fut)
 
+    async def timekeeper(self):
+        total_clock_time = int(time() - self.start_clock_time)
+
+        try:
+            while total_clock_time <= self.opt_timeout:
+                await asyncio.sleep(1)
+                total_clock_time = int(time() - self.start_clock_time)
+        except asyncio.CancelledError:
+            pass
+
+    def timeout(self, fut):
+        self.log("Reached TIMEOUT (%d seconds). Terminating all tasks." % self.opt_timeout)
+        self.status = "TIMEOUT"
+        self.terminate(timeout=True)
+
     async def task_poller(self):
+        if self.opt_timeout is not None:
+            timer_fut = asyncio.ensure_future(self.timekeeper())
+            timer_fut.add_done_callback(partial(SbyJob.timeout, self))
+
         for task in self.tasks_pending:
             await task.maybe_spawn_async()
 
@@ -358,16 +378,8 @@ class SbyJob:
                 if task.fut in done:
                     await task.shutdown_and_notify_async()
 
-            # for task in self.tasks_pending:
-            #     await task.poll_async()
-
-            #if self.opt_timeout is not None:
-                #total_clock_time = int(time() - self.start_clock_time)
-                #if total_clock_time > self.opt_timeout:
-                    #self.log("Reached TIMEOUT (%d seconds). Terminating all tasks." % self.opt_timeout)
-                    #self.status = "TIMEOUT"
-                    #self.terminate(timeout=True)
-
+        if self.opt_timeout is not None:
+            timer_fut.cancel()
 
     def log(self, logmessage):
         tm = localtime()
