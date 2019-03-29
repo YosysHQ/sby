@@ -19,7 +19,7 @@
 import re, os, getopt
 from sby_core import SbyTask
 
-def run(job):
+def init(job):
     job.handle_str_option("aigsmt", "yices")
 
     job.status = "UNKNOWN"
@@ -33,8 +33,7 @@ def run(job):
 
         if engine[0] == "aiger":
             import sby_engine_aiger
-            sby_engine_aiger.run("live", job, engine_idx, engine)
+            sby_engine_aiger.init("live", job, engine_idx, engine)
 
         else:
             job.error("Invalid engine '%s' for live mode." % engine[0])
-
