@@ -88,8 +88,18 @@ class SbyTask:
             return
         if self.running:
             self.job.log("%s: terminating process" % self.info)
-            self.p.terminate()
+            if os.name != "posix":
+                # self.p.terminate does not actually terminate underlying
+                # processes on Windows, so use taskkill to kill the shell
+                # and children. This for some reason does not cause the
+                # associated future (self.fut) to complete until it is awaited
+                # on one last time.
+                subprocess.Popen("taskkill /T /F /PID {}".format(self.p.pid), stdin=subprocess.DEVNULL,
+                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            else:
+                self.p.terminate()
             self.job.tasks_running.remove(self)
+            self.job.tasks_retired.append(self)
         self.terminated = True
 
     async def output(self):
@@ -127,6 +137,7 @@ class SbyTask:
     async def shutdown_and_notify(self):
         self.job.log("%s: finished (returncode=%d)" % (self.info, self.p.returncode))
         self.job.tasks_running.remove(self)
+        self.job.tasks_retired.append(self)
         self.running = False
 
         self.handle_exit(self.p.returncode)
@@ -174,6 +185,7 @@ class SbyJob:
 
         self.tasks_running = []
         self.tasks_pending = []
+        self.tasks_retired = []
 
         self.start_clock_time = time()
 
@@ -238,6 +250,14 @@ class SbyJob:
 
         if self.opt_timeout is not None:
             timer_fut.cancel()
+
+        # Required on Windows. I am unsure why, but subprocesses that were
+        # terminated will not have their futures complete until awaited on
+        # one last time.
+        if os.name != "posix":
+            for t in self.tasks_retired:
+                if not t.fut.done():
+                    await t.fut
 
     def log(self, logmessage):
         tm = localtime()
