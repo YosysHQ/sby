@@ -19,12 +19,26 @@
 import os, re, sys
 if os.name == "posix":
     import resource, fcntl
+import signal
 import subprocess
 import asyncio
 from functools import partial
 from shutil import copyfile
 from select import select
 from time import time, localtime
+
+all_tasks_running = []
+
+def force_shutdown(signum, frame):
+    print("SBY ---- Keyboard interrupt or external termination signal ----", flush=True)
+    for task in list(all_tasks_running):
+        task.terminate()
+    sys.exit(1)
+
+if os.name == "posix":
+    signal.signal(signal.SIGHUP, force_shutdown)
+signal.signal(signal.SIGINT, force_shutdown)
+signal.signal(signal.SIGTERM, force_shutdown)
 
 class SbyTask:
     def __init__(self, job, info, deps, cmdline, logfile=None, logstderr=True):
@@ -97,9 +111,11 @@ class SbyTask:
                 subprocess.Popen("taskkill /T /F /PID {}".format(self.p.pid), stdin=subprocess.DEVNULL,
                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             else:
+                os.killpg(self.p.pid, signal.SIGTERM)
                 self.p.terminate()
             self.job.tasks_running.remove(self)
             self.job.tasks_retired.append(self)
+            all_tasks_running.remove(self)
         self.terminated = True
 
     async def output(self):
@@ -125,11 +141,22 @@ class SbyTask:
                     return
 
             self.job.log("%s: starting process \"%s\"" % (self.info, self.cmdline))
+            if os.name == "posix":
+                def preexec_fn():
+                    signal.signal(signal.SIGINT, signal.SIG_IGN)
+                    os.setpgrp()
+
+                subp_kwargs = { "preexec_fn" : preexec_fn }
+            else:
+                subp_kwargs = {}
+
             self.p = await asyncio.create_subprocess_shell(self.cmdline, stdin=asyncio.subprocess.DEVNULL,
                     stdout=asyncio.subprocess.PIPE,
-                    stderr=(asyncio.subprocess.STDOUT if self.logstderr else None))
+                    stderr=(asyncio.subprocess.STDOUT if self.logstderr else None),
+                    **subp_kwargs)
             self.job.tasks_pending.remove(self)
             self.job.tasks_running.append(self)
+            all_tasks_running.append(self)
             self.running = True
             asyncio.ensure_future(self.output())
             self.fut = asyncio.ensure_future(self.p.wait())
@@ -198,12 +225,12 @@ class SbyJob:
         self.logfile = open("%s/logfile.txt" % workdir, "a")
 
         for line in early_logs:
-            print(line, file=self.logfile)
-        self.logfile.flush()
+            print(line, file=self.logfile, flush=True)
 
-        with open("%s/config.sby" % workdir, "w") as f:
-            for line in sbyconfig:
-                print(line, file=f)
+        if not reusedir:
+            with open("%s/config.sby" % workdir, "w") as f:
+                for line in sbyconfig:
+                    print(line, file=f)
 
     def taskloop(self):
         if os.name != "posix":
@@ -261,15 +288,13 @@ class SbyJob:
 
     def log(self, logmessage):
         tm = localtime()
-        print("SBY %2d:%02d:%02d [%s] %s" % (tm.tm_hour, tm.tm_min, tm.tm_sec, self.workdir, logmessage))
-        print("SBY %2d:%02d:%02d [%s] %s" % (tm.tm_hour, tm.tm_min, tm.tm_sec, self.workdir, logmessage), file=self.logfile)
-        self.logfile.flush()
+        print("SBY %2d:%02d:%02d [%s] %s" % (tm.tm_hour, tm.tm_min, tm.tm_sec, self.workdir, logmessage), flush=True)
+        print("SBY %2d:%02d:%02d [%s] %s" % (tm.tm_hour, tm.tm_min, tm.tm_sec, self.workdir, logmessage), file=self.logfile, flush=True)
 
     def error(self, logmessage):
         tm = localtime()
-        print("SBY %2d:%02d:%02d [%s] ERROR: %s" % (tm.tm_hour, tm.tm_min, tm.tm_sec, self.workdir, logmessage))
-        print("SBY %2d:%02d:%02d [%s] ERROR: %s" % (tm.tm_hour, tm.tm_min, tm.tm_sec, self.workdir, logmessage), file=self.logfile)
-        self.logfile.flush()
+        print("SBY %2d:%02d:%02d [%s] ERROR: %s" % (tm.tm_hour, tm.tm_min, tm.tm_sec, self.workdir, logmessage), flush=True)
+        print("SBY %2d:%02d:%02d [%s] ERROR: %s" % (tm.tm_hour, tm.tm_min, tm.tm_sec, self.workdir, logmessage), file=self.logfile, flush=True)
         self.status = "ERROR"
         if "ERROR" not in self.expect:
             self.retcode = 16
@@ -427,6 +452,8 @@ class SbyJob:
                 print("techmap", file=f)
                 print("opt -fast", file=f)
                 print("abc -g AND -fast", file=f)
+                print("opt_clean", file=f)
+                print("setundef -anyseq", file=f)
                 print("opt_clean", file=f)
                 print("stat", file=f)
                 print("write_aiger -I -B -zinit -map design_aiger.aim design_aiger.aig", file=f)
