@@ -241,7 +241,6 @@ class SbyJob:
             loop = asyncio.ProactorEventLoop()
             asyncio.set_event_loop(loop)
         loop = asyncio.get_event_loop()
-        loop.set_debug(enabled=True)
         poll_fut = asyncio.ensure_future(self.task_poller())
         loop.run_until_complete(poll_fut)
 
