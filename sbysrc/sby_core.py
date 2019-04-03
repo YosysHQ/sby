@@ -263,7 +263,8 @@ class SbyJob:
     async def task_poller(self):
         if self.opt_timeout is not None:
             timer_fut = asyncio.ensure_future(self.timekeeper())
-            timer_fut.add_done_callback(partial(SbyJob.timeout, self))
+            done_cb = partial(SbyJob.timeout, self)
+            timer_fut.add_done_callback(done_cb)
 
         for task in self.tasks_pending:
             await task.maybe_spawn()
@@ -280,6 +281,7 @@ class SbyJob:
                     await task.shutdown_and_notify()
 
         if self.opt_timeout is not None:
+            timer_fut.remove_done_callback(done_cb)
             timer_fut.cancel()
 
         # Required on Windows. I am unsure why, but subprocesses that were
