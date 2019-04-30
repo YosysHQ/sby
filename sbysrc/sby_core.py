@@ -20,7 +20,7 @@ import os, re, sys
 if os.name == "posix":
     import resource, fcntl, signal
 import subprocess
-from shutil import copyfile
+from shutil import copyfile, rmtree
 from select import select
 from time import time, localtime
 
