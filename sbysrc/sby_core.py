@@ -589,6 +589,9 @@ class SbyJob:
                     if engine[0] not in ["smtbmc", "btor"]:
                         self.error("Option skip is only valid for smtbmc and btor engines.")
 
+        if len(self.engines) == 0:
+            self.error("Config file is lacking engine configuration.")
+
         if self.reusedir:
             rmtree("%s/model" % self.workdir, ignore_errors=True)
         else:
