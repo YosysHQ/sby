@@ -21,105 +21,166 @@ import os, sys, getopt, shutil, tempfile
 ##yosys-sys-path##
 from sby_core import SbyJob, SbyAbort
 from time import localtime
+import argparse
 
-sbyfile = None
-workdir = None
-tasknames = list()
-opt_force = False
-opt_backup = False
-opt_tmpdir = False
-exe_paths = dict()
-throw_err = False
-dump_cfg = False
-dump_tasks = False
+# sbyfile = None
+# workdir = None
+# tasknames = list()
+# opt_force = False
+# opt_backup = False
+# opt_tmpdir = False
+# exe_paths = dict()
+# throw_err = False
+# dump_cfg = False
+# dump_tasks = False
+# reusedir = False
+# setupmode = False
+
+# def usage():
+#     print("""
+# sby [options] [<jobname>.sby [tasknames] | <dirname>]
+
+#     -d <dirname>
+#         set workdir name. default: <jobname> (without .sby)
+
+#     -f
+#         remove workdir if it already exists
+
+#     -b
+#         backup workdir if it already exists
+
+#     -t
+#         run in a temporary workdir (remove when finished)
+
+#     -T taskname
+#         add taskname (useful when sby file is read from stdin)
+
+#     -E
+#         throw an exception (incl stack trace) for most errors
+
+#     --yosys <path_to_executable>
+#     --abc <path_to_executable>
+#     --smtbmc <path_to_executable>
+#     --suprove <path_to_executable>
+#     --aigbmc <path_to_executable>
+#     --avy <path_to_executable>
+#     --btormc <path_to_executable>
+#         configure which executable to use for the respective tool
+
+#     --dumpcfg
+#         print the pre-processed configuration file
+
+#     --dumptasks
+#         print the list of tasks
+
+#     --setup
+#         set up the working directory and exit
+# """)
+#     sys.exit(1)
+
+# try:
+#     opts, args = getopt.getopt(sys.argv[1:], "d:btfT:E", ["yosys=",
+#             "abc=", "smtbmc=", "suprove=", "aigbmc=", "avy=", "btormc=",
+#             "dumpcfg", "dumptasks", "setup"])
+# except:
+#     usage()
+
+parser = argparse.ArgumentParser(description='SymbiYosys (sby) -- Front-end for Yosys-based formal verification flows.')
+
+parser.add_argument('sbyfile', default=None, type=str, required=True,
+                    metavar='<jobname>.sby')
+parser.add_argument('-d', default=None, type=str,
+                    help='set workdir name. default: <jobname> (without .sby)')
+parser.add_argument('-f', action='store_true', default=False,
+                    help='remove workdir if it already exists')
+parser.add_argument('-b', action='store_true', default=False,
+                    help='backup workdir if it already exists')
+parser.add_argument('-t', action='store_true', default=False,
+                    help='run in a temporary workdir (remove when finished)')
+parser.add_argument('-T', default=None, nargs='*', # TODO Unsure about multiple args
+                    help='add taskname (useful when sby file is read from stdin)')
+parser.add_argument('-E', action='store_true', default=False,
+                    help='throw an exception (incl stack trace) for most errors')
+# ------
+# TODO Can path to executables just be a string?
+exe_group = parser.add_argument_group(title='Executable configuration',
+                                      description='configure which executable to use for the respective tool')
+exe_group.add_argument('--yosys', default=None, metavar='<path_to_executable>')
+exe_group.add_argument('--abc', default=None, metavar='<path_to_executable>')
+exe_group.add_argument('--smtbmc', default=None, metavar='<path_to_executable>')
+exe_group.add_argument('--suprove', default=None, metavar='<path_to_executable>')
+exe_group.add_argument('--aigbmc', default=None, metavar='<path_to_executable>')
+exe_group.add_argument('--avy', default=None, metavar='<path_to_executable>')
+exe_group.add_argument('--btormc', default=None, metavar='<path_to_executable>')
+# ------
+parser.add_argument('--dumpcfg', action='store_true', default=False,
+                    help='print the pre-processed configuration file')
+parser.add_argument('--dumptasks', action='store_true', default=False,
+                    help='print the list of tasks')
+parser.add_argument('--setup', action='store_true', default=False,
+                    help='set up the working directory and exit')
+args = parser.parse_args()
+
+sbyfile = args.sbyfile
+workdir = args.d
+tasknames = list() # TODO Tie this to args
+opt_force = args.f
+opt_backup = args.b
+opt_tmpdir = args.t
+throw_err = args.E
+dump_cfg = args.dumpcfg
+dump_tasks = args.dumptasks
 reusedir = False
-setupmode = False
+setupmode = args.setup
 
-def usage():
-    print("""
-sby [options] [<jobname>.sby [tasknames] | <dirname>]
+# add args to exe_paths dictionary
+# TODO Not sure if I need .exe_group in the middle? Test this
+exe_paths = dict()
+exe_paths["yosys"] = args.exe_group.yosys
+exe_paths["abc"] = args.exe_group.abc
+exe_paths["smtbmc"] = args.exe_group.smtbmc
+exe_paths["suprove"] = args.exe_group.suprove
+exe_paths["aigbmc"] = args.exe_group.aigbmc
+exe_paths["avy"] = args.exe_group.avy
+exe_paths["btormc"] = args.exe_group.btormc
 
-    -d <dirname>
-        set workdir name. default: <jobname> (without .sby)
+# for o, a in opts:
+#     if o == "-d":
+#         workdir = a
+#     elif o == "-f":
+#         opt_force = True
+#     elif o == "-b":
+#         opt_backup = True
+#     elif o == "-t":
+#         opt_tmpdir = True
+#     elif o == "-T":
+#         tasknames.append(a)
+#     elif o == "-E":
+#         throw_err = True
+#     elif o == "--yosys":
+#         exe_paths["yosys"] = a
+#     elif o == "--abc":
+#         exe_paths["abc"] = a
+#     elif o == "--smtbmc":
+#         exe_paths["smtbmc"] = a
+#     elif o == "--suprove":
+#         exe_paths["suprove"] = a
+#     elif o == "--aigbmc":
+#         exe_paths["aigbmc"] = a
+#     elif o == "--avy":
+#         exe_paths["avy"] = a
+#     elif o == "--btormc":
+#         exe_paths["btormc"] = a
+#     elif o == "--dumpcfg":
+#         dump_cfg = True
+#     elif o == "--dumptasks":
+#         dump_tasks = True
+#     elif o == "--setup":
+#         setupmode = True
+#     else:
+#         usage()
 
-    -f
-        remove workdir if it already exists
-
-    -b
-        backup workdir if it already exists
-
-    -t
-        run in a temporary workdir (remove when finished)
-
-    -T taskname
-        add taskname (useful when sby file is read from stdin)
-
-    -E
-        throw an exception (incl stack trace) for most errors
-
-    --yosys <path_to_executable>
-    --abc <path_to_executable>
-    --smtbmc <path_to_executable>
-    --suprove <path_to_executable>
-    --aigbmc <path_to_executable>
-    --avy <path_to_executable>
-    --btormc <path_to_executable>
-        configure which executable to use for the respective tool
-
-    --dumpcfg
-        print the pre-processed configuration file
-
-    --dumptasks
-        print the list of tasks
-
-    --setup
-        set up the working directory and exit
-""")
-    sys.exit(1)
-
-try:
-    opts, args = getopt.getopt(sys.argv[1:], "d:btfT:E", ["yosys=",
-            "abc=", "smtbmc=", "suprove=", "aigbmc=", "avy=", "btormc=",
-            "dumpcfg", "dumptasks", "setup"])
-except:
-    usage()
-
-for o, a in opts:
-    if o == "-d":
-        workdir = a
-    elif o == "-f":
-        opt_force = True
-    elif o == "-b":
-        opt_backup = True
-    elif o == "-t":
-        opt_tmpdir = True
-    elif o == "-T":
-        tasknames.append(a)
-    elif o == "-E":
-        throw_err = True
-    elif o == "--yosys":
-        exe_paths["yosys"] = a
-    elif o == "--abc":
-        exe_paths["abc"] = a
-    elif o == "--smtbmc":
-        exe_paths["smtbmc"] = a
-    elif o == "--suprove":
-        exe_paths["suprove"] = a
-    elif o == "--aigbmc":
-        exe_paths["aigbmc"] = a
-    elif o == "--avy":
-        exe_paths["avy"] = a
-    elif o == "--btormc":
-        exe_paths["btormc"] = a
-    elif o == "--dumpcfg":
-        dump_cfg = True
-    elif o == "--dumptasks":
-        dump_tasks = True
-    elif o == "--setup":
-        setupmode = True
-    else:
-        usage()
-
+# TODO Does this function need changing now that we've adopted argparse?
 if len(args) > 0:
     sbyfile = args[0]
     if os.path.isdir(sbyfile):
