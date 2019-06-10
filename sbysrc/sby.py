@@ -85,9 +85,18 @@ import argparse
 # except:
 #     usage()
 
+# https://stackoverflow.com/a/15204006/4788111
+def valid_file(param):
+    ''' Verifies .sby file extention. '''
+    base, ext = os.path.splitext(param)
+    if ext.lower() not '.sby':
+        print("ERROR: Sby file does not have .sby file extension.", file=sys.stderr)
+        sys.exit(1)
+    return param
+
 parser = argparse.ArgumentParser(description='SymbiYosys (sby) -- Front-end for Yosys-based formal verification flows.')
 
-parser.add_argument('sbyfile', default=None, type=str, required=True,
+parser.add_argument('sbyfile', default=None, type=valid_file
                     metavar='<jobname>.sby')
 parser.add_argument('-d', default=None, type=str,
                     help='set workdir name. default: <jobname> (without .sby)')
@@ -97,7 +106,7 @@ parser.add_argument('-b', action='store_true', default=False,
                     help='backup workdir if it already exists')
 parser.add_argument('-t', action='store_true', default=False,
                     help='run in a temporary workdir (remove when finished)')
-parser.add_argument('-T', default=None, nargs='*', # TODO Unsure about multiple args
+parser.add_argument('-T', default=[], nargs='+',
                     help='add taskname (useful when sby file is read from stdin)')
 parser.add_argument('-E', action='store_true', default=False,
                     help='throw an exception (incl stack trace) for most errors')
@@ -123,7 +132,7 @@ args = parser.parse_args()
 
 sbyfile = args.sbyfile
 workdir = args.d
-tasknames = list() # TODO Tie this to args
+tasknames = args.T
 opt_force = args.f
 opt_backup = args.b
 opt_tmpdir = args.t
@@ -134,15 +143,14 @@ reusedir = False
 setupmode = args.setup
 
 # add args to exe_paths dictionary
-# TODO Not sure if I need .exe_group in the middle? Test this
 exe_paths = dict()
-exe_paths["yosys"] = args.exe_group.yosys
-exe_paths["abc"] = args.exe_group.abc
-exe_paths["smtbmc"] = args.exe_group.smtbmc
-exe_paths["suprove"] = args.exe_group.suprove
-exe_paths["aigbmc"] = args.exe_group.aigbmc
-exe_paths["avy"] = args.exe_group.avy
-exe_paths["btormc"] = args.exe_group.btormc
+exe_paths["yosys"] = args.yosys
+exe_paths["abc"] = args.abc
+exe_paths["smtbmc"] = args.smtbmc
+exe_paths["suprove"] = args.suprove
+exe_paths["aigbmc"] = args.aigbmc
+exe_paths["avy"] = args.avy
+exe_paths["btormc"] = args.btormc
 
 # for o, a in opts:
 #     if o == "-d":
@@ -180,32 +188,31 @@ exe_paths["btormc"] = args.exe_group.btormc
 #     else:
 #         usage()
 
-# TODO Does this function need changing now that we've adopted argparse?
-if len(args) > 0:
-    sbyfile = args[0]
-    if os.path.isdir(sbyfile):
-        workdir = sbyfile
-        sbyfile += "/config.sby"
-        reusedir = True
-        if not opt_force and os.path.exists(workdir + "/model"):
-            print("ERROR: Use -f to re-run in existing directory.", file=sys.stderr)
-            sys.exit(1)
-        if len(args) > 1:
-            print("ERROR: Can't use tasks when running in existing directory.", file=sys.stderr)
-            sys.exit(1)
-        if setupmode:
-            print("ERROR: Can't use --setup with existing directory.", file=sys.stderr)
-            sys.exit(1)
-        if opt_force:
-            for f in "PASS FAIL UNKNOWN ERROR TIMEOUT".split():
-                if os.path.exists(workdir + "/" + f):
-                    os.remove(workdir + "/" + f)
-    elif not sbyfile.endswith(".sby"):
-        print("ERROR: Sby file does not have .sby file extension.", file=sys.stderr)
+# if len(args) > 0:
+    # sbyfile = args[0]
+if os.path.isdir(sbyfile):
+    workdir = sbyfile
+    sbyfile += "/config.sby"
+    reusedir = True
+    if not opt_force and os.path.exists(workdir + "/model"):
+        print("ERROR: Use -f to re-run in existing directory.", file=sys.stderr)
         sys.exit(1)
+    if len(tasknames) > 1:
+        print("ERROR: Can't use tasks when running in existing directory.", file=sys.stderr)
+        sys.exit(1)
+    if setupmode:
+        print("ERROR: Can't use --setup with existing directory.", file=sys.stderr)
+        sys.exit(1)
+    if opt_force:
+        for f in "PASS FAIL UNKNOWN ERROR TIMEOUT".split():
+            if os.path.exists(workdir + "/" + f):
+                os.remove(workdir + "/" + f)
+# elif not sbyfile.endswith(".sby"):
+#     print("ERROR: Sby file does not have .sby file extension.", file=sys.stderr)
+#     sys.exit(1)
 
-if len(args) > 1:
-    tasknames = args[1:]
+# if len(args) > 1:
+#     tasknames = args[1:]
 
 
 early_logmsgs = list()
