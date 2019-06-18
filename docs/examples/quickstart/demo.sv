@@ -1,8 +1,8 @@
 module demo (
   input clk,
-  output [5:0] counter
+  output reg [5:0] counter
 );
-  reg [5:0] counter = 0;
+  initial counter = 0;
 
   always @(posedge clk) begin
     if (counter == 15)
