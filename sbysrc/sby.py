@@ -41,6 +41,7 @@ parser.add_argument("-b", action="store_true", dest="backup",
 parser.add_argument("-t", action="store_true", dest="tmpdir",
         help="run in a temporary workdir (remove when finished)")
 parser.add_argument("-T", metavar="<taskname>", action="append", dest="tasknames",
+        default=list(),
         help="add taskname (useful when sby file is read from stdin, ignored if tasknames are given as positional arguments)")
 parser.add_argument("-E", action="store_true", dest="throw_err",
         help="throw an exception (incl stack trace) for most errors")
