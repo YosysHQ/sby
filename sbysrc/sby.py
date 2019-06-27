@@ -33,16 +33,15 @@ parser = argparse.ArgumentParser(prog="sby",
 parser.set_defaults(exe_paths=dict())
 
 parser.add_argument("-d", metavar="<dirname>", dest="workdir",
-        help="set workdir name (ignored if <dirname> is given as a positional argument). default: <jobname> (without .sby)")
+        help="set workdir name. default: <jobname> or <jobname>_<taskname>")
 parser.add_argument("-f", action="store_true", dest="force",
         help="remove workdir if it already exists")
 parser.add_argument("-b", action="store_true", dest="backup",
         help="backup workdir if it already exists")
 parser.add_argument("-t", action="store_true", dest="tmpdir",
         help="run in a temporary workdir (remove when finished)")
-parser.add_argument("-T", metavar="<taskname>", action="append", dest="tasknames",
-        default=list(),
-        help="add taskname (useful when sby file is read from stdin, ignored if tasknames are given as positional arguments)")
+parser.add_argument("-T", metavar="<taskname>", action="append", dest="tasknames", default=list(),
+        help="add taskname (useful when sby file is read from stdin)")
 parser.add_argument("-E", action="store_true", dest="throw_err",
         help="throw an exception (incl stack trace) for most errors")
 
@@ -71,15 +70,15 @@ parser.add_argument("--setup", action="store_true", dest="setupmode",
         help="set up the working directory and exit")
 
 parser.add_argument("sbyfile", metavar="<jobname>.sby | <dirname>", nargs="?",
-        help=".sby file OR directory containing config.sby file (causes -d to be ignored if <dirname> is used)")
+        help=".sby file OR directory containing config.sby file")
 parser.add_argument("arg_tasknames", metavar="tasknames", nargs="*",
-        help="tasks to run (only valid when <jobname> is used, causes -T to be ignored)")
+        help="tasks to run (only valid when <jobname>.sby is used)")
 
 args = parser.parse_args()
 
 sbyfile = args.sbyfile
 workdir = args.workdir
-tasknames = args.arg_tasknames if args.arg_tasknames else args.tasknames
+tasknames = args.arg_tasknames + args.tasknames
 opt_force = args.force
 opt_backup = args.backup
 opt_tmpdir = args.tmpdir
@@ -93,6 +92,9 @@ setupmode = args.setupmode
 
 if sbyfile is not None:
     if os.path.isdir(sbyfile):
+        if workdir is not None:
+            print("ERROR: Can't use -d when running in existing directory.", file=sys.stderr)
+            sys.exit(1)
         workdir = sbyfile
         sbyfile += "/config.sby"
         reusedir = True
