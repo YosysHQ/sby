@@ -37,6 +37,14 @@ if os.name == "posix":
 signal.signal(signal.SIGINT, force_shutdown)
 signal.signal(signal.SIGTERM, force_shutdown)
 
+def process_filename(filename):
+    if filename.startswith("~/"):
+        filename = os.environ['HOME'] + filename[1:]
+
+    filename = os.path.expandvars(filename)
+
+    return filename
+
 class SbyTask:
     def __init__(self, job, info, deps, cmdline, logfile=None, logstderr=True):
         self.running = False
@@ -290,8 +298,7 @@ class SbyJob:
                 self.error("destination filename must be a relative path without /../: %s" % dstfile)
             dstfile = self.workdir + "/src/" + dstfile
 
-            if srcfile.startswith("~/"):
-                srcfile = os.environ['HOME'] + srcfile[1:]
+            srcfile = process_filename(srcfile)
 
             basedir = os.path.dirname(dstfile)
             if basedir != "" and not os.path.exists(basedir):

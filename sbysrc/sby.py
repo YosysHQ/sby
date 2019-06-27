@@ -19,7 +19,7 @@
 
 import argparse, os, sys, shutil, tempfile
 ##yosys-sys-path##
-from sby_core import SbyJob, SbyAbort
+from sby_core import SbyJob, SbyAbort, process_filename
 from time import localtime
 
 class DictAction(argparse.Action):
@@ -65,6 +65,8 @@ parser.add_argument("--dumpcfg", action="store_true", dest="dump_cfg",
         help="print the pre-processed configuration file")
 parser.add_argument("--dumptasks", action="store_true", dest="dump_tasks",
         help="print the list of tasks")
+parser.add_argument("--dumpfiles", action="store_true", dest="dump_files",
+        help="print the list of source files")
 parser.add_argument("--setup", action="store_true", dest="setupmode",
         help="set up the working directory and exit")
 
@@ -85,6 +87,7 @@ exe_paths = args.exe_paths
 throw_err = args.throw_err
 dump_cfg = args.dump_cfg
 dump_tasks = args.dump_tasks
+dump_files = args.dump_files
 reusedir = False
 setupmode = args.setupmode
 
@@ -109,7 +112,6 @@ if sbyfile is not None:
     elif not sbyfile.endswith(".sby"):
         print("ERROR: Sby file does not have .sby file extension.", file=sys.stderr)
         sys.exit(1)
-
 
 early_logmsgs = list()
 
@@ -232,6 +234,38 @@ if dump_cfg:
     assert len(tasknames) < 2
     sbyconfig, _ = read_sbyconfig(sbydata, tasknames[0] if len(tasknames) else None)
     print("\n".join(sbyconfig))
+    sys.exit(0)
+
+if dump_files:
+    file_set = set()
+
+    def find_files(taskname):
+        sbyconfig, _ = read_sbyconfig(sbydata, taskname)
+
+        start_index = -1
+        for i in range(len(sbyconfig)):
+            if sbyconfig[i].strip() == "[files]":
+                start_index = i
+                break
+
+        if start_index == -1:
+            return
+
+        for line in sbyconfig[start_index+1:]:
+            line = line.strip()
+            if line.startswith("["):
+                break
+            if line == "" or line.startswith("#"):
+                continue
+            filename = line.split()[-1]
+            file_set.add(process_filename(filename))
+    
+    if len(tasknames):
+        for taskname in tasknames:
+            find_files(taskname)
+    else:
+        find_files(None)
+    print("\n".join(file_set))
     sys.exit(0)
 
 if len(tasknames) == 0:
