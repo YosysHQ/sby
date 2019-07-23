@@ -207,10 +207,8 @@ proof. This engine uses the array-theories provided by those solvers to
 efficiently model memories. Since this example uses large memories, the
 ``smtbmc`` engine is a good match.
 
-(``smtbmc boolector`` uses boolector as SMT solver. Note that boolector is
-only free-to-use for noncommercial purposes. Use ``smtbmc z3`` to use the
-permissively licensed solver Z3, or use ``smtbmc yices`` to use the
-copyleft licensed solver Yices 2 intead. Yices 2 is the default solver when
+(``smtbmc boolector`` selects Boolector as SMT solver, ``smtbmc z3`` selects
+Z3, and ``smtbmc yices`` selects Yices 2. Yices 2 is the default solver when
 no argument is used with ``smtbmc``.)
 
 Exercise: The engine ``abc bmc3`` does not provide abstract memory models.
