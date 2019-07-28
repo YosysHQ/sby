@@ -18,7 +18,8 @@
 
 import os, re, sys
 if os.name == "posix":
-    import resource, fcntl, signal
+    import resource, fcntl
+import signal
 import subprocess
 from shutil import copyfile, rmtree
 from select import select
@@ -242,10 +243,11 @@ class SbyJob:
                 if task.running:
                     fds.append(task.p.stdout)
 
-            try:
-                select(fds, [], [], 1.0) == ([], [], [])
-            except InterruptedError:
-                pass
+            if os.name == "posix":
+                try:
+                    select(fds, [], [], 1.0) == ([], [], [])
+                except InterruptedError:
+                    pass
 
             for task in self.tasks_running:
                 task.poll()
