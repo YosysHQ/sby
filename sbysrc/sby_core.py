@@ -135,7 +135,7 @@ class SbyTask:
                     signal.signal(signal.SIGINT, signal.SIG_IGN)
                     os.setpgrp()
 
-                self.p = subprocess.Popen(["/bin/bash", "-c", self.cmdline], stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+                self.p = subprocess.Popen(["/usr/bin/env", "bash", "-c", self.cmdline], stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
                         stderr=(subprocess.STDOUT if self.logstderr else None), preexec_fn=preexec_fn)
 
                 fl = fcntl.fcntl(self.p.stdout, fcntl.F_GETFL)
