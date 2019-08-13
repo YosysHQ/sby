@@ -3,7 +3,7 @@ Getting Started
 ===============
 
 The example files used in this chapter can be downloaded from `here
-<https://github.com/cliffordwolf/SymbiYosys/tree/master/docs/examples/quickstart>`_.
+<https://github.com/YosysHQ/SymbiYosys/tree/master/docs/examples/quickstart>`_.
 
 Installing
 ----------
@@ -36,7 +36,7 @@ Next install Yosys, Yosys-SMTBMC and ABC (``yosys-abc``):
 
 .. code-block:: text
 
-   git clone https://github.com/cliffordwolf/yosys.git yosys
+   git clone https://github.com/YosysHQ/yosys.git yosys
    cd yosys
    make -j$(nproc)
    sudo make install
@@ -44,11 +44,11 @@ Next install Yosys, Yosys-SMTBMC and ABC (``yosys-abc``):
 SymbiYosys
 ~~~~~~~~~~
 
-https://github.com/cliffordwolf/SymbiYosys
+https://github.com/YosysHQ/SymbiYosys
 
 .. code-block:: text
 
-   git clone https://github.com/cliffordwolf/SymbiYosys.git SymbiYosys
+   git clone https://github.com/YosysHQ/SymbiYosys.git SymbiYosys
    cd SymbiYosys
    sudo make install
 
