@@ -151,10 +151,19 @@ def run(mode, job, engine_idx, engine):
         nonlocal task_status
 
         match = re.match(r"^## [0-9: ]+ Status: FAILED", line)
-        if match: task_status = "FAIL"
+        if match:
+            task_status = "FAIL"
+            return line.replace("FAILED", "failed")
 
         match = re.match(r"^## [0-9: ]+ Status: PASSED", line)
-        if match: task_status = "PASS"
+        if match:
+            task_status = "PASS"
+            return line.replace("PASSED", "passed")
+
+        match = re.match(r"^## [0-9: ]+ Status: PREUNSAT", line)
+        if match:
+            task_status = "ERROR"
+            return line
 
         return line
 
@@ -164,8 +173,9 @@ def run(mode, job, engine_idx, engine):
 
         if mode == "bmc" or mode == "cover":
             job.update_status(task_status)
-            job.log("engine_%d: Status returned by engine: %s" % (engine_idx, task_status))
-            job.summary.append("engine_%d (%s) returned %s" % (engine_idx, " ".join(engine), task_status))
+            task_status_lower = task_status.lower() if task_status == "PASS" else task_status
+            job.log("engine_%d: Status returned by engine: %s" % (engine_idx, task_status_lower))
+            job.summary.append("engine_%d (%s) returned %s" % (engine_idx, " ".join(engine), task_status_lower))
 
             if task_status == "FAIL" and mode != "cover":
                 if os.path.exists("%s/engine_%d/trace.vcd" % (job.workdir, engine_idx)):
@@ -174,8 +184,9 @@ def run(mode, job, engine_idx, engine):
             job.terminate()
 
         elif mode in ["prove_basecase", "prove_induction"]:
-            job.log("engine_%d: Status returned by engine for %s: %s" % (engine_idx, mode.split("_")[1], task_status))
-            job.summary.append("engine_%d (%s) returned %s for %s" % (engine_idx, " ".join(engine), task_status, mode.split("_")[1]))
+            task_status_lower = task_status.lower() if task_status == "PASS" else task_status
+            job.log("engine_%d: Status returned by engine for %s: %s" % (engine_idx, mode.split("_")[1], task_status_lower))
+            job.summary.append("engine_%d (%s) returned %s for %s" % (engine_idx, " ".join(engine), task_status_lower, mode.split("_")[1]))
 
             if mode == "prove_basecase":
                 for task in job.basecase_tasks:
