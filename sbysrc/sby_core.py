@@ -34,8 +34,8 @@ def force_shutdown(signum, frame):
 
 if os.name == "posix":
     signal.signal(signal.SIGHUP, force_shutdown)
-signal.signal(signal.SIGINT, force_shutdown)
-signal.signal(signal.SIGTERM, force_shutdown)
+    signal.signal(signal.SIGINT, force_shutdown)
+    signal.signal(signal.SIGTERM, force_shutdown)
 
 def process_filename(filename):
     if filename.startswith("~/"):
@@ -242,10 +242,11 @@ class SbyJob:
                 if task.running:
                     fds.append(task.p.stdout)
 
-            try:
-                select(fds, [], [], 1.0) == ([], [], [])
-            except InterruptedError:
-                pass
+            if os.name == "posix":
+                try:
+                    select(fds, [], [], 1.0) == ([], [], [])
+                except InterruptedError:
+                    pass
 
             for task in self.tasks_running:
                 task.poll()
