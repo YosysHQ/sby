@@ -1,6 +1,5 @@
 
-DESTDIR =
-PREFIX = /usr/local
+PREFIX ?= /usr/local
 
 # On Windows, manually setting absolute path to Python binary may be required
 # for launcher executable to work. From MSYS2, this can be done using the
