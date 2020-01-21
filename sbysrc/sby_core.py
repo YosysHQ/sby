@@ -16,13 +16,13 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #
 
-import os, re, sys
+import os, re, sys, signal
 if os.name == "posix":
-    import resource, fcntl, signal
+    import resource, fcntl
 import subprocess
 from shutil import copyfile, rmtree
 from select import select
-from time import time, localtime
+from time import time, localtime, sleep
 
 all_tasks_running = []
 
@@ -242,10 +242,13 @@ class SbyJob:
                 if task.running:
                     fds.append(task.p.stdout)
 
-            try:
-                select(fds, [], [], 1.0) == ([], [], [])
-            except InterruptedError:
-                pass
+            if os.name == "posix":
+                try:
+                    select(fds, [], [], 1.0) == ([], [], [])
+                except InterruptedError:
+                    pass
+            else:
+                sleep(0.1)
 
             for task in self.tasks_running:
                 task.poll()
