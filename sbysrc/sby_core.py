@@ -167,6 +167,13 @@ class SbyTask:
             all_tasks_running.remove(self)
             self.running = False
 
+            if self.p.returncode == 127:
+                self.job.status = "ERROR"
+                self.job.log("%s: COMMAND NOT FOUND. ERROR." % self.info)
+                self.terminated = True
+                self.job.terminate()
+                return
+
             self.handle_exit(self.p.returncode)
 
             if self.checkretcode and self.p.returncode != 0:
