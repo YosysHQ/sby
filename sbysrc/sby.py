@@ -299,18 +299,18 @@ def run_job(taskname):
             backup_idx = 0
             while os.path.exists("%s.bak%03d" % (my_workdir, backup_idx)):
                 backup_idx += 1
-            early_log(my_workdir, "Moving direcory '%s' to '%s'." % (my_workdir, "%s.bak%03d" % (my_workdir, backup_idx)))
+            early_log(my_workdir, "Moving directory '%s' to '%s'." % (my_workdir, "%s.bak%03d" % (my_workdir, backup_idx)))
             shutil.move(my_workdir, "%s.bak%03d" % (my_workdir, backup_idx))
 
         if opt_force and not reusedir:
-            early_log(my_workdir, "Removing direcory '%s'." % (my_workdir))
+            early_log(my_workdir, "Removing directory '%s'." % (my_workdir))
             if sbyfile:
                 shutil.rmtree(my_workdir, ignore_errors=True)
 
         if reusedir:
             pass
         elif os.path.isdir(my_workdir):
-            print("ERROR: Direcory '%s' already exists." % (my_workdir))
+            print("ERROR: Directory '%s' already exists." % (my_workdir))
             sys.exit(1)
         else:
             os.makedirs(my_workdir)
@@ -348,7 +348,7 @@ def run_job(taskname):
             pass
 
     if my_opt_tmpdir:
-        job.log("Removing direcory '%s'." % (my_workdir))
+        job.log("Removing directory '%s'." % (my_workdir))
         shutil.rmtree(my_workdir, ignore_errors=True)
 
     if setupmode:
