@@ -28,13 +28,12 @@ def run(job):
         engine = job.engines[engine_idx]
         assert len(engine) > 0
 
-        job.log("engine_%d: %s" % (engine_idx, " ".join(engine)))
-        job.makedirs("%s/engine_%d" % (job.workdir, engine_idx))
+        job.log("engine_{}: {}".format(engine_idx, " ".join(engine)))
+        job.makedirs("{}/engine_{}".format(job.workdir, engine_idx))
 
         if engine[0] == "aiger":
             import sby_engine_aiger
             sby_engine_aiger.run("live", job, engine_idx, engine)
 
         else:
-            job.error("Invalid engine '%s' for live mode." % engine[0])
-
+            job.error("Invalid engine '{}' for live mode.".format(engine[0]))

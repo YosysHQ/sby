@@ -29,22 +29,22 @@ def run(mode, job, engine_idx, engine):
         job.error("Unexpected BTOR engine options.")
 
     if solver_args[0] == "btormc":
-        solver_cmd = job.exe_paths["btormc"] + " --stop-first -v 1 -kmax %d" % (job.opt_depth - 1)
+        solver_cmd = job.exe_paths["btormc"] + " --stop-first -v 1 -kmax {}".format(job.opt_depth - 1)
         if job.opt_skip is not None:
-            solver_cmd += " -kmin %d" % job.opt_skip
+            solver_cmd += " -kmin {}".format(job.opt_skip)
         solver_cmd += " ".join([""] + solver_args[1:])
 
     else:
-        job.error("Invalid solver command %s." % solver_args[0])
+        job.error("Invalid solver command {}.".format(solver_args[0]))
 
-    task = SbyTask(job, "engine_%d" % engine_idx, job.model("btor"),
-            "cd %s; %s model/design_btor.btor" % (job.workdir, solver_cmd),
-            logfile=open("%s/engine_%d/logfile.txt" % (job.workdir, engine_idx), "w"))
+    task = SbyTask(job, "engine_{}".format(engine_idx), job.model("btor"),
+            "cd {}; {} model/design_btor.btor".format(job.workdir, solver_cmd),
+            logfile=open("{}/engine_{}/logfile.txt".format(job.workdir, engine_idx), "w"))
 
     task_status = None
     produced_cex = False
     end_of_cex = False
-    wit_file = open("%s/engine_%d/trace.wit" % (job.workdir, engine_idx), "w")
+    wit_file = open("{}/engine_{}/trace.wit".format(job.workdir, engine_idx), "w")
 
     def output_callback(line):
         nonlocal task_status
@@ -61,7 +61,7 @@ def run(mode, job, engine_idx, engine):
                 end_of_cex = True
 
         if line.startswith("u"):
-            return "No CEX up to depth %d." % (int(line[1:])-1)
+            return "No CEX up to depth {}.".format(int(line[1:])-1)
 
         if solver_args[0] == "btormc":
             if "calling BMC on" in line:
@@ -89,8 +89,8 @@ def run(mode, job, engine_idx, engine):
         wit_file.close()
 
         job.update_status(task_status)
-        job.log("engine_%d: Status returned by engine: %s" % (engine_idx, task_status))
-        job.summary.append("engine_%d (%s) returned %s" % (engine_idx, " ".join(engine), task_status))
+        job.log("engine_{}: Status returned by engine: {}".format(engine_idx, task_status))
+        job.summary.append("engine_{} ({}) returned {}".format(engine_idx, " ".join(engine), task_status))
 
         job.terminate()
 
@@ -98,7 +98,7 @@ def run(mode, job, engine_idx, engine):
             if produced_cex:
                 has_arrays = False
 
-                with open("%s/model/design_btor.btor" % job.workdir, "r") as f:
+                with open("{}/model/design_btor.btor".format(job.workdir), "r") as f:
                     for line in f:
                         line = line.split()
                         if len(line) == 5 and line[1] == "sort" and line[2] == "array":
@@ -106,28 +106,25 @@ def run(mode, job, engine_idx, engine):
                             break
 
                 if has_arrays:
-                    setupcmd = "cd %s;" % (job.workdir)
-                    finalwit = "engine_%d/trace.wit" % engine_idx
+                    setupcmd = "cd {};".format(job.workdir)
+                    finalwit = "engine_{}/trace.wit".format(engine_idx)
                 else:
-                    setupcmd = "cd %s; { echo sat; btorsim --states model/design_btor.btor engine_%d/trace.wit; } > engine_%d/simtrace.wit &&" % (job.workdir, engine_idx, engine_idx)
-                    finalwit = "engine_%d/simtrace.wit" % engine_idx
+                    setupcmd = "cd {}; { echo sat; btorsim --states model/design_btor.btor engine_{i}/trace.wit; } > engine_{i}/simtrace.wit &&".format(job.workdir, i=engine_idx)
+                    finalwit = "engine_{}/simtrace.wit".format(engine_idx)
 
                 if mode == "live":
-                    task2 = SbyTask(job, "engine_%d" % engine_idx, job.model("smt2"),
-                            ("%s %s -g -s %s%s --noprogress --dump-vcd engine_%d/trace.vcd --dump-vlogtb engine_%d/trace_tb.v " +
-                             "--dump-smtc engine_%d/trace.smtc --btorwit %s model/design_smt2.smt2") %
-                                    (setupcmd, job.exe_paths["smtbmc"], job.opt_aigsmt,
-                                     "" if job.opt_tbtop is None else " --vlogtb-top %s" % job.opt_tbtop,
-                                     engine_idx, engine_idx, engine_idx, finalwit),
-                            logfile=open("%s/engine_%d/logfile2.txt" % (job.workdir, engine_idx), "w"))
+                    task2 = SbyTask(job, "engine_{}".format(engine_idx), job.model("smt2"),
+                            ("{} {} -g -s {}{} --noprogress --dump-vcd engine_{i}/trace.vcd --dump-vlogtb engine_{i}/trace_tb.v " +
+                             "--dump-smtc engine_{i}/trace.smtc --btorwit {} model/design_smt2.smt2").format(setupcmd, job.exe_paths["smtbmc"], job.opt_aigsmt, "" if job.opt_tbtop is None else " --vlogtb-top {}".format(job.opt_tbtop), finalwit, i=engine_idx),
+                            logfile=open("{}/engine_{}/logfile2.txt".format(job.workdir, engine_idx), "w"))
                 else:
-                    task2 = SbyTask(job, "engine_%d" % engine_idx, job.model("smt2"),
-                            ("%s %s -s %s%s --noprogress --append %d --dump-vcd engine_%d/trace.vcd --dump-vlogtb engine_%d/trace_tb.v " +
-                             "--dump-smtc engine_%d/trace.smtc --btorwit %s model/design_smt2.smt2") %
+                    task2 = SbyTask(job, "engine_{}".format(engine_idx), job.model("smt2"),
+                            ("{} {} -s {}{} --noprogress --append {} --dump-vcd engine_{i}/trace.vcd --dump-vlogtb engine_{i}/trace_tb.v " +
+                             "--dump-smtc engine_{i}/trace.smtc --btorwit {} model/design_smt2.smt2").format
                                     (setupcmd, job.exe_paths["smtbmc"], job.opt_aigsmt,
-                                     "" if job.opt_tbtop is None else " --vlogtb-top %s" % job.opt_tbtop,
-                                     job.opt_append, engine_idx, engine_idx, engine_idx, finalwit),
-                            logfile=open("%s/engine_%d/logfile2.txt" % (job.workdir, engine_idx), "w"))
+                                     "" if job.opt_tbtop is None else " --vlogtb-top {}".format(job.opt_tbtop),
+                                     job.opt_append, finalwit, i=engine_idx),
+                            logfile=open("{}/engine_{}/logfile2.txt".format(job.workdir, engine_idx), "w"))
 
                 task2_status = None
 
@@ -149,15 +146,14 @@ def run(mode, job, engine_idx, engine):
                     else:
                         assert task2_status == "FAIL"
 
-                    if os.path.exists("%s/engine_%d/trace.vcd" % (job.workdir, engine_idx)):
-                        job.summary.append("counterexample trace: %s/engine_%d/trace.vcd" % (job.workdir, engine_idx))
+                    if os.path.exists("{}/engine_{}/trace.vcd".format(job.workdir, engine_idx)):
+                        job.summary.append("counterexample trace: {}/engine_{}/trace.vcd".format(job.workdir, engine_idx))
 
                 task2.output_callback = output_callback2
                 task2.exit_callback = exit_callback2
 
             else:
-                job.log("engine_%d: Engine did not produce a counter example." % engine_idx)
+                job.log("engine_{}: Engine did not produce a counter example.".format(engine_idx))
 
     task.output_callback = output_callback
     task.exit_callback = exit_callback
-

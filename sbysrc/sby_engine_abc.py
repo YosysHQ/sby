@@ -31,24 +31,24 @@ def run(mode, job, engine_idx, engine):
     if abc_command[0] == "bmc3":
         if mode != "bmc":
             job.error("ABC command 'bmc3' is only valid in bmc mode.")
-        abc_command[0] += " -F %d -v" % job.opt_depth
+        abc_command[0] += " -F {} -v".format(job.opt_depth)
 
     elif abc_command[0] == "sim3":
         if mode != "bmc":
             job.error("ABC command 'sim3' is only valid in bmc mode.")
-        abc_command[0] += " -F %d -v" % job.opt_depth
+        abc_command[0] += " -F {} -v".format(job.opt_depth)
 
     elif abc_command[0] == "pdr":
         if mode != "prove":
             job.error("ABC command 'pdr' is only valid in prove mode.")
 
     else:
-        job.error("Invalid ABC command %s." % abc_command[0])
+        job.error("Invalid ABC command {}.".format(abc_command[0]))
 
-    task = SbyTask(job, "engine_%d" % engine_idx, job.model("aig"),
-            ("cd %s; %s -c 'read_aiger model/design_aiger.aig; fold; strash; %s; write_cex -a engine_%d/trace.aiw'") %
+    task = SbyTask(job, "engine_{}".format(engine_idx), job.model("aig"),
+            ("cd {}; {} -c 'read_aiger model/design_aiger.aig; fold; strash; {}; write_cex -a engine_{}/trace.aiw'").format
             (job.workdir, job.exe_paths["abc"], " ".join(abc_command), engine_idx),
-            logfile=open("%s/engine_%d/logfile.txt" % (job.workdir, engine_idx), "w"))
+            logfile=open("{}/engine_{}/logfile.txt".format(job.workdir, engine_idx), "w"))
 
     task.noprintregex = re.compile(r"^\.+$")
     task_status = None
@@ -78,19 +78,19 @@ def run(mode, job, engine_idx, engine):
         assert task_status is not None
 
         job.update_status(task_status)
-        job.log("engine_%d: Status returned by engine: %s" % (engine_idx, task_status))
-        job.summary.append("engine_%d (%s) returned %s" % (engine_idx, " ".join(engine), task_status))
+        job.log("engine_{}: Status returned by engine: {}".format(engine_idx, task_status))
+        job.summary.append("engine_{} ({}) returned {}".format(engine_idx, " ".join(engine), task_status))
 
         job.terminate()
 
         if task_status == "FAIL" and job.opt_aigsmt != "none":
-            task2 = SbyTask(job, "engine_%d" % engine_idx, job.model("smt2"),
-                    ("cd %s; %s -s %s%s --noprogress --append %d --dump-vcd engine_%d/trace.vcd --dump-vlogtb engine_%d/trace_tb.v " +
-                     "--dump-smtc engine_%d/trace.smtc --aig model/design_aiger.aim:engine_%d/trace.aiw --aig-noheader model/design_smt2.smt2") %
+            task2 = SbyTask(job, "engine_{}".format(engine_idx), job.model("smt2"),
+                    ("cd {}; {} -s {}{} --noprogress --append {} --dump-vcd engine_{i}/trace.vcd --dump-vlogtb engine_{i}/trace_tb.v " +
+                     "--dump-smtc engine_{i}/trace.smtc --aig model/design_aiger.aim:engine_{i}/trace.aiw --aig-noheader model/design_smt2.smt2").format
                             (job.workdir, job.exe_paths["smtbmc"], job.opt_aigsmt,
-                            "" if job.opt_tbtop is None else " --vlogtb-top %s" % job.opt_tbtop,
-                            job.opt_append, engine_idx, engine_idx, engine_idx, engine_idx),
-                    logfile=open("%s/engine_%d/logfile2.txt" % (job.workdir, engine_idx), "w"))
+                            "" if job.opt_tbtop is None else " --vlogtb-top {}".format(job.opt_tbtop),
+                            job.opt_append, i=engine_idx, engine_idx, engine_idx, engine_idx),
+                    logfile=open("{}/engine_{}/logfile2.txt".format(job.workdir, engine_idx), "w"))
 
             task2_status = None
 
@@ -109,12 +109,11 @@ def run(mode, job, engine_idx, engine):
                 assert task2_status is not None
                 assert task2_status == "FAIL"
 
-                if os.path.exists("%s/engine_%d/trace.vcd" % (job.workdir, engine_idx)):
-                    job.summary.append("counterexample trace: %s/engine_%d/trace.vcd" % (job.workdir, engine_idx))
+                if os.path.exists("{}/engine_{}/trace.vcd".format(job.workdir, engine_idx)):
+                    job.summary.append("counterexample trace: {}/engine_{}/trace.vcd".format(job.workdir, engine_idx))
 
             task2.output_callback = output_callback2
             task2.exit_callback = exit_callback2
 
     task.output_callback = output_callback
     task.exit_callback = exit_callback
-
