@@ -12,6 +12,7 @@ primes_fail: expect fail
 smtbmc --dumpsmt2 --progress --stbv z3
 
 [script]
+read -noverific
 read -formal primegen.sv
 primes_fail: chparam -set offset 7 primes
 primegen: prep -top primegen
