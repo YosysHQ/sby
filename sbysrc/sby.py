@@ -68,6 +68,8 @@ parser.add_argument("--dumpfiles", action="store_true", dest="dump_files",
         help="print the list of source files")
 parser.add_argument("--setup", action="store_true", dest="setupmode",
         help="set up the working directory and exit")
+parser.add_argument("--init-config", action="store_true", dest="initconfig",
+        help="create a default .sby config file")
 
 parser.add_argument("sbyfile", metavar="<jobname>.sby | <dirname>", nargs="?",
         help=".sby file OR directory containing config.sby file")
@@ -89,6 +91,23 @@ dump_tasks = args.dump_tasks
 dump_files = args.dump_files
 reusedir = False
 setupmode = args.setupmode
+initconfig = args.initconfig
+
+def init_config(filename):
+    with open(filename, 'w') as config:
+        config.write("""
+[options]
+mode bmc
+
+[engines]
+smtbmc
+
+[script]
+read -formal default.v
+prep -top top
+
+[files]
+default.v""")
 
 if sbyfile is not None:
     if os.path.isdir(sbyfile):
@@ -115,13 +134,17 @@ if sbyfile is not None:
         print("ERROR: Sby file does not have .sby file extension.", file=sys.stderr)
         sys.exit(1)
 
+elif initconfig:
+    print("default sby config written to default.sby", file=sys.stderr)
+    init_config("default.sby")
+    sys.exit(0)
+
 early_logmsgs = list()
 
 def early_log(workdir, msg):
     tm = localtime()
     early_logmsgs.append("SBY %2d:%02d:%02d [%s] %s" % (tm.tm_hour, tm.tm_min, tm.tm_sec, workdir, msg))
     print(early_logmsgs[-1])
-
 
 def read_sbyconfig(sbydata, taskname):
     cfgdata = list()
