@@ -139,22 +139,24 @@ def run(mode, job, engine_idx, engine):
             task2.exit_callback = exit_callback2
 
         else:
-            for i in range(produced_cex):
-                task2 = SbyTask(job, "engine_{}".format(engine_idx), job.model("btor"),
-                        "cd {dir}; btorsim -c --vcd engine_{idx}/trace{i}.vcd --hierarchical-symbols model/design_btor.btor engine_{idx}/trace{i}.wit".format(dir=job.workdir, idx=engine_idx, i=i),
-                        logfile=open("{dir}/engine_{idx}/logfile{}.txt".format(i+2, dir=job.workdir, idx=engine_idx), "w"))
+            def output_callback2(line):
+                return line
 
-                def output_callback2(line):
-                    return line
-
+            def make_exit_callback2(i):
                 def exit_callback2(line):
                     assert retcode == 0
 
                     if os.path.exists("{}/engine_{}/trace{}.vcd".format(job.workdir, engine_idx, i)):
                         job.summary.append("counterexample trace: {}/engine_{}/trace{}.vcd".format(job.workdir, engine_idx, i))
+                return exit_callback2
+
+            for i in range(produced_cex):
+                task2 = SbyTask(job, "engine_{}".format(engine_idx), job.model("btor"),
+                        "cd {dir}; btorsim -c --vcd engine_{idx}/trace{i}.vcd --hierarchical-symbols model/design_btor.btor engine_{idx}/trace{i}.wit".format(dir=job.workdir, idx=engine_idx, i=i),
+                        logfile=open("{dir}/engine_{idx}/logfile{}.txt".format(i+2, dir=job.workdir, idx=engine_idx), "w"))
 
                 task2.output_callback = output_callback2
-                task2.exit_callback = exit_callback2
+                task2.exit_callback = make_exit_callback2(i)
 
     task.output_callback = output_callback
     task.exit_callback = exit_callback
