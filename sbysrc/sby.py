@@ -119,7 +119,7 @@ early_logmsgs = list()
 
 def early_log(workdir, msg):
     tm = localtime()
-    early_logmsgs.append("SBY %2d:%02d:%02d [%s] %s" % (tm.tm_hour, tm.tm_min, tm.tm_sec, workdir, msg))
+    early_logmsgs.append("SBY {:2d}:{:02d}:{:02d} [{}] {}".format(tm.tm_hour, tm.tm_min, tm.tm_sec, workdir, msg))
     print(early_logmsgs[-1])
 
 
@@ -194,7 +194,7 @@ def read_sbyconfig(sbydata, taskname):
         if len(task_tags_all) and not found_task_tag:
             tokens = line.split()
             if len(tokens) > 0 and tokens[0][0] == line[0] and tokens[0].endswith(":"):
-                print("ERROR: Invalid task specifier \"%s\"." % tokens[0], file=sys.stderr)
+                print("ERROR: Invalid task specifier \"{}\".".format(tokens[0]), file=sys.stderr)
                 sys.exit(1)
 
         if task_skip_line or task_skip_block:
@@ -261,7 +261,7 @@ if dump_files:
                 continue
             filename = line.split()[-1]
             file_set.add(process_filename(filename))
-    
+
     if len(tasknames):
         for taskname in tasknames:
             find_files(taskname)
@@ -297,20 +297,20 @@ def run_job(taskname):
     if my_workdir is not None:
         if opt_backup:
             backup_idx = 0
-            while os.path.exists("%s.bak%03d" % (my_workdir, backup_idx)):
+            while os.path.exists("{}.bak{:03d}".format(my_workdir, backup_idx)):
                 backup_idx += 1
-            early_log(my_workdir, "Moving directory '%s' to '%s'." % (my_workdir, "%s.bak%03d" % (my_workdir, backup_idx)))
-            shutil.move(my_workdir, "%s.bak%03d" % (my_workdir, backup_idx))
+            early_log(my_workdir, "Moving directory '{}' to '{}'.".format(my_workdir, "{}.bak{:03d}".format(my_workdir, backup_idx)))
+            shutil.move(my_workdir, "{}.bak{:03d}".format(my_workdir, backup_idx))
 
         if opt_force and not reusedir:
-            early_log(my_workdir, "Removing directory '%s'." % (my_workdir))
+            early_log(my_workdir, "Removing directory '{}'.".format(my_workdir))
             if sbyfile:
                 shutil.rmtree(my_workdir, ignore_errors=True)
 
         if reusedir:
             pass
         elif os.path.isdir(my_workdir):
-            print("ERROR: Directory '%s' already exists." % (my_workdir))
+            print("ERROR: Directory '{}' already exists.".format(my_workdir))
             sys.exit(1)
         else:
             os.makedirs(my_workdir)
@@ -348,37 +348,37 @@ def run_job(taskname):
             pass
 
     if my_opt_tmpdir:
-        job.log("Removing directory '%s'." % (my_workdir))
+        job.log("Removing directory '{}'.".format(my_workdir))
         shutil.rmtree(my_workdir, ignore_errors=True)
 
     if setupmode:
-        job.log("SETUP COMPLETE (rc=%d)" % (job.retcode))
+        job.log("SETUP COMPLETE (rc={})".format(job.retcode))
     else:
-        job.log("DONE (%s, rc=%d)" % (job.status, job.retcode))
+        job.log("DONE ({}, rc={})".format(job.status, job.retcode))
     job.logfile.close()
 
     if not my_opt_tmpdir and not setupmode:
-        with open("%s/%s.xml" % (job.workdir, junit_filename), "w") as f:
+        with open("{}/{}.xml".format(job.workdir, junit_filename), "w") as f:
             junit_errors = 1 if job.retcode == 16 else 0
             junit_failures = 1 if job.retcode != 0 and junit_errors == 0 else 0
             print('<?xml version="1.0" encoding="UTF-8"?>', file=f)
-            print('<testsuites disabled="0" errors="%d" failures="%d" tests="1" time="%d">' % (junit_errors, junit_failures, job.total_time), file=f)
-            print('<testsuite disabled="0" errors="%d" failures="%d" name="%s" skipped="0" tests="1" time="%d">' % (junit_errors, junit_failures, junit_ts_name, job.total_time), file=f)
+            print('<testsuites disabled="0" errors="{}" failures="{}" tests="1" time="{}">'.format(junit_errors, junit_failures, job.total_time), file=f)
+            print('<testsuite disabled="0" errors="{}" failures="{}" name="{}" skipped="0" tests="1" time="{}">'.format(junit_errors, junit_failures, junit_ts_name, job.total_time), file=f)
             print('<properties>', file=f)
-            print('<property name="os" value="%s"/>' % os.name, file=f)
+            print('<property name="os" value="{}"/>'.format(os.name), file=f)
             print('</properties>', file=f)
-            print('<testcase classname="%s" name="%s" status="%s" time="%d">' % (junit_ts_name, junit_tc_name, job.status, job.total_time), file=f)
+            print('<testcase classname="{}" name="{}" status="{}" time="{}">'.format(junit_ts_name, junit_tc_name, job.status, job.total_time), file=f)
             if junit_errors:
-                print('<error message="%s" type="%s"/>' % (job.status, job.status), file=f)
+                print('<error message="{}" type="{}"/>'.format(job.status, job.status), file=f)
             if junit_failures:
-                print('<failure message="%s" type="%s"/>' % (job.status, job.status), file=f)
+                print('<failure message="{}" type="{}"/>'.format(job.status, job.status), file=f)
             print('<system-out>', end="", file=f)
-            with open("%s/logfile.txt" % (job.workdir), "r") as logf:
+            with open("{}/logfile.txt".format(job.workdir), "r") as logf:
                 for line in logf:
                     print(line.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;"), end="", file=f)
             print('</system-out></testcase></testsuite></testsuites>', file=f)
-        with open("%s/status" % (job.workdir), "w") as f:
-            print("%s %d %d" % (job.status, job.retcode, job.total_time), file=f)
+        with open("{}/status".format(job.workdir), "w") as f:
+            print("{} {} {}".format(job.status, job.retcode, job.total_time), file=f)
 
     return job.retcode
 

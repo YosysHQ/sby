@@ -65,7 +65,7 @@ def run(mode, job, engine_idx, engine):
                 job.error("smtbmc options --basecase and --induction are exclusive.")
             induction_only = True
         else:
-            job.error("Invalid smtbmc options %s." % o)
+            job.error("Invalid smtbmc options {}.".format(o))
 
     xtra_opts = False
     for i, a in enumerate(args):
@@ -86,7 +86,7 @@ def run(mode, job, engine_idx, engine):
         smtbmc_opts += ["--unroll"]
 
     if job.opt_smtc is not None:
-        smtbmc_opts += ["--smtc", "src/%s" % job.opt_smtc]
+        smtbmc_opts += ["--smtc", "src/{}".format(job.opt_smtc)]
 
     if job.opt_tbtop is not None:
          smtbmc_opts += ["--vlogtb-top", job.opt_tbtop]
@@ -104,9 +104,9 @@ def run(mode, job, engine_idx, engine):
             run("prove_induction", job, engine_idx, engine)
         return
 
-    taskname = "engine_%d" % engine_idx
-    trace_prefix = "engine_%d/trace" % engine_idx
-    logfile_prefix = "%s/engine_%d/logfile" % (job.workdir, engine_idx)
+    taskname = "engine_{}".format(engine_idx)
+    trace_prefix = "engine_{}/trace".format(engine_idx)
+    logfile_prefix = "{}/engine_{}/logfile".format(job.workdir, engine_idx)
 
     if mode == "prove_basecase":
         taskname += ".basecase"
@@ -130,13 +130,13 @@ def run(mode, job, engine_idx, engine):
 
 
     if job.opt_skip is not None:
-        t_opt = "%d:%d" % (job.opt_skip, job.opt_depth)
+        t_opt = "{}:{}".format(job.opt_skip, job.opt_depth)
     else:
-        t_opt = "%d" % job.opt_depth
+        t_opt = "{}".format(job.opt_depth)
 
     task = SbyTask(job, taskname, job.model(model_name),
-            "cd %s; %s %s -t %s --append %d --dump-vcd %s.vcd --dump-vlogtb %s_tb.v --dump-smtc %s.smtc model/design_%s.smt2" %
-                    (job.workdir, job.exe_paths["smtbmc"], " ".join(smtbmc_opts), t_opt, job.opt_append, trace_prefix, trace_prefix, trace_prefix, model_name),
+            "cd {}; {} {} -t {} --append {} --dump-vcd {p}.vcd --dump-vlogtb {p}_tb.v --dump-smtc {p}.smtc model/design_{}.smt2".format
+                    (job.workdir, job.exe_paths["smtbmc"], " ".join(smtbmc_opts), t_opt, job.opt_append, model_name, p=trace_prefix),
             logfile=open(logfile_prefix + ".txt", "w"), logstderr=(not progress))
 
     if mode == "prove_basecase":
@@ -169,24 +169,24 @@ def run(mode, job, engine_idx, engine):
 
     def exit_callback(retcode):
         if task_status is None:
-            job.error("engine_%d: Engine terminated without status." % engine_idx)
+            job.error("engine_{}: Engine terminated without status.".format(engine_idx))
 
         if mode == "bmc" or mode == "cover":
             job.update_status(task_status)
             task_status_lower = task_status.lower() if task_status == "PASS" else task_status
-            job.log("engine_%d: Status returned by engine: %s" % (engine_idx, task_status_lower))
-            job.summary.append("engine_%d (%s) returned %s" % (engine_idx, " ".join(engine), task_status_lower))
+            job.log("engine_{}: Status returned by engine: {}".format(engine_idx, task_status_lower))
+            job.summary.append("engine_{} ({}) returned {}".format(engine_idx, " ".join(engine), task_status_lower))
 
             if task_status == "FAIL" and mode != "cover":
-                if os.path.exists("%s/engine_%d/trace.vcd" % (job.workdir, engine_idx)):
-                    job.summary.append("counterexample trace: %s/engine_%d/trace.vcd" % (job.workdir, engine_idx))
+                if os.path.exists("{}/engine_{}/trace.vcd".format(job.workdir, engine_idx)):
+                    job.summary.append("counterexample trace: {}/engine_{}/trace.vcd".format(job.workdir, engine_idx))
 
             job.terminate()
 
         elif mode in ["prove_basecase", "prove_induction"]:
             task_status_lower = task_status.lower() if task_status == "PASS" else task_status
-            job.log("engine_%d: Status returned by engine for %s: %s" % (engine_idx, mode.split("_")[1], task_status_lower))
-            job.summary.append("engine_%d (%s) returned %s for %s" % (engine_idx, " ".join(engine), task_status_lower, mode.split("_")[1]))
+            job.log("engine_{}: Status returned by engine for {}: {}".format(engine_idx, mode.split("_")[1], task_status_lower))
+            job.summary.append("engine_{} ({}) returned {} for {}".format(engine_idx, " ".join(engine), task_status_lower, mode.split("_")[1]))
 
             if mode == "prove_basecase":
                 for task in job.basecase_tasks:
@@ -197,8 +197,8 @@ def run(mode, job, engine_idx, engine):
 
                 else:
                     job.update_status(task_status)
-                    if os.path.exists("%s/engine_%d/trace.vcd" % (job.workdir, engine_idx)):
-                        job.summary.append("counterexample trace: %s/engine_%d/trace.vcd" % (job.workdir, engine_idx))
+                    if os.path.exists("{}/engine_{}/trace.vcd".format(job.workdir, engine_idx)):
+                        job.summary.append("counterexample trace: {}/engine_{}/trace.vcd".format(job.workdir, engine_idx))
                     job.terminate()
 
             elif mode == "prove_induction":
@@ -221,5 +221,3 @@ def run(mode, job, engine_idx, engine):
 
     task.output_callback = output_callback
     task.exit_callback = exit_callback
-
-
