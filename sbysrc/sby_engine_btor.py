@@ -109,7 +109,7 @@ def run(mode, job, engine_idx, engine):
                     setupcmd = "cd {};".format(job.workdir)
                     finalwit = "engine_{}/trace.wit".format(engine_idx)
                 else:
-                    setupcmd = "cd {}; { echo sat; btorsim --states model/design_btor.btor engine_{i}/trace.wit; } > engine_{i}/simtrace.wit &&".format(job.workdir, i=engine_idx)
+                    setupcmd = "cd {}; {{ echo sat; btorsim --states model/design_btor.btor engine_{i}/trace.wit; }} > engine_{i}/simtrace.wit &&".format(job.workdir, i=engine_idx)
                     finalwit = "engine_{}/simtrace.wit".format(engine_idx)
 
                 if mode == "live":
