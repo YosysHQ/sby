@@ -9,7 +9,7 @@ module demo (
 		if (reset)
 			counter <= 0;
 		else
-			counter <= counter + 1;
+			counter <= counter + 20'd 1;
 	end
 
 	assign A = counter == 123456;
