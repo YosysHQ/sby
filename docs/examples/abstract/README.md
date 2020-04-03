@@ -10,7 +10,7 @@ This can be solved by replacing counter with the abstraction in `abstr.sv`.
 In order to do this we must first prove that the abstraction is correct. This is
 done with `sby -f abstr.sby`.
 
-Then we apply the abstriction by assuming what we have just proven and otherwise
+Then we apply the abstraction by assuming what we have just proven and otherwise
 turn `counter` into a cutpoint. See `props.sby` for details.
 
 Running `sby -f props.sby prv` proves the properties and `sby -f props.sby cvr`
