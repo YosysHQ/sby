@@ -113,46 +113,60 @@ def run(mode, job, engine_idx, engine):
         else:
             task_status = "FAIL" if solver_status == "sat" else "PASS"
 
-        job.update_status(task_status)
-        job.log("engine_{}: Status returned by engine: {}".format(engine_idx, task_status))
-        job.summary.append("engine_{} ({}) returned {}".format(engine_idx, " ".join(engine), task_status))
-
-        job.terminate()
-
-        if produced_cex == 0:
-            job.log("engine_{}: Engine did not produce a counter example.".format(engine_idx))
-        elif produced_cex == 1:
-            task2 = SbyTask(job, "engine_{}".format(engine_idx), job.model("btor"),
-                    "cd {dir}; btorsim -c --vcd engine_{idx}/trace.vcd --hierarchical-symbols model/design_btor.btor engine_{idx}/trace.wit".format(dir=job.workdir, idx=engine_idx),
-                    logfile=open("{dir}/engine_{idx}/logfile2.txt".format(dir=job.workdir, idx=engine_idx), "w"))
-
+        if mode == "cover":
+            def output_callback2(line):
+                nonlocal task_status
+                match = re.search(r"Assert failed in test", line)
+                if match:
+                    task_status = "FAIL"
+                return line
+        else:
             def output_callback2(line):
                 return line
 
+        if produced_cex == 0:
+            job.update_status(task_status)
+            job.log("engine_{}: Status returned by engine: {}".format(engine_idx, task_status))
+            job.summary.append("engine_{} ({}) returned {}".format(engine_idx, " ".join(engine), task_status))
+
+            job.terminate()
+            job.log("engine_{}: Engine did not produce a counter example.".format(engine_idx))
+        elif produced_cex == 1:
+            task2 = SbyTask(job, "engine_{}".format(engine_idx), job.model("btor"),
+                    "cd {dir}; btorsim -c --vcd engine_{idx}/trace.vcd --hierarchical-symbols --info model/design_btor.info model/design_btor.btor engine_{idx}/trace.wit".format(dir=job.workdir, idx=engine_idx),
+                    logfile=open("{dir}/engine_{idx}/logfile2.txt".format(dir=job.workdir, idx=engine_idx), "w"))
+
             def exit_callback2(line):
                 assert retcode == 0
+                job.update_status(task_status)
+                job.log("engine_{}: Status returned by engine: {}".format(engine_idx, task_status))
+                job.summary.append("engine_{} ({}) returned {}".format(engine_idx, " ".join(engine), task_status))
+
+                job.terminate()
 
                 if os.path.exists("{}/engine_{}/trace.vcd".format(job.workdir, engine_idx)):
-                    job.summary.append("counterexample trace: {}/engine_{}/trace.vcd".format(job.workdir, engine_idx))
+                    job.summary.append("{}trace: {}/engine_{}/trace.vcd".format("" if mode == "cover" else "counterexample ", job.workdir, engine_idx))
 
             task2.output_callback = output_callback2
             task2.exit_callback = exit_callback2
 
         else:
-            def output_callback2(line):
-                return line
-
             def make_exit_callback2(i):
                 def exit_callback2(line):
                     assert retcode == 0
+                    job.update_status(task_status)
+                    job.log("engine_{}: Status returned by engine: {}".format(engine_idx, task_status))
+                    job.summary.append("engine_{} ({}) returned {}".format(engine_idx, " ".join(engine), task_status))
+
+                    job.terminate()
 
                     if os.path.exists("{}/engine_{}/trace{}.vcd".format(job.workdir, engine_idx, i)):
-                        job.summary.append("counterexample trace: {}/engine_{}/trace{}.vcd".format(job.workdir, engine_idx, i))
+                        job.summary.append("{}trace: {}/engine_{}/trace{}.vcd".format("" if mode == "cover" else "counterexample ", job.workdir, engine_idx, i))
                 return exit_callback2
 
             for i in range(produced_cex):
                 task2 = SbyTask(job, "engine_{}".format(engine_idx), job.model("btor"),
-                        "cd {dir}; btorsim -c --vcd engine_{idx}/trace{i}.vcd --hierarchical-symbols model/design_btor.btor engine_{idx}/trace{i}.wit".format(dir=job.workdir, idx=engine_idx, i=i),
+                        "cd {dir}; btorsim -c --vcd engine_{idx}/trace{i}.vcd --hierarchical-symbols --info model/design_btor.info model/design_btor.btor engine_{idx}/trace{i}.wit".format(dir=job.workdir, idx=engine_idx, i=i),
                         logfile=open("{dir}/engine_{idx}/logfile{}.txt".format(i+2, dir=job.workdir, idx=engine_idx), "w"))
 
                 task2.output_callback = output_callback2
