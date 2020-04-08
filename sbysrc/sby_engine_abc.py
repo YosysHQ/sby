@@ -89,7 +89,7 @@ def run(mode, job, engine_idx, engine):
                      "--dump-smtc engine_{i}/trace.smtc --aig model/design_aiger.aim:engine_{i}/trace.aiw --aig-noheader model/design_smt2.smt2").format
                             (job.workdir, job.exe_paths["smtbmc"], job.opt_aigsmt,
                             "" if job.opt_tbtop is None else " --vlogtb-top {}".format(job.opt_tbtop),
-                            job.opt_append, i=engine_idx, engine_idx, engine_idx, engine_idx),
+                            job.opt_append, i=engine_idx),
                     logfile=open("{}/engine_{}/logfile2.txt".format(job.workdir, engine_idx), "w"))
 
             task2_status = None
