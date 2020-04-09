@@ -1,0 +1,14 @@
+[options]
+mode bmc
+expect fail
+
+[engines]
+smtbmc yices
+
+[script]
+read -noverific
+read -sv djb2hash.sv
+prep -top djb2hash
+
+[files]
+djb2hash.sv
