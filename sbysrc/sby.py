@@ -17,7 +17,7 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #
 
-import argparse, os, sys, shutil, tempfile
+import argparse, os, sys, shutil, tempfile, re
 ##yosys-sys-path##
 from sby_core import SbyJob, SbyAbort, process_filename
 from time import localtime
@@ -149,6 +149,7 @@ def early_log(workdir, msg):
 def read_sbyconfig(sbydata, taskname):
     cfgdata = list()
     tasklist = list()
+    task_matched = False
 
     pycode = None
     tasks_section = False
@@ -159,7 +160,7 @@ def read_sbyconfig(sbydata, taskname):
 
     def handle_line(line):
         nonlocal pycode, tasks_section, task_tags_active, task_tags_all
-        nonlocal task_skip_block, task_skiping_blocks
+        nonlocal task_skip_block, task_skiping_blocks, task_matched
 
         line = line.rstrip("\n")
         line = line.rstrip("\r")
@@ -230,11 +231,23 @@ def read_sbyconfig(sbydata, taskname):
                 return
             line = line.split()
             if len(line) > 0:
-                tasklist.append(line[0])
-            for t in line:
-                if taskname == line[0]:
-                    task_tags_active.add(t)
-                task_tags_all.add(t)
+                tname = line[0]
+                tpattern = False
+                for c in tname:
+                    if c in "(?*.[]|)":
+                        tpattern = True
+                if not tpattern:
+                    tasklist.append(tname)
+                    task_tags_all.add(tname)
+                if taskname is not None and re.fullmatch(tname, taskname):
+                    task_matched = True
+                    task_tags_active.add(tname)
+                    for t in line[1:]:
+                        task_tags_active.add(t)
+                        task_tags_all.add(t)
+                else:
+                    for t in line[1:]:
+                        task_tags_all.add(t)
 
         elif line == "[tasks]":
             if taskname is None:
@@ -246,6 +259,10 @@ def read_sbyconfig(sbydata, taskname):
 
     for line in sbydata:
         handle_line(line)
+
+    if taskname is not None and not task_matched:
+        print("ERROR: Task name '{}' didn't match any lines in [tasks].".format(taskname), file=sys.stderr)
+        sys.exit(1)
 
     return cfgdata, tasklist
 
