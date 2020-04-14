@@ -410,4 +410,8 @@ retcode = 0
 for t in tasknames:
     retcode |= run_job(t)
 
+if retcode and (len(tasknames) > 1 or tasknames[0] is not None):
+    tm = localtime()
+    print("SBY {:2d}:{:02d}:{:02d} One or more tasks produced a non-zero return code.".format(tm.tm_hour, tm.tm_min, tm.tm_sec))
+
 sys.exit(retcode)
