@@ -10,10 +10,10 @@ module wolf_goat_cabbage (input clk, input w, g, c);
 	reg bank_w = 0; // wolf
 	reg bank_g = 0; // goat
 	reg bank_c = 0; // cabbage
-	reg bank_p = 0; // person who drives the boat
+	reg bank_p = 0; // person
 
 	always @(posedge clk) begin
-		// person travels and takes the selected item with him
+		// person travels and takes the selected item with them
 		bank_p <= !bank_p;
 		if (w && (bank_w == bank_p)) bank_w <= !bank_p;
 		if (g && (bank_g == bank_p)) bank_g <= !bank_p;
