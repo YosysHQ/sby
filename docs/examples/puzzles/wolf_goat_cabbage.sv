@@ -10,29 +10,28 @@ module wolf_goat_cabbage (input clk, input w, g, c);
 	reg bank_w = 0; // wolf
 	reg bank_g = 0; // goat
 	reg bank_c = 0; // cabbage
-	reg bank_person = 0; // person who drives the boat
+	reg bank_p = 0; // person who drives the boat
 
 	always @(posedge clk) begin
 		// person travels and takes the selected item with him
-		if (w && (bank_w == bank_person)) bank_w <= !bank_person;
-		if (g && (bank_g == bank_person)) bank_g <= !bank_person;
-		if (c && (bank_c == bank_person)) bank_c <= !bank_person;
-		bank_person <= !bank_person;
+		bank_p <= !bank_p;
+		if (w && (bank_w == bank_p)) bank_w <= !bank_p;
+		if (g && (bank_g == bank_p)) bank_g <= !bank_p;
+		if (c && (bank_c == bank_p)) bank_c <= !bank_p;
 
 		// maximum one of the control signals must be high
 		assume (w+g+c <= 1);
 
 		// we want wolf, goat, and cabbage on the 2nd river bank
-		// write a cover statement that will result in the desired combination
 		cover(bank_w == 1 && bank_g == 1 && bank_c == 1);
 
 		// don't leave wolf and goat unattended
-		if (bank_w != bank_person) begin
+		if (bank_w != bank_p) begin
 			assume (bank_w != bank_g);
 		end
 
 		// don't leave goat and cabbage unattended
-		if (bank_g != bank_person) begin
+		if (bank_g != bank_p) begin
 			assume (bank_g != bank_c);
 		end
 	end
