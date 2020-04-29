@@ -136,7 +136,7 @@ def run(mode, job, engine_idx, engine):
                     "cd {dir}; btorsim -c --vcd engine_{idx}/trace.vcd --hierarchical-symbols --info model/design_btor.info model/design_btor.btor engine_{idx}/trace.wit".format(dir=job.workdir, idx=engine_idx),
                     logfile=open("{dir}/engine_{idx}/logfile2.txt".format(dir=job.workdir, idx=engine_idx), "w"))
 
-            def exit_callback2(line):
+            def exit_callback2(retcode):
                 assert retcode == 0
                 job.update_status(task_status)
                 job.log("engine_{}: Status returned by engine: {}".format(engine_idx, task_status))
@@ -152,7 +152,7 @@ def run(mode, job, engine_idx, engine):
 
         else:
             def make_exit_callback2(i):
-                def exit_callback2(line):
+                def exit_callback2(retcode):
                     assert retcode == 0
                     job.update_status(task_status)
                     job.log("engine_{}: Status returned by engine: {}".format(engine_idx, task_status))
