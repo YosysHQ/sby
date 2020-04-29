@@ -34,5 +34,9 @@ def run(job):
             import sby_engine_smtbmc
             sby_engine_smtbmc.run("cover", job, engine_idx, engine)
 
+        elif engine[0] == "btor":
+            import sby_engine_btor
+            sby_engine_btor.run("cover", job, engine_idx, engine)
+
         else:
             job.error("Invalid engine '{}' for cover mode.".format(engine[0]))

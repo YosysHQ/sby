@@ -409,15 +409,15 @@ class SbyJob:
                 print("flatten", file=f)
                 print("setundef -undriven -anyseq", file=f)
                 print("setattr -unset keep", file=f)
-                print("delete -output", file=f)
                 print("opt -full", file=f)
                 if "_syn" in model_name:
                     print("techmap", file=f)
                     print("opt -fast", file=f)
                     print("abc", file=f)
                     print("opt_clean", file=f)
+                print("delete -output", file=f)
                 print("stat", file=f)
-                print("write_btor design_{}.btor".format(model_name), file=f)
+                print("write_btor {}-i design_{m}.info design_{m}.btor".format("-c " if self.opt_mode == "cover" else "", m=model_name), file=f)
 
             task = SbyTask(self, model_name, self.model("nomem" if "_nomem" in model_name else "base"),
                     "cd {}/model; {} -ql design_{s}.log design_{s}.ys".format(self.workdir, self.exe_paths["yosys"], s=model_name))
