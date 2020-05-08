@@ -46,7 +46,7 @@ def process_filename(filename):
     return filename
 
 class SbyTask:
-    def __init__(self, job, info, deps, cmdline, logfile=None, logstderr=True):
+    def __init__(self, job, info, deps, cmdline, logfile=None, logstderr=True, silent=False):
         self.running = False
         self.finished = False
         self.terminated = False
@@ -74,6 +74,7 @@ class SbyTask:
         self.notify = []
         self.linebuffer = ""
         self.logstderr = logstderr
+        self.silent = silent
 
         self.job.tasks_pending.append(self)
 
@@ -111,7 +112,8 @@ class SbyTask:
         if self.job.opt_wait and not timeout:
             return
         if self.running:
-            self.job.log("{}: terminating process".format(self.info))
+            if not self.silent:
+                self.job.log("{}: terminating process".format(self.info))
             if os.name == "posix":
                 os.killpg(self.p.pid, signal.SIGTERM)
             self.p.terminate()
@@ -128,7 +130,8 @@ class SbyTask:
                 if not dep.finished:
                     return
 
-            self.job.log("{}: starting process \"{}\"".format(self.info, self.cmdline))
+            if not self.silent:
+                self.job.log("{}: starting process \"{}\"".format(self.info, self.cmdline))
 
             if os.name == "posix":
                 def preexec_fn():
@@ -162,14 +165,16 @@ class SbyTask:
             self.handle_output(outs)
 
         if self.p.poll() is not None:
-            self.job.log("{}: finished (returncode={})".format(self.info, self.p.returncode))
+            if not self.silent:
+                self.job.log("{}: finished (returncode={})".format(self.info, self.p.returncode))
             self.job.tasks_running.remove(self)
             all_tasks_running.remove(self)
             self.running = False
 
             if self.p.returncode == 127:
                 self.job.status = "ERROR"
-                self.job.log("{}: COMMAND NOT FOUND. ERROR.".format(self.info))
+                if not self.silent:
+                    self.job.log("{}: COMMAND NOT FOUND. ERROR.".format(self.info))
                 self.terminated = True
                 self.job.terminate()
                 return
@@ -178,7 +183,8 @@ class SbyTask:
 
             if self.checkretcode and self.p.returncode != 0:
                 self.job.status = "ERROR"
-                self.job.log("{}: job failed. ERROR.".format(self.info))
+                if not self.silent:
+                    self.job.log("{}: job failed. ERROR.".format(self.info))
                 self.terminated = True
                 self.job.terminate()
                 return
