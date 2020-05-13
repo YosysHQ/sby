@@ -17,6 +17,7 @@
 #
 
 import re, os, getopt
+from types import SimpleNamespace
 from sby_core import SbyTask
 
 def run(mode, job, engine_idx, engine):
@@ -37,43 +38,108 @@ def run(mode, job, engine_idx, engine):
     else:
         job.error("Invalid solver command {}.".format(solver_args[0]))
 
-    task = SbyTask(job, "engine_{}".format(engine_idx), job.model("btor"),
-            "cd {}; {} model/design_btor.btor".format(job.workdir, solver_cmd),
-            logfile=open("{}/engine_{}/logfile.txt".format(job.workdir, engine_idx), "w"))
+    common_state = SimpleNamespace()
+    common_state.solver_status = None
+    common_state.produced_cex = 0
+    common_state.expected_cex = 1
+    common_state.wit_file = None
+    common_state.assert_fail = False
+    common_state.produced_traces = []
+    common_state.print_traces_max = 5
+    common_state.running_tasks = 0
 
-    solver_status = None
-    produced_cex = 0
-    expected_cex = 1
-    wit_file = None
+    def print_traces_and_terminate():
+        if mode == "cover":
+            if common_state.assert_fail:
+                task_status = "FAIL"
+            elif common_state.solver_status == "sat":
+                task_status = "pass"
+            elif common_state.solver_status == "unsat":
+                task_status = "FAIL"
+            else:
+                job.error("engine_{}: Engine terminated without status.".format(engine_idx))
+        else:
+            if common_state.solver_status == "sat":
+                task_status = "FAIL"
+            elif common_state.solver_status == "unsat":
+                task_status = "pass"
+            else:
+                job.error("engine_{}: Engine terminated without status.".format(engine_idx))
+
+        job.update_status(task_status.upper())
+        job.log("engine_{}: Status returned by engine: {}".format(engine_idx, task_status))
+        job.summary.append("engine_{} ({}) returned {}".format(engine_idx, " ".join(engine), task_status))
+
+        if len(common_state.produced_traces) == 0:
+            job.log("engine_{}: Engine did not produce a counter example.".format(engine_idx))
+        elif len(common_state.produced_traces) <= common_state.print_traces_max:
+            job.summary.extend(common_state.produced_traces)
+        else:
+            job.summary.extend(common_state.produced_traces[:common_state.print_traces_max])
+            excess_traces = len(common_state.produced_traces) - common_state.print_traces_max
+            job.summary.append("and {} further trace{}".format(excess_traces, "s" if excess_traces > 1 else ""))
+
+        job.terminate()
+
+    if mode == "cover":
+        def output_callback2(line):
+            match = re.search(r"Assert failed in test", line)
+            if match:
+                common_state.assert_fail = True
+            return line
+    else:
+        def output_callback2(line):
+            return line
+
+    def make_exit_callback(suffix):
+        def exit_callback2(retcode):
+            assert retcode == 0
+
+            vcdpath = "{}/engine_{}/trace{}.vcd".format(job.workdir, engine_idx, suffix)
+            if os.path.exists(vcdpath):
+                common_state.produced_traces.append("{}trace: {}".format("" if mode == "cover" else "counterexample ", vcdpath))
+
+            common_state.running_tasks -= 1
+            if (common_state.running_tasks == 0):
+                print_traces_and_terminate()
+
+        return exit_callback2
 
     def output_callback(line):
-        nonlocal solver_status
-        nonlocal produced_cex
-        nonlocal expected_cex
-        nonlocal wit_file
-
         if mode == "cover":
             match = re.search(r"calling BMC on ([0-9]+) properties", line)
             if match:
-                expected_cex = int(match[1])
-                assert expected_cex > 0
-                assert produced_cex == 0
+                common_state.expected_cex = int(match[1])
+                assert common_state.expected_cex > 0
+                assert common_state.produced_cex == 0
 
-        if (produced_cex < expected_cex) and line == "sat":
-            assert wit_file == None
-            if expected_cex == 1:
-                wit_file = open("{}/engine_{}/trace.wit".format(job.workdir, engine_idx), "w")
+        if (common_state.produced_cex < common_state.expected_cex) and line == "sat":
+            assert common_state.wit_file == None
+            if common_state.expected_cex == 1:
+                common_state.wit_file = open("{}/engine_{}/trace.wit".format(job.workdir, engine_idx), "w")
             else:
-                wit_file = open("{}/engine_{}/trace{}.wit".format(job.workdir, engine_idx, produced_cex), "w")
+                common_state.wit_file = open("{}/engine_{}/trace{}.wit".format(job.workdir, engine_idx, common_state.produced_cex), "w")
 
-        if wit_file:
-            print(line, file=wit_file)
+        if common_state.wit_file:
+            print(line, file=common_state.wit_file)
             if line == ".":
-                produced_cex += 1
-                wit_file.close()
-                wit_file = None
-                if produced_cex == expected_cex:
-                    solver_status = "sat"
+                if common_state.expected_cex == 1:
+                    suffix = ""
+                else:
+                    suffix = common_state.produced_cex
+                task2 = SbyTask(job, "engine_{}".format(engine_idx), job.model("btor"),
+                        "cd {dir} ; btorsim -c --vcd engine_{idx}/trace{i}.vcd --hierarchical-symbols --info model/design_btor.info model/design_btor.btor engine_{idx}/trace{i}.wit".format(dir=job.workdir, idx=engine_idx, i=suffix),
+                        logfile=open("{dir}/engine_{idx}/logfile2.txt".format(dir=job.workdir, idx=engine_idx), "w"))
+                task2.output_callback = output_callback2
+                task2.exit_callback = make_exit_callback(suffix)
+                task2.checkretcode = True
+                common_state.running_tasks += 1
+
+                common_state.produced_cex += 1
+                common_state.wit_file.close()
+                common_state.wit_file = None
+                if common_state.produced_cex == common_state.expected_cex:
+                    common_state.solver_status = "sat"
 
         if line.startswith("u"):
             return "No CEX up to depth {}.".format(int(line[1:])-1)
@@ -86,91 +152,36 @@ def run(mode, job, engine_idx, engine):
             if "bad state properties at bound" in line:
                 return line
             if "deleting model checker:" in line:
-                if solver_status is None:
-                    solver_status = "unsat"
+                if common_state.solver_status is None:
+                    common_state.solver_status = "unsat"
                 return line
 
-        if not wit_file:
+        if not common_state.wit_file:
             print(line, file=task.logfile)
 
         return None
 
     def exit_callback(retcode):
         assert retcode == 0
-        assert solver_status is not None
+        assert common_state.solver_status is not None
 
-        if solver_status == "unsat":
-            if expected_cex == 1:
+        if common_state.solver_status == "unsat":
+            if common_state.expected_cex == 1:
                 with open("{}/engine_{}/trace.wit".format(job.workdir, engine_idx), "w") as wit_file:
                     print("unsat", file=wit_file)
             else:
-                for i in range(produced_cex, expected_cex):
+                for i in range(common_state.produced_cex, common_state.expected_cex):
                     with open("{}/engine_{}/trace{}.wit".format(job.workdir, engine_idx, i), "w") as wit_file:
                         print("unsat", file=wit_file)
 
-        if mode == "cover":
-            task_status = "PASS" if solver_status == "sat" else "FAIL"
-        else:
-            task_status = "FAIL" if solver_status == "sat" else "PASS"
+        common_state.running_tasks -= 1
+        if (common_state.running_tasks == 0):
+            print_traces_and_terminate()
 
-        if mode == "cover":
-            def output_callback2(line):
-                nonlocal task_status
-                match = re.search(r"Assert failed in test", line)
-                if match:
-                    task_status = "FAIL"
-                return line
-        else:
-            def output_callback2(line):
-                return line
-
-        if produced_cex == 0:
-            job.update_status(task_status)
-            job.log("engine_{}: Status returned by engine: {}".format(engine_idx, task_status))
-            job.summary.append("engine_{} ({}) returned {}".format(engine_idx, " ".join(engine), task_status))
-
-            job.terminate()
-            job.log("engine_{}: Engine did not produce a counter example.".format(engine_idx))
-        elif produced_cex == 1:
-            task2 = SbyTask(job, "engine_{}".format(engine_idx), job.model("btor"),
-                    "cd {dir}; btorsim -c --vcd engine_{idx}/trace.vcd --hierarchical-symbols --info model/design_btor.info model/design_btor.btor engine_{idx}/trace.wit".format(dir=job.workdir, idx=engine_idx),
-                    logfile=open("{dir}/engine_{idx}/logfile2.txt".format(dir=job.workdir, idx=engine_idx), "w"))
-
-            def exit_callback2(retcode):
-                assert retcode == 0
-                job.update_status(task_status)
-                job.log("engine_{}: Status returned by engine: {}".format(engine_idx, task_status))
-                job.summary.append("engine_{} ({}) returned {}".format(engine_idx, " ".join(engine), task_status))
-
-                job.terminate()
-
-                if os.path.exists("{}/engine_{}/trace.vcd".format(job.workdir, engine_idx)):
-                    job.summary.append("{}trace: {}/engine_{}/trace.vcd".format("" if mode == "cover" else "counterexample ", job.workdir, engine_idx))
-
-            task2.output_callback = output_callback2
-            task2.exit_callback = exit_callback2
-
-        else:
-            def make_exit_callback2(i):
-                def exit_callback2(retcode):
-                    assert retcode == 0
-                    job.update_status(task_status)
-                    job.log("engine_{}: Status returned by engine: {}".format(engine_idx, task_status))
-                    job.summary.append("engine_{} ({}) returned {}".format(engine_idx, " ".join(engine), task_status))
-
-                    job.terminate()
-
-                    if os.path.exists("{}/engine_{}/trace{}.vcd".format(job.workdir, engine_idx, i)):
-                        job.summary.append("{}trace: {}/engine_{}/trace{}.vcd".format("" if mode == "cover" else "counterexample ", job.workdir, engine_idx, i))
-                return exit_callback2
-
-            for i in range(produced_cex):
-                task2 = SbyTask(job, "engine_{}".format(engine_idx), job.model("btor"),
-                        "cd {dir}; btorsim -c --vcd engine_{idx}/trace{i}.vcd --hierarchical-symbols --info model/design_btor.info model/design_btor.btor engine_{idx}/trace{i}.wit".format(dir=job.workdir, idx=engine_idx, i=i),
-                        logfile=open("{dir}/engine_{idx}/logfile{}.txt".format(i+2, dir=job.workdir, idx=engine_idx), "w"))
-
-                task2.output_callback = output_callback2
-                task2.exit_callback = make_exit_callback2(i)
+    task = SbyTask(job, "engine_{}".format(engine_idx), job.model("btor"),
+            "cd {}; {} model/design_btor.btor".format(job.workdir, solver_cmd),
+            logfile=open("{}/engine_{}/logfile.txt".format(job.workdir, engine_idx), "w"))
 
     task.output_callback = output_callback
     task.exit_callback = exit_callback
+    common_state.running_tasks += 1

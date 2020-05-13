@@ -180,6 +180,19 @@ def run(mode, job, engine_idx, engine):
             if task_status == "FAIL" and mode != "cover":
                 if os.path.exists("{}/engine_{}/trace.vcd".format(job.workdir, engine_idx)):
                     job.summary.append("counterexample trace: {}/engine_{}/trace.vcd".format(job.workdir, engine_idx))
+            elif task_status == "PASS" and mode == "cover":
+                print_traces_max = 5
+                for i in range(print_traces_max):
+                    if os.path.exists("{}/engine_{}/trace{}.vcd".format(job.workdir, engine_idx, i)):
+                        job.summary.append("trace: {}/engine_{}/trace{}.vcd".format(job.workdir, engine_idx, i))
+                    else:
+                        break
+                else:
+                    excess_traces = 0
+                    while os.path.exists("{}/engine_{}/trace{}.vcd".format(job.workdir, engine_idx, print_traces_max + excess_traces)):
+                        excess_traces += 1
+                    if excess_traces > 0:
+                        job.summary.append("and {} further trace{}".format(excess_traces, "s" if excess_traces > 1 else ""))
 
             job.terminate()
 
