@@ -192,7 +192,7 @@ def run(mode, job, engine_idx, engine):
                     while os.path.exists("{}/engine_{}/trace{}.vcd".format(job.workdir, engine_idx, print_traces_max + excess_traces)):
                         excess_traces += 1
                     if excess_traces > 0:
-                        job.summary.append("and {} further trace{}".format(excess_traces, "s" if excess_traces > 1 else {}))
+                        job.summary.append("and {} further trace{}".format(excess_traces, "s" if excess_traces > 1 else ""))
 
             job.terminate()
 

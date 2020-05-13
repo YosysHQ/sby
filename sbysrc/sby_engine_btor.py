@@ -70,15 +70,14 @@ def run(mode, job, engine_idx, engine):
         job.log("engine_{}: Status returned by engine: {}".format(engine_idx, task_status))
         job.summary.append("engine_{} ({}) returned {}".format(engine_idx, " ".join(engine), task_status))
 
-        common_state.produced_traces.sort()
         if len(common_state.produced_traces) == 0:
             job.log("engine_{}: Engine did not produce a counter example.".format(engine_idx))
-        elif len(common_state.produced_traces) < common_state.print_traces_max:
+        elif len(common_state.produced_traces) <= common_state.print_traces_max:
             job.summary.extend(common_state.produced_traces)
         else:
             job.summary.extend(common_state.produced_traces[:common_state.print_traces_max])
             excess_traces = len(common_state.produced_traces) - common_state.print_traces_max
-            job.summary.append("and {} further trace{}".format(excess_traces, "s" if excess_traces > 1 else {}))
+            job.summary.append("and {} further trace{}".format(excess_traces, "s" if excess_traces > 1 else ""))
 
         job.terminate()
 
