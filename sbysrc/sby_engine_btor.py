@@ -53,7 +53,7 @@ def run(mode, job, engine_idx, engine):
             if common_state.assert_fail:
                 task_status = "FAIL"
             elif common_state.solver_status == "sat":
-                task_status = "PASS"
+                task_status = "pass"
             elif common_state.solver_status == "unsat":
                 task_status = "FAIL"
             else:
@@ -62,11 +62,11 @@ def run(mode, job, engine_idx, engine):
             if common_state.solver_status == "sat":
                 task_status = "FAIL"
             elif common_state.solver_status == "unsat":
-                task_status = "PASS"
+                task_status = "pass"
             else:
                 job.error("engine_{}: Engine terminated without status.".format(engine_idx))
 
-        job.update_status(task_status)
+        job.update_status(task_status.upper())
         job.log("engine_{}: Status returned by engine: {}".format(engine_idx, task_status))
         job.summary.append("engine_{} ({}) returned {}".format(engine_idx, " ".join(engine), task_status))
 
@@ -79,6 +79,8 @@ def run(mode, job, engine_idx, engine):
             job.summary.extend(common_state.produced_traces[:common_state.print_traces_max])
             excess_traces = len(common_state.produced_traces) - common_state.print_traces_max
             job.summary.append("and {} further trace{}".format(excess_traces, "s" if excess_traces > 1 else {}))
+
+        job.terminate()
 
     if mode == "cover":
         def output_callback2(line):
