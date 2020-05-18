@@ -90,15 +90,18 @@ class SbyTask:
         else:
             self.notify.append(next_task)
 
+    def log(self, line):
+        if line is not None and (self.noprintregex is None or not self.noprintregex.match(line)):
+            if self.logfile is not None:
+                print(line, file=self.logfile)
+            self.job.log("{}: {}".format(self.info, line))
+
     def handle_output(self, line):
         if self.terminated or len(line) == 0:
             return
         if self.output_callback is not None:
             line = self.output_callback(line)
-        if line is not None and (self.noprintregex is None or not self.noprintregex.match(line)):
-            if self.logfile is not None:
-                print(line, file=self.logfile)
-            self.job.log("{}: {}".format(self.info, line))
+        self.log(line)
 
     def handle_exit(self, retcode):
         if self.terminated:
@@ -222,6 +225,7 @@ class SbyJob:
             "aigbmc": "aigbmc",
             "avy": "avy",
             "btormc": "btormc",
+            "cosa2": "cosa2",
         }
 
         self.tasks_running = []
