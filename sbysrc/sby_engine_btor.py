@@ -52,6 +52,8 @@ def run(mode, job, engine_idx, engine):
         if mode == "cover":
             if common_state.assert_fail:
                 task_status = "FAIL"
+            elif common_state.expected_cex == 0:
+                task_status = "pass"
             elif common_state.solver_status == "sat":
                 task_status = "pass"
             elif common_state.solver_status == "unsat":
@@ -59,7 +61,9 @@ def run(mode, job, engine_idx, engine):
             else:
                 job.error("engine_{}: Engine terminated without status.".format(engine_idx))
         else:
-            if common_state.solver_status == "sat":
+            if common_state.expected_cex == 0:
+                task_status = "pass"
+            elif common_state.solver_status == "sat":
                 task_status = "FAIL"
             elif common_state.solver_status == "unsat":
                 task_status = "pass"
@@ -71,7 +75,7 @@ def run(mode, job, engine_idx, engine):
         job.summary.append("engine_{} ({}) returned {}".format(engine_idx, " ".join(engine), task_status))
 
         if len(common_state.produced_traces) == 0:
-            job.log("engine_{}: Engine did not produce a counter example.".format(engine_idx))
+            job.log("engine_{}: Engine did not produce a{}example.".format(engine_idx, " counter" if mode != "cover" else "n "))
         elif len(common_state.produced_traces) <= common_state.print_traces_max:
             job.summary.extend(common_state.produced_traces)
         else:
@@ -110,7 +114,6 @@ def run(mode, job, engine_idx, engine):
             match = re.search(r"calling BMC on ([0-9]+) properties", line)
             if match:
                 common_state.expected_cex = int(match[1])
-                assert common_state.expected_cex > 0
                 assert common_state.produced_cex == 0
 
         if (common_state.produced_cex < common_state.expected_cex) and line == "sat":
@@ -163,7 +166,8 @@ def run(mode, job, engine_idx, engine):
 
     def exit_callback(retcode):
         assert retcode == 0
-        assert common_state.solver_status is not None
+        if common_state.expected_cex != 0:
+            assert common_state.solver_status is not None
 
         if common_state.solver_status == "unsat":
             if common_state.expected_cex == 1:
