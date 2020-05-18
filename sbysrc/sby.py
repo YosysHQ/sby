@@ -58,6 +58,8 @@ parser.add_argument("--aigbmc", metavar="<path_to_executable>",
 parser.add_argument("--avy", metavar="<path_to_executable>",
         action=DictAction, dest="exe_paths")
 parser.add_argument("--btormc", metavar="<path_to_executable>",
+        action=DictAction, dest="exe_paths")
+parser.add_argument("--cosa2", metavar="<path_to_executable>",
         action=DictAction, dest="exe_paths",
         help="configure which executable to use for the respective tool")
 parser.add_argument("--dumpcfg", action="store_true", dest="dump_cfg",

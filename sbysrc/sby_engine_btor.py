@@ -35,6 +35,9 @@ def run(mode, job, engine_idx, engine):
             solver_cmd += " -kmin {}".format(job.opt_skip)
         solver_cmd += " ".join([""] + solver_args[1:])
 
+    elif solver_args[0] == "cosa2":
+        solver_cmd = job.exe_paths["cosa2"] + " -v 1 -e bmc -k {}".format(job.opt_depth - 1)
+
     else:
         job.error("Invalid solver command {}.".format(solver_args[0]))
 
@@ -111,10 +114,14 @@ def run(mode, job, engine_idx, engine):
 
     def output_callback(line):
         if mode == "cover":
-            match = re.search(r"calling BMC on ([0-9]+) properties", line)
-            if match:
-                common_state.expected_cex = int(match[1])
-                assert common_state.produced_cex == 0
+            if solver_args[0] == "btormc":
+                match = re.search(r"calling BMC on ([0-9]+) properties", line)
+                if match:
+                    common_state.expected_cex = int(match[1])
+                    assert common_state.produced_cex == 0
+
+            else:
+                job.error("engine_{}: BTOR solver '{}' is currently not supported in cover mode.".format(solver_args[0]))
 
         if (common_state.produced_cex < common_state.expected_cex) and line == "sat":
             assert common_state.wit_file == None
@@ -122,6 +129,8 @@ def run(mode, job, engine_idx, engine):
                 common_state.wit_file = open("{}/engine_{}/trace.wit".format(job.workdir, engine_idx), "w")
             else:
                 common_state.wit_file = open("{}/engine_{}/trace{}.wit".format(job.workdir, engine_idx, common_state.produced_cex), "w")
+            if solver_args[0] != "btormc":
+                task.log("Found satisfiability witness.")
 
         if common_state.wit_file:
             print(line, file=common_state.wit_file)
@@ -130,7 +139,7 @@ def run(mode, job, engine_idx, engine):
                     suffix = ""
                 else:
                     suffix = common_state.produced_cex
-                task2 = SbyTask(job, "engine_{}".format(engine_idx), job.model("btor"),
+                task2 = SbyTask(job, "engine_{}_{}".format(engine_idx, common_state.produced_cex), job.model("btor"),
                         "cd {dir} ; btorsim -c --vcd engine_{idx}/trace{i}.vcd --hierarchical-symbols --info model/design_btor.info model/design_btor.btor engine_{idx}/trace{i}.wit".format(dir=job.workdir, idx=engine_idx, i=suffix),
                         logfile=open("{dir}/engine_{idx}/logfile2.txt".format(dir=job.workdir, idx=engine_idx), "w"))
                 task2.output_callback = output_callback2
@@ -144,28 +153,36 @@ def run(mode, job, engine_idx, engine):
                 if common_state.produced_cex == common_state.expected_cex:
                     common_state.solver_status = "sat"
 
-        if line.startswith("u"):
-            return "No CEX up to depth {}.".format(int(line[1:])-1)
+        else:
+            if solver_args[0] == "btormc":
+                if "calling BMC on" in line:
+                    return line
+                if "SATISFIABLE" in line:
+                    return line
+                if "bad state properties at bound" in line:
+                    return line
+                if "deleting model checker:" in line:
+                    if common_state.solver_status is None:
+                        common_state.solver_status = "unsat"
+                    return line
 
-        if solver_args[0] == "btormc":
-            if "calling BMC on" in line:
-                return line
-            if "SATISFIABLE" in line:
-                return line
-            if "bad state properties at bound" in line:
-                return line
-            if "deleting model checker:" in line:
-                if common_state.solver_status is None:
-                    common_state.solver_status = "unsat"
-                return line
+            elif solver_args[0] == "cosa2":
+                if line == "unknown":
+                    if common_state.solver_status is None:
+                        common_state.solver_status = "unsat"
+                    return "No CEX found."
+                if line not in ["b0"]:
+                    return line
 
-        if not common_state.wit_file:
             print(line, file=task.logfile)
 
         return None
 
     def exit_callback(retcode):
-        assert retcode == 0
+        if solver_args[0] == "cosa2":
+            assert retcode in [1, 2]
+        else:
+            assert retcode == 0
         if common_state.expected_cex != 0:
             assert common_state.solver_status is not None
 
