@@ -499,6 +499,7 @@ class SbyJob:
             for line in f:
                 raw_line = line
                 if mode in ["options", "engines", "files"]:
+                    # delete trailing whitespace and comments
                     line = re.sub(r"\s*(\s#.*)?$", "", line)
                     if line == "" or line[0] == "#":
                         continue
