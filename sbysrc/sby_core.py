@@ -118,7 +118,10 @@ class SbyTask:
             if not self.silent:
                 self.job.log("{}: terminating process".format(self.info))
             if os.name == "posix":
-                os.killpg(self.p.pid, signal.SIGTERM)
+                try:
+                    os.killpg(self.p.pid, signal.SIGTERM)
+                except PermissionError:
+                    pass
             self.p.terminate()
             self.job.tasks_running.remove(self)
             all_tasks_running.remove(self)
