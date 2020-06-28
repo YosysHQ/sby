@@ -211,7 +211,7 @@ To use ``(* gclk *)``, define a register with that attribute, as in:
 
 .. code-block:: systemverilog
 
-    (* gclk ) reg formal_timestep;
+    (* gclk *) reg formal_timestep;
 
 You can then reference this ``formal_timestep`` in the clocking section
 of an always block, as in,
