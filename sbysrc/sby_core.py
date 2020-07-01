@@ -418,13 +418,14 @@ class SbyJob:
                 print("read_ilang design{}.il".format("_nomem" if "_nomem" in model_name else ""), file=f)
                 print("flatten", file=f)
                 print("setundef -undriven -anyseq", file=f)
-                print("setattr -unset keep", file=f)
-                print("opt -full", file=f)
                 if "_syn" in model_name:
+                    print("opt -full", file=f)
                     print("techmap", file=f)
                     print("opt -fast", file=f)
                     print("abc", file=f)
                     print("opt_clean", file=f)
+                else:
+                    print("opt -fast", file=f)
                 print("delete -output", file=f)
                 print("stat", file=f)
                 print("write_btor {}-i design_{m}.info design_{m}.btor".format("-c " if self.opt_mode == "cover" else "", m=model_name), file=f)
