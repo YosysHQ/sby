@@ -21,21 +21,31 @@ from types import SimpleNamespace
 from sby_core import SbyTask
 
 def run(mode, job, engine_idx, engine):
-    opts, solver_args = getopt.getopt(engine[1:], "", [])
+    random_seed = None
+
+    opts, solver_args = getopt.getopt(engine[1:], "", ["seed="])
 
     if len(solver_args) == 0:
         job.error("Missing solver command.")
 
     for o, a in opts:
-        job.error("Unexpected BTOR engine options.")
+        if o == "--seed":
+            random_seed = a
+        else:
+            job.error("Unexpected BTOR engine options.")
 
     if solver_args[0] == "btormc":
-        solver_cmd = job.exe_paths["btormc"] + " --stop-first {} -v 1 -kmax {}".format(0 if mode == "cover" else 1, job.opt_depth - 1)
+        solver_cmd = ""
+        if random_seed:
+            solver_cmd += "BTORSEED={} ".format(random_seed)
+        solver_cmd += job.exe_paths["btormc"] + " --stop-first {} -v 1 -kmax {}".format(0 if mode == "cover" else 1, job.opt_depth - 1)
         if job.opt_skip is not None:
             solver_cmd += " -kmin {}".format(job.opt_skip)
         solver_cmd += " ".join([""] + solver_args[1:])
 
     elif solver_args[0] == "cosa2":
+        if random_seed:
+            job.error("Setting the random seed is not available for the cosa2 solver.")
         solver_cmd = job.exe_paths["cosa2"] + " -v 1 -e bmc -k {}".format(job.opt_depth - 1)
 
     else:
