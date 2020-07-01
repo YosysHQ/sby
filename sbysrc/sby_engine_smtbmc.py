@@ -31,11 +31,13 @@ def run(mode, job, engine_idx, engine):
     progress = False
     basecase_only = False
     induction_only = False
+    random_seed = None
 
     opts, args = getopt.getopt(engine[1:], "", ["nomem", "syn", "stbv", "stdt", "presat",
-            "nopresat", "unroll", "nounroll", "dumpsmt2", "progress", "basecase", "induction"])
+            "nopresat", "unroll", "nounroll", "dumpsmt2", "progress", "basecase", "induction", "seed="])
 
     for o, a in opts:
+        print(o, a)
         if o == "--nomem":
             nomem_opt = True
         elif o == "--syn":
@@ -64,6 +66,8 @@ def run(mode, job, engine_idx, engine):
             if basecase_only:
                 job.error("smtbmc options --basecase and --induction are exclusive.")
             induction_only = True
+        elif o == "--seed":
+            random_seed = a
         else:
             job.error("Invalid smtbmc options {}.".format(o))
 
@@ -135,8 +139,8 @@ def run(mode, job, engine_idx, engine):
         t_opt = "{}".format(job.opt_depth)
 
     task = SbyTask(job, taskname, job.model(model_name),
-            "cd {}; {} {} -t {} --append {} --dump-vcd {p}.vcd --dump-vlogtb {p}_tb.v --dump-smtc {p}.smtc model/design_{}.smt2".format
-                    (job.workdir, job.exe_paths["smtbmc"], " ".join(smtbmc_opts), t_opt, job.opt_append, model_name, p=trace_prefix),
+            "cd {}; {} {} -t {} {} --append {} --dump-vcd {p}.vcd --dump-vlogtb {p}_tb.v --dump-smtc {p}.smtc model/design_{}.smt2".format
+                    (job.workdir, job.exe_paths["smtbmc"], " ".join(smtbmc_opts), t_opt, "--info \"(set-option :random-seed {})\"".format(random_seed) if random_seed else "", job.opt_append, model_name, p=trace_prefix),
             logfile=open(logfile_prefix + ".txt", "w"), logstderr=(not progress))
 
     if mode == "prove_basecase":
