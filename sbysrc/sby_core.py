@@ -228,7 +228,7 @@ class SbyJob:
             "aigbmc": "aigbmc",
             "avy": "avy",
             "btormc": "btormc",
-            "cosa2": "cosa2",
+            "pono": "pono",
         }
 
         self.tasks_running = []
