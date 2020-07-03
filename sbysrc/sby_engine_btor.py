@@ -43,10 +43,10 @@ def run(mode, job, engine_idx, engine):
             solver_cmd += " -kmin {}".format(job.opt_skip)
         solver_cmd += " ".join([""] + solver_args[1:])
 
-    elif solver_args[0] == "cosa2":
+    elif solver_args[0] == "pono":
         if random_seed:
-            job.error("Setting the random seed is not available for the cosa2 solver.")
-        solver_cmd = job.exe_paths["cosa2"] + " -v 1 -e bmc -k {}".format(job.opt_depth - 1)
+            job.error("Setting the random seed is not available for the pono solver.")
+        solver_cmd = job.exe_paths["pono"] + " -v 1 -e bmc -k {}".format(job.opt_depth - 1)
 
     else:
         job.error("Invalid solver command {}.".format(solver_args[0]))
@@ -176,7 +176,7 @@ def run(mode, job, engine_idx, engine):
                         common_state.solver_status = "unsat"
                     return line
 
-            elif solver_args[0] == "cosa2":
+            elif solver_args[0] == "pono":
                 if line == "unknown":
                     if common_state.solver_status is None:
                         common_state.solver_status = "unsat"
@@ -189,7 +189,7 @@ def run(mode, job, engine_idx, engine):
         return None
 
     def exit_callback(retcode):
-        if solver_args[0] == "cosa2":
+        if solver_args[0] == "pono":
             assert retcode in [1, 2]
         else:
             assert retcode == 0
