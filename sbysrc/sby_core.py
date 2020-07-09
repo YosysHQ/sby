@@ -221,14 +221,14 @@ class SbyJob:
         self.expect = []
 
         self.exe_paths = {
-            "yosys": "yosys",
-            "abc": "yosys-abc",
-            "smtbmc": "yosys-smtbmc",
-            "suprove": "suprove",
-            "aigbmc": "aigbmc",
-            "avy": "avy",
-            "btormc": "btormc",
-            "pono": "pono",
+            "yosys": os.getenv("YOSYS", "yosys"),
+            "abc": os.getenv("ABC", "yosys-abc"),
+            "smtbmc": os.getenv("SMTBMC", "yosys-smtbmc"),
+            "suprove": os.getenv("SUPROVE", "suprove"),
+            "aigbmc": os.getenv("AIGBMC", "aigbmc"),
+            "avy": os.getenv("AVY", "avy"),
+            "btormc": os.getenv("BTORMC", "btormc"),
+            "pono": os.getenv("PONO", "pono"),
         }
 
         self.tasks_running = []
