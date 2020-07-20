@@ -37,7 +37,6 @@ def run(mode, job, engine_idx, engine):
             "nopresat", "unroll", "nounroll", "dumpsmt2", "progress", "basecase", "induction", "seed="])
 
     for o, a in opts:
-        print(o, a)
         if o == "--nomem":
             nomem_opt = True
         elif o == "--syn":
@@ -165,6 +164,11 @@ def run(mode, job, engine_idx, engine):
             return line.replace("PASSED", "passed")
 
         match = re.match(r"^## [0-9: ]+ Status: PREUNSAT", line)
+        if match:
+            task_status = "ERROR"
+            return line
+
+        match = re.match(r"^## [0-9: ]+ Unexpected response from solver:", line)
         if match:
             task_status = "ERROR"
             return line
