@@ -17,6 +17,9 @@ help:
 	@echo "make html"
 	@echo "    build documentation in docs/build/html/"
 	@echo ""
+	@echo "make test"
+	@echo "    run examples"
+	@echo ""
 	@echo "make clean"
 	@echo "    cleanup"
 	@echo ""
@@ -33,6 +36,72 @@ else
 	sed 's|##yosys-sys-path##|sys.path += [os.path.dirname(__file__) + p for p in ["/share/python3", "/../share/yosys/python3"]]|;' < sbysrc/sby.py > $(DESTDIR)$(PREFIX)/bin/sby
 	chmod +x $(DESTDIR)$(PREFIX)/bin/sby
 endif
+
+test: \
+  test_demo1 test_demo2 test_demo3 \
+  test_abstract_abstr test_abstract_props \
+  test_demos_fib_cover test_demos_fib_prove test_demos_fib_live \
+  test_multiclk_dpmem \
+  test_puzzles_djb2hash test_puzzles_pour853to4 test_puzzles_wolfgoatcabbage \
+  test_puzzles_primegen_primegen test_puzzles_primegen_primes_pass test_puzzles_primegen_primes_fail \
+  test_quickstart_demo test_quickstart_cover test_quickstart_prove test_quickstart_memory
+
+test_demo1:
+	python3 sbysrc/sby.py -f sbysrc/demo1.sby
+
+test_demo2:
+	python3 sbysrc/sby.py -f sbysrc/demo2.sby
+
+test_demo3:
+	python3 sbysrc/sby.py -f sbysrc/demo3.sby
+
+test_abstract_abstr:
+	cd docs/examples/abstract && python3 ../../../sbysrc/sby.py -f abstr.sby
+
+test_abstract_props:
+	cd docs/examples/abstract && python3 ../../../sbysrc/sby.py -f props.sby
+
+test_demos_fib_cover:
+	cd docs/examples/demos && python3 ../../../sbysrc/sby.py -f fib.sby cover
+
+test_demos_fib_prove:
+	cd docs/examples/demos && python3 ../../../sbysrc/sby.py -f fib.sby prove
+
+test_demos_fib_live:
+	cd docs/examples/demos && python3 ../../../sbysrc/sby.py -f fib.sby live
+
+test_multiclk_dpmem:
+	cd docs/examples/multiclk && python3 ../../../sbysrc/sby.py -f dpmem.sby
+
+test_puzzles_djb2hash:
+	cd docs/examples/puzzles && python3 ../../../sbysrc/sby.py -f djb2hash.sby
+
+test_puzzles_pour853to4:
+	cd docs/examples/puzzles && python3 ../../../sbysrc/sby.py -f pour_853_to_4.sby
+
+test_puzzles_wolfgoatcabbage:
+	cd docs/examples/puzzles && python3 ../../../sbysrc/sby.py -f wolf_goat_cabbage.sby
+
+test_puzzles_primegen_primegen:
+	cd docs/examples/puzzles && python3 ../../../sbysrc/sby.py -f primegen.sby primegen
+
+test_puzzles_primegen_primes_pass:
+	cd docs/examples/puzzles && python3 ../../../sbysrc/sby.py -f primegen.sby primes_pass
+
+test_puzzles_primegen_primes_fail:
+	cd docs/examples/puzzles && python3 ../../../sbysrc/sby.py -f primegen.sby primes_fail
+
+test_quickstart_demo:
+	cd docs/examples/quickstart && python3 ../../../sbysrc/sby.py -f demo.sby
+
+test_quickstart_cover:
+	cd docs/examples/quickstart && python3 ../../../sbysrc/sby.py -f cover.sby
+
+test_quickstart_prove:
+	cd docs/examples/quickstart && python3 ../../../sbysrc/sby.py -f prove.sby
+
+test_quickstart_memory:
+	cd docs/examples/quickstart && python3 ../../../sbysrc/sby.py -f memory.sby
 
 html:
 	make -C docs html

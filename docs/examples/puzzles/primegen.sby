@@ -6,7 +6,7 @@ primes_pass
 [options]
 mode cover
 depth 1
-primes_fail: expect fail
+primes_fail: expect fail,error
 
 [engines]
 smtbmc --dumpsmt2 --progress --stbv z3
