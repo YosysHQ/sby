@@ -47,13 +47,13 @@ test: \
   test_quickstart_demo test_quickstart_cover test_quickstart_prove test_quickstart_memory
 
 test_demo1:
-	python3 sbysrc/sby.py -f sbysrc/demo1.sby
+	cd sbysrc && python3 sby.py -f demo1.sby
 
 test_demo2:
-	python3 sbysrc/sby.py -f sbysrc/demo2.sby
+	cd sbysrc && python3 sby.py -f demo2.sby
 
 test_demo3:
-	python3 sbysrc/sby.py -f sbysrc/demo3.sby
+	cd sbysrc && python3 sby.py -f demo3.sby
 
 test_abstract_abstr:
 	cd docs/examples/abstract && python3 ../../../sbysrc/sby.py -f abstr.sby
