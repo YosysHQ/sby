@@ -131,7 +131,7 @@ def run(mode, job, engine_idx, engine):
                     assert common_state.produced_cex == 0
 
             else:
-                job.error("engine_{}: BTOR solver '{}' is currently not supported in cover mode.".format(solver_args[0]))
+                job.error("engine_{}: BTOR solver '{}' is currently not supported in cover mode.".format(engine_idx, solver_args[0]))
 
         if (common_state.produced_cex < common_state.expected_cex) and line == "sat":
             assert common_state.wit_file == None
