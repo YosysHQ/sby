@@ -1,0 +1,21 @@
+[tasks]
+btormc
+pono
+
+[options]
+mode bmc
+expect fail
+
+[engines]
+btormc: btor btormc
+pono: btor pono
+
+[script]
+read -noverific
+read -sv picorv32.v
+read -sv prv32fmcmp.v
+prep -top prv32fmcmp
+
+[files]
+picorv32.v
+prv32fmcmp.v

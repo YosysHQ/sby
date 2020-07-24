@@ -44,7 +44,8 @@ test: \
   test_multiclk_dpmem \
   test_puzzles_djb2hash test_puzzles_pour853to4 test_puzzles_wolfgoatcabbage \
   test_puzzles_primegen_primegen test_puzzles_primegen_primes_pass test_puzzles_primegen_primes_fail \
-  test_quickstart_demo test_quickstart_cover test_quickstart_prove test_quickstart_memory
+  test_quickstart_demo test_quickstart_cover test_quickstart_prove test_quickstart_memory \
+  run_tests
 
 test_demo1:
 	cd sbysrc && python3 sby.py -f demo1.sby
@@ -103,10 +104,12 @@ test_quickstart_prove:
 test_quickstart_memory:
 	cd docs/examples/quickstart && python3 ../../../sbysrc/sby.py -f memory.sby
 
+run_tests:
+	make -C tests test
+
 html:
 	make -C docs html
 
 clean:
 	make -C docs clean
 	rm -rf docs/build sbysrc/sby sbysrc/__pycache__
-

@@ -1,0 +1,19 @@
+[tasks]
+btormc
+pono
+
+[options]
+mode bmc
+depth 100
+expect fail
+
+[engines]
+btormc: btor btormc
+pono: btor pono
+
+[script]
+read -formal demo.sv
+prep -top demo
+
+[files]
+demo.sv

@@ -1,0 +1,13 @@
+[options]
+mode cover
+expect pass
+
+[engines]
+btor btormc
+
+[script]
+read_verilog -formal redxor.v
+prep -top test
+
+[files]
+redxor.v

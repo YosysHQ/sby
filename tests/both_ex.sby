@@ -1,0 +1,22 @@
+[tasks]
+btormc bmc
+pono bmc
+cover
+
+[options]
+bmc: mode bmc
+cover: mode cover
+depth 5
+expect pass
+
+[engines]
+btormc: btor btormc
+pono: btor pono
+cover: btor btormc
+
+[script]
+read_verilog -sv both_ex.v
+prep -top test
+
+[files]
+both_ex.v
