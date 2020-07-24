@@ -46,6 +46,9 @@ test: \
   test_puzzles_primegen_primegen test_puzzles_primegen_primes_pass test_puzzles_primegen_primes_fail \
   test_quickstart_demo test_quickstart_cover test_quickstart_prove test_quickstart_memory \
   run_tests
+	if yosys -qp 'read -verific' 2> /dev/null; then set -x; \
+		YOSYS_NOVERIFIC=1 $(MAKE) test; \
+	fi
 
 test_demo1:
 	cd sbysrc && python3 sby.py -f demo1.sby
@@ -57,10 +60,14 @@ test_demo3:
 	cd sbysrc && python3 sby.py -f demo3.sby
 
 test_abstract_abstr:
-	cd docs/examples/abstract && python3 ../../../sbysrc/sby.py -f abstr.sby
+	@if yosys -qp 'read -verific' 2> /dev/null; then set -x; \
+		cd docs/examples/abstract && python3 ../../../sbysrc/sby.py -f abstr.sby; \
+	else echo "skipping $@"; fi
 
 test_abstract_props:
-	cd docs/examples/abstract && python3 ../../../sbysrc/sby.py -f props.sby
+	if yosys -qp 'read -verific' 2> /dev/null; then set -x; \
+		cd docs/examples/abstract && python3 ../../../sbysrc/sby.py -f props.sby; \
+	else echo "skipping $@"; fi
 
 test_demos_fib_cover:
 	cd docs/examples/demos && python3 ../../../sbysrc/sby.py -f fib.sby cover
@@ -105,11 +112,11 @@ test_quickstart_memory:
 	cd docs/examples/quickstart && python3 ../../../sbysrc/sby.py -f memory.sby
 
 run_tests:
-	make -C tests test
+	$(MAKE) -C tests test
 
 html:
-	make -C docs html
+	$(MAKE) -C docs html
 
 clean:
-	make -C docs clean
+	$(MAKE) -C docs clean
 	rm -rf docs/build sbysrc/sby sbysrc/__pycache__
