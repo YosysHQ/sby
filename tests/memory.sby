@@ -1,0 +1,19 @@
+[tasks]
+btormc
+pono
+
+[options]
+mode bmc
+depth 10
+expect fail
+
+[engines]
+btormc: btor btormc
+pono: btor pono
+
+[script]
+read -formal memory.sv
+prep -top testbench
+
+[files]
+memory.sv

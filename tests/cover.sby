@@ -1,0 +1,13 @@
+[options]
+mode cover
+expect pass
+
+[engines]
+btor btormc
+
+[script]
+read -formal cover.sv
+prep -top top
+
+[files]
+cover.sv

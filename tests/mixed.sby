@@ -1,0 +1,21 @@
+[tasks]
+cover
+btormc bmc
+pono bmc
+
+[options]
+cover: mode cover
+bmc: mode bmc
+bmc: depth 1
+
+[engines]
+cover: btor btormc
+btormc: btor btormc
+pono: btor pono
+
+[script]
+read -formal mixed.v
+prep -top test
+
+[files]
+mixed.v

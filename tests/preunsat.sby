@@ -1,0 +1,22 @@
+[tasks]
+btormc
+yices
+
+[options]
+mode bmc
+yices: expect error
+btormc: expect pass
+
+[engines]
+btormc: btor btormc
+yices: smtbmc yices
+
+[script]
+read_verilog -sv test.sv
+prep -top test
+
+[file test.sv]
+module test(input foo);
+always @* assume(0);
+always @* assert(foo);
+endmodule
