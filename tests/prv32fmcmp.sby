@@ -17,5 +17,5 @@ read -sv prv32fmcmp.v
 prep -top prv32fmcmp
 
 [files]
-picorv32.v
+../extern/picorv32.v
 prv32fmcmp.v
