@@ -401,6 +401,7 @@ class SbyJob:
                     print("opt -fast", file=f)
                     print("abc", file=f)
                     print("opt_clean", file=f)
+                print("dffunmap", file=f)
                 print("stat", file=f)
                 if "_stbv" in model_name:
                     print("write_smt2 -stbv -wires design_{}.smt2".format(model_name), file=f)
@@ -430,6 +431,7 @@ class SbyJob:
                 else:
                     print("opt -fast", file=f)
                 print("delete -output", file=f)
+                print("dffunmap", file=f)
                 print("stat", file=f)
                 print("write_btor {}-i design_{m}.info design_{m}.btor".format("-c " if self.opt_mode == "cover" else "", m=model_name), file=f)
 
@@ -450,6 +452,7 @@ class SbyJob:
                 print("opt -full", file=f)
                 print("techmap", file=f)
                 print("opt -fast", file=f)
+                print("dffunmap", file=f)
                 print("abc -g AND -fast", file=f)
                 print("opt_clean", file=f)
                 print("stat", file=f)
