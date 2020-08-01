@@ -127,12 +127,13 @@ class SbyTask:
                     os.killpg(self.p.pid, signal.SIGTERM)
                 except PermissionError:
                     pass
-            self.p.terminate()
+                self.p.terminate()
             self.job.tasks_running.remove(self)
             self.job.tasks_retired.append(self)
+            all_tasks_running.remove(self)
         self.terminated = True
 
-    async def output_async(self):
+    async def output(self):
         while True:
             outs = await self.p.stdout.readline()
             await asyncio.sleep(0) # https://bugs.python.org/issue24532
@@ -154,27 +155,48 @@ class SbyTask:
                 if not dep.finished:
                     return
 
-            self.job.log("%s: starting process \"%s\"" % (self.info, self.cmdline))
+            if not self.silent:
+                self.job.log("{}: starting process \"{}\"".format(self.info, self.cmdline))
+            if os.name == "posix":
+                def preexec_fn():
+                    signal.signal(signal.SIGINT, signal.SIG_IGN)
+                    os.setpgrp()
+
+                subp_kwargs = { "preexec_fn" : preexec_fn }
+            else:
+                subp_kwargs = {}
             self.p = await asyncio.create_subprocess_shell(self.cmdline, stdin=asyncio.subprocess.DEVNULL,
                     stdout=asyncio.subprocess.PIPE,
-                    stderr=(asyncio.subprocess.STDOUT if self.logstderr else None))
+                    stderr=(asyncio.subprocess.STDOUT if self.logstderr else None),
+                    **subp_kwargs)
             self.job.tasks_pending.remove(self)
             self.job.tasks_running.append(self)
+            all_tasks_running.append(self)
             self.running = True
             asyncio.ensure_future(self.output())
             self.fut = asyncio.ensure_future(self.p.wait())
 
     async def shutdown_and_notify(self):
-        self.job.log("%s: finished (returncode=%d)" % (self.info, self.p.returncode))
+        if not self.silent:
+            self.job.log("{}: finished (returncode={})".format(self.info, self.p.returncode))
         self.job.tasks_running.remove(self)
         self.job.tasks_retired.append(self)
         self.running = False
 
         self.handle_exit(self.p.returncode)
 
+        if self.p.returncode == 127:
+            self.job.status = "ERROR"
+            if not self.silent:
+                self.job.log("{}: COMMAND NOT FOUND. ERROR.".format(self.info))
+            self.terminated = True
+            self.job.terminate()
+            return
+
         if self.checkretcode and self.p.returncode != 0:
             self.job.status = "ERROR"
-            self.job.log("%s: job failed. ERROR." % self.info)
+            if not self.silent:
+                self.job.log("{}: job failed. ERROR.".format(self.info))
             self.terminated = True
             self.job.terminate()
             return
@@ -236,7 +258,7 @@ class SbyJob:
                 for line in sbyconfig:
                     print(line, file=f)
 
-    def taskloop_async(self):
+    def taskloop(self):
         if os.name != "posix":
             loop = asyncio.ProactorEventLoop()
             asyncio.set_event_loop(loop)
@@ -255,7 +277,7 @@ class SbyJob:
             pass
 
     def timeout(self, fut):
-        self.log("Reached TIMEOUT (%d seconds). Terminating all tasks." % self.opt_timeout)
+        self.log("Reached TIMEOUT ({} seconds). Terminating all tasks.".format(self.opt_timeout))
         self.status = "TIMEOUT"
         self.terminate(timeout=True)
 
@@ -409,6 +431,7 @@ class SbyJob:
                     print("opt -fast", file=f)
                     print("abc", file=f)
                     print("opt_clean", file=f)
+                print("dffunmap", file=f)
                 print("stat", file=f)
                 if "_stbv" in model_name:
                     print("write_smt2 -stbv -wires design_{}.smt2".format(model_name), file=f)
@@ -438,6 +461,7 @@ class SbyJob:
                 else:
                     print("opt -fast", file=f)
                 print("delete -output", file=f)
+                print("dffunmap", file=f)
                 print("stat", file=f)
                 print("write_btor {}-i design_{m}.info design_{m}.btor".format("-c " if self.opt_mode == "cover" else "", m=model_name), file=f)
 
@@ -458,6 +482,7 @@ class SbyJob:
                 print("opt -full", file=f)
                 print("techmap", file=f)
                 print("opt -fast", file=f)
+                print("dffunmap", file=f)
                 print("abc -g AND -fast", file=f)
                 print("opt_clean", file=f)
                 print("stat", file=f)

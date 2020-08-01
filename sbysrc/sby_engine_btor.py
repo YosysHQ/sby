@@ -190,7 +190,7 @@ def init(mode, job, engine_idx, engine):
 
     def exit_callback(retcode):
         if solver_args[0] == "pono":
-            assert retcode in [1, 2]
+            assert retcode in [0, 1, 255] # UNKNOWN = -1, FALSE = 0, TRUE = 1, ERROR = 2
         else:
             assert retcode == 0
         if common_state.expected_cex != 0:
