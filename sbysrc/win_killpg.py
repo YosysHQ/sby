@@ -61,7 +61,7 @@ def _create_process_lookup():
     pe = pointer(PROCESSENTRY32())
     pe.contents.dwSize = sizeof(PROCESSENTRY32)
     pid_lookup = {}
-    if windll.kernel32. (handle, pe) != 0:
+    if windll.kernel32.Process32First(handle, pe) != 0:
         _update_lookup(pid_lookup, pe)
         while windll.kernel32.Process32Next(handle, pe) != 0:
             _update_lookup(pid_lookup, pe)
@@ -83,6 +83,6 @@ def win_killpg(pid):
         try:
             # "Any other value for sig will cause the process to be
             # unconditionally killed by the TerminateProcess API"
-            os.kill(p, sig=-1)
-        except PermissionError as pe:
-            print("WARNING: error while killing pid {}: {}".format(p, pe))
+            os.kill(p, -1)
+        except (PermissionError, OSError) as e:
+            print("WARNING: error while killing pid {}: {}".format(p, e))
