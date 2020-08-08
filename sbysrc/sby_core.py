@@ -19,6 +19,8 @@
 import os, re, sys, signal
 if os.name == "posix":
     import resource, fcntl
+else:
+    import win_killpg
 import subprocess
 import asyncio
 from functools import partial
@@ -116,12 +118,11 @@ class SbyTask:
                 self.job.log("{}: terminating process".format(self.info))
             if os.name != "posix":
                 # self.p.terminate does not actually terminate underlying
-                # processes on Windows, so use taskkill to kill the shell
-                # and children. This for some reason does not cause the
-                # associated future (self.fut) to complete until it is awaited
-                # on one last time.
-                subprocess.Popen("taskkill /T /F /PID {}".format(self.p.pid), stdin=subprocess.DEVNULL,
-                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                # processes on Windows, so we resort to using the WinAPI to
+                # kill the shell and children. This for some reason does
+                # not cause the associated future (self.fut) to complete
+                # until it is awaited on one last time.
+                win_killpg.win_killpg(self.p.pid)
             else:
                 try:
                     os.killpg(self.p.pid, signal.SIGTERM)
