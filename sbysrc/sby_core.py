@@ -19,8 +19,6 @@
 import os, re, sys, signal
 if os.name == "posix":
     import resource, fcntl
-else:
-    import win_killpg
 import subprocess
 import asyncio
 from functools import partial
