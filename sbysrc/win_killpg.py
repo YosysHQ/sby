@@ -28,24 +28,23 @@ class PROCESSENTRY32(Structure):
     ]
 
 
-def _all_children(pid, lookup, visited):
-    if pid in lookup and pid not in visited:
+def _visit_all_children(pid, lookup, visited):
+    if pid not in visited:
         visited.add(pid)
-        for c in lookup[pid]:
-            if c not in visited:
-                visited.add(c)
-                visited |= _all_children(c, lookup, visited)
-        return visited
-    else:
-        return set()
+        if pid in lookup:
+            for c in lookup[pid]:
+                _visit_all_children(c, lookup, visited)
 
 
 def _update_lookup(pid_lookup, pe):
     cpid = pe.contents.th32ProcessID
     ppid = pe.contents.th32ParentProcessID
-    # pid 0 should be the only one that is its own parent
+    # pid 0 should be the only one that is its own parent.
+    # don't add this entry to the graph to avoid an unwanted cycle
+    if ppid == 0 and cpid == 0:
+        return
     assert (
-        cpid == 0 or cpid != ppid
+        cpid != ppid
     ), "Internal error listing windows processes - process is its own parent"
     if ppid not in pid_lookup:
         pid_lookup[ppid] = []
@@ -78,7 +77,8 @@ def win_killpg(pid):
     first and use this to derive a list of child processes to be killed.
     """
     pid_lookup = _create_process_lookup()
-    to_kill = _all_children(pid, pid_lookup, set())
+    to_kill = set()
+    _visit_all_children(pid, pid_lookup, to_kill)
     for p in to_kill:
         try:
             # "Any other value for sig will cause the process to be
