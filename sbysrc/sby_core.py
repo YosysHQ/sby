@@ -118,11 +118,12 @@ class SbyTask:
                 self.job.log("{}: terminating process".format(self.info))
             if os.name != "posix":
                 # self.p.terminate does not actually terminate underlying
-                # processes on Windows, so we resort to using the WinAPI to
-                # kill the shell and children. This for some reason does
+                # processes on Windows, so send ctrl+break to the process
+                # group we created. This for some reason does
                 # not cause the associated future (self.fut) to complete
                 # until it is awaited on one last time.
-                win_killpg.win_killpg(self.p.pid)
+
+                os.kill(self.p.pid, signal.CTRL_BREAK_EVENT)
             else:
                 try:
                     os.killpg(self.p.pid, signal.SIGTERM)
@@ -165,7 +166,7 @@ class SbyTask:
 
                 subp_kwargs = { "preexec_fn" : preexec_fn }
             else:
-                subp_kwargs = {}
+                subp_kwargs = { "creationflags" : subprocess.CREATE_NEW_PROCESS_GROUP }
             self.p = await asyncio.create_subprocess_shell(self.cmdline, stdin=asyncio.subprocess.DEVNULL,
                     stdout=asyncio.subprocess.PIPE,
                     stderr=(asyncio.subprocess.STDOUT if self.logstderr else None),
