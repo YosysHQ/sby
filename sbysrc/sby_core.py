@@ -220,10 +220,11 @@ class SbyJob:
         self.total_time = 0
         self.expect = []
 
+        yosys_program_prefix = "" ##yosys-program-prefix##
         self.exe_paths = {
-            "yosys": os.getenv("YOSYS", "yosys"),
-            "abc": os.getenv("ABC", "yosys-abc"),
-            "smtbmc": os.getenv("SMTBMC", "yosys-smtbmc"),
+            "yosys": os.getenv("YOSYS", yosys_program_prefix + "yosys"),
+            "abc": os.getenv("ABC", yosys_program_prefix + "yosys-abc"),
+            "smtbmc": os.getenv("SMTBMC", yosys_program_prefix + "yosys-smtbmc"),
             "suprove": os.getenv("SUPROVE", "suprove"),
             "aigbmc": os.getenv("AIGBMC", "aigbmc"),
             "avy": os.getenv("AVY", "avy"),
