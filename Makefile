@@ -39,7 +39,7 @@ else
 	chmod +x $(DESTDIR)$(PREFIX)/bin/sby
 endif
 
-test: \
+ci: \
   test_demo1 test_demo2 test_demo3 \
   test_abstract_abstr test_abstract_props \
   test_demos_fib_cover test_demos_fib_prove test_demos_fib_live \
@@ -49,7 +49,7 @@ test: \
   test_quickstart_demo test_quickstart_cover test_quickstart_prove test_quickstart_memory \
   run_tests
 	if yosys -qp 'read -verific' 2> /dev/null; then set -x; \
-		YOSYS_NOVERIFIC=1 $(MAKE) test; \
+		YOSYS_NOVERIFIC=1 $(MAKE) ci; \
 	fi
 
 test_demo1:
