@@ -29,7 +29,7 @@ install:
 	mkdir -p $(DESTDIR)$(PREFIX)/bin
 	mkdir -p $(DESTDIR)$(PREFIX)/share/yosys/python3
 	cp sbysrc/sby_*.py $(DESTDIR)$(PREFIX)/share/yosys/python3/
-	sed -e 's|##yosys-program-prefix##|"'$(PROGRAM_PREFIX)'"|' -i $(DESTDIR)$(PREFIX)/share/yosys/python3/sby_core.py
+	sed -e 's|##yosys-program-prefix##|"'$(PROGRAM_PREFIX)'"|' < sbysrc/sby_core.py > $(DESTDIR)$(PREFIX)/share/yosys/python3/sby_core.py
 ifeq ($(OS), Windows_NT)
 	sed -e 's|##yosys-sys-path##|sys.path += [os.path.dirname(__file__) + p for p in ["/share/python3", "/../share/yosys/python3"]]|;' \
 		-e "s|#!/usr/bin/env python3|#!$(PYTHON)|" < sbysrc/sby.py > $(DESTDIR)$(PREFIX)/bin/sby-script.py
