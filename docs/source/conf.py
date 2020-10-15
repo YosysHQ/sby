@@ -50,8 +50,8 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'SymbiYosys'
-copyright = '2020, Claire Wolf'
-author = 'Claire Wolf'
+copyright = '2020 Symbiotic EDA'
+author = 'Symbiotic EDA'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
