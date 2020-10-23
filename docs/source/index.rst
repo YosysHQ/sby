@@ -19,6 +19,7 @@ at the moment.)
 .. toctree::
    :maxdepth: 3
 
+   install.rst
    quickstart.rst
    reference.rst
    verilog.rst
