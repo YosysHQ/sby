@@ -14,9 +14,9 @@ module top (
   input clk,
   input [7:0] addr,
   input [7:0] wdata,
-  output [7:0] rdata,
+  output [7:0] rdata
 );
-  const rand reg [7:0] test_addr;
+  rand const reg [7:0] test_addr;
   reg [7:0] test_data;
   reg test_valid = 0;
 
@@ -42,7 +42,7 @@ module memory (
   input clk,
   input [7:0] addr,
   input [7:0] wdata,
-  output [7:0] rdata,
+  output [7:0] rdata
 );
   reg [7:0] mem [0:255];
 
