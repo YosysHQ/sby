@@ -50,8 +50,8 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'SymbiYosys'
-copyright = '2020 Symbiotic EDA'
-author = 'Symbiotic EDA'
+copyright = '2021 YosysHQ'
+author = 'YosysHQ'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -128,10 +128,10 @@ html_theme = 'alabaster'
 #
 html_theme_options = {
     "extra_nav_links" : { 
-        'Documentation Index' : 'https://sedasuite.readthedocs.io' ,
-        'Symbiotic Website' : 'https://www.symbioticeda.com',
+#       'Documentation Index' : 'https://tabbycad.readthedocs.io' ,
+        'YosysHQ Website' : 'https://www.yosyshq.com',
         },
-    "logo" : 'symbiotic_logo.png',
+#   "logo" : 'logo.png',
     "fixed_sidebar" : True,
 }
 
@@ -268,7 +268,7 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
     (master_doc, 'SymbiYosys.tex', 'SymbiYosys Documentation',
-     'Clifford Wolf', 'manual'),
+     'Claire Xen Wolf', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
