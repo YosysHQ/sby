@@ -64,11 +64,14 @@ class SbyTask:
                 "{" : "(",
                 "}" : ")",
             }
-
-            cmdline_copy = cmdline
-            for u, w in replacements.items():
-                cmdline_copy = cmdline_copy.replace(u, w)
-            self.cmdline = cmdline_copy
+            parts = cmdline.split("'")
+            for i in range(len(parts)):
+                if i % 2 == 0:
+                    cmdline_copy = parts[i]
+                    for u, w in replacements.items():
+                        cmdline_copy = cmdline_copy.replace(u, w)
+                    parts[i] = cmdline_copy
+            self.cmdline = '"'.join(parts)
         self.logfile = logfile
         self.noprintregex = None
         self.notify = []
