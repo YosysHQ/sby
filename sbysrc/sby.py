@@ -345,7 +345,7 @@ def run_job(taskname):
             shutil.move(my_workdir, "{}.bak{:03d}".format(my_workdir, backup_idx))
 
         if opt_force and not reusedir:
-            early_log(my_workdir, "Removing directory '{}'.".format(my_workdir))
+            early_log(my_workdir, "Removing directory '{}'.".format(os.path.abspath(my_workdir)))
             if sbyfile:
                 shutil.rmtree(my_workdir, ignore_errors=True)
 

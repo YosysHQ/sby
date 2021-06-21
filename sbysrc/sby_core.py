@@ -331,7 +331,7 @@ class SbyJob:
             if basedir != "" and not os.path.exists(basedir):
                 os.makedirs(basedir)
 
-            self.log("Copy '{}' to '{}'.".format(srcfile, dstfile))
+            self.log("Copy '{}' to '{}'.".format(os.path.abspath(srcfile), os.path.abspath(dstfile)))
             copyfile(srcfile, dstfile)
 
     def handle_str_option(self, option_name, default_value):
