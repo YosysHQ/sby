@@ -33,7 +33,7 @@ parser = argparse.ArgumentParser(prog="sby",
 parser.set_defaults(exe_paths=dict())
 
 parser.add_argument("-d", metavar="<dirname>", dest="workdir",
-        help="set workdir name. default: <jobname> or <jobname>_<taskname>")
+        help="set workdir name prefix. default: <jobname>. `_<taskname>` will be appended to the path for each task")
 parser.add_argument("-f", action="store_true", dest="force",
         help="remove workdir if it already exists")
 parser.add_argument("-b", action="store_true", dest="backup",
@@ -323,14 +323,12 @@ if dump_tasks:
             print(task)
     sys.exit(0)
 
-if (workdir is not None) and (len(tasknames) != 1):
-    print("ERROR: Exactly one task is required when workdir is specified.", file=sys.stderr)
-    sys.exit(1)
-
 def run_job(taskname):
     my_workdir = workdir
     my_opt_tmpdir = opt_tmpdir
 
+    if my_workdir is not None and len(taskname) > 1:
+        my_workdir += "_" + taskname
     if my_workdir is None and sbyfile is not None and not my_opt_tmpdir:
         my_workdir = sbyfile[:-4]
         if taskname is not None:
