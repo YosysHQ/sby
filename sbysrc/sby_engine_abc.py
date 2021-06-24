@@ -31,24 +31,27 @@ def run(mode, job, engine_idx, engine):
     if abc_command[0] == "bmc3":
         if mode != "bmc":
             job.error("ABC command 'bmc3' is only valid in bmc mode.")
-        abc_command[0] += " -F {} -v".format(job.opt_depth)
+        abc_command[0] += f" -F {job.opt_depth} -v"
 
     elif abc_command[0] == "sim3":
         if mode != "bmc":
             job.error("ABC command 'sim3' is only valid in bmc mode.")
-        abc_command[0] += " -F {} -v".format(job.opt_depth)
+        abc_command[0] += f" -F {job.opt_depth} -v"
 
     elif abc_command[0] == "pdr":
         if mode != "prove":
             job.error("ABC command 'pdr' is only valid in prove mode.")
 
     else:
-        job.error("Invalid ABC command {}.".format(abc_command[0]))
+        job.error(f"Invalid ABC command {abc_command[0]}.")
 
-    task = SbyTask(job, "engine_{}".format(engine_idx), job.model("aig"),
-            ("cd {}; {} -c 'read_aiger model/design_aiger.aig; fold; strash; {}; write_cex -a engine_{}/trace.aiw'").format
-            (job.workdir, job.exe_paths["abc"], " ".join(abc_command), engine_idx),
-            logfile=open("{}/engine_{}/logfile.txt".format(job.workdir, engine_idx), "w"))
+    task = SbyTask(
+        job,
+        f"engine_{engine_idx}",
+        job.model("aig"),
+        f"""cd {job.workdir}; {job.exe_paths["abc"]} -c 'read_aiger model/design_aiger.aig; fold; strash; {" ".join(abc_command)}; write_cex -a engine_{engine_idx}/trace.aiw'""",
+        logfile=open(f"{job.workdir}/engine_{engine_idx}/logfile.txt", "w")
+    )
 
     task.noprintregex = re.compile(r"^\.+$")
     task_status = None
@@ -78,19 +81,23 @@ def run(mode, job, engine_idx, engine):
         assert task_status is not None
 
         job.update_status(task_status)
-        job.log("engine_{}: Status returned by engine: {}".format(engine_idx, task_status))
-        job.summary.append("engine_{} ({}) returned {}".format(engine_idx, " ".join(engine), task_status))
+        job.log(f"engine_{engine_idx}: Status returned by engine: {task_status}")
+        job.summary.append(f"""engine_{engine_idx} ({" ".join(engine)}) returned {task_status}""")
 
         job.terminate()
 
         if task_status == "FAIL" and job.opt_aigsmt != "none":
-            task2 = SbyTask(job, "engine_{}".format(engine_idx), job.model("smt2"),
-                    ("cd {}; {} -s {}{} --noprogress --append {} --dump-vcd engine_{i}/trace.vcd --dump-vlogtb engine_{i}/trace_tb.v " +
+            task2 = SbyTask(
+                job,
+                f"engine_{engine_idx}",
+                job.model("smt2"),
+                ("cd {}; {} -s {}{} --noprogress --append {} --dump-vcd engine_{i}/trace.vcd --dump-vlogtb engine_{i}/trace_tb.v " +
                      "--dump-smtc engine_{i}/trace.smtc --aig model/design_aiger.aim:engine_{i}/trace.aiw --aig-noheader model/design_smt2.smt2").format
                             (job.workdir, job.exe_paths["smtbmc"], job.opt_aigsmt,
-                            "" if job.opt_tbtop is None else " --vlogtb-top {}".format(job.opt_tbtop),
+                            "" if job.opt_tbtop is None else f" --vlogtb-top {job.opt_tbtop}",
                             job.opt_append, i=engine_idx),
-                    logfile=open("{}/engine_{}/logfile2.txt".format(job.workdir, engine_idx), "w"))
+                logfile=open(f"{job.workdir}/engine_{engine_idx}/logfile2.txt", "w")
+            )
 
             task2_status = None
 
@@ -109,8 +116,8 @@ def run(mode, job, engine_idx, engine):
                 assert task2_status is not None
                 assert task2_status == "FAIL"
 
-                if os.path.exists("{}/engine_{}/trace.vcd".format(job.workdir, engine_idx)):
-                    job.summary.append("counterexample trace: {}/engine_{}/trace.vcd".format(job.workdir, engine_idx))
+                if os.path.exists(f"{job.workdir}/engine_{engine_idx}/trace.vcd"):
+                    job.summary.append(f"counterexample trace: {job.workdir}/engine_{engine_idx}/trace.vcd")
 
             task2.output_callback = output_callback2
             task2.exit_callback = exit_callback2

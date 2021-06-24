@@ -97,7 +97,7 @@ class SbyTask:
         if line is not None and (self.noprintregex is None or not self.noprintregex.match(line)):
             if self.logfile is not None:
                 print(line, file=self.logfile)
-            self.job.log("{}: {}".format(self.info, line))
+            self.job.log(f"{self.info}: {line}")
 
     def handle_output(self, line):
         if self.terminated or len(line) == 0:
@@ -119,7 +119,7 @@ class SbyTask:
             return
         if self.running:
             if not self.silent:
-                self.job.log("{}: terminating process".format(self.info))
+                self.job.log(f"{self.info}: terminating process")
             if os.name == "posix":
                 try:
                     os.killpg(self.p.pid, signal.SIGTERM)
@@ -140,7 +140,7 @@ class SbyTask:
                     return
 
             if not self.silent:
-                self.job.log("{}: starting process \"{}\"".format(self.info, self.cmdline))
+                self.job.log(f"{self.info}: starting process \"{self.cmdline}\"")
 
             if os.name == "posix":
                 def preexec_fn():
@@ -175,7 +175,7 @@ class SbyTask:
 
         if self.p.poll() is not None:
             if not self.silent:
-                self.job.log("{}: finished (returncode={})".format(self.info, self.p.returncode))
+                self.job.log(f"{self.info}: finished (returncode={self.p.returncode})")
             self.job.tasks_running.remove(self)
             all_tasks_running.remove(self)
             self.running = False
@@ -183,7 +183,7 @@ class SbyTask:
             if self.p.returncode == 127:
                 self.job.status = "ERROR"
                 if not self.silent:
-                    self.job.log("{}: COMMAND NOT FOUND. ERROR.".format(self.info))
+                    self.job.log(f"{self.info}: COMMAND NOT FOUND. ERROR.")
                 self.terminated = True
                 self.job.terminate()
                 return
@@ -193,7 +193,7 @@ class SbyTask:
             if self.checkretcode and self.p.returncode != 0:
                 self.job.status = "ERROR"
                 if not self.silent:
-                    self.job.log("{}: job failed. ERROR.".format(self.info))
+                    self.job.log(f"{self.info}: job failed. ERROR.")
                 self.terminated = True
                 self.job.terminate()
                 return
@@ -246,13 +246,13 @@ class SbyJob:
 
         self.summary = list()
 
-        self.logfile = open("{}/logfile.txt".format(workdir), "a")
+        self.logfile = open(f"{workdir}/logfile.txt", "a")
 
         for line in early_logs:
             print(line, file=self.logfile, flush=True)
 
         if not reusedir:
-            with open("{}/config.sby".format(workdir), "w") as f:
+            with open(f"{workdir}/config.sby", "w") as f:
                 for line in sbyconfig:
                     print(line, file=f)
 
@@ -283,7 +283,7 @@ class SbyJob:
             if self.opt_timeout is not None:
                 total_clock_time = int(time() - self.start_clock_time)
                 if total_clock_time > self.opt_timeout:
-                    self.log("Reached TIMEOUT ({} seconds). Terminating all tasks.".format(self.opt_timeout))
+                    self.log(f"Reached TIMEOUT ({self.opt_timeout} seconds). Terminating all tasks.")
                     self.status = "TIMEOUT"
                     self.terminate(timeout=True)
 
@@ -300,8 +300,8 @@ class SbyJob:
         if "ERROR" not in self.expect:
             self.retcode = 16
         self.terminate()
-        with open("{}/{}".format(self.workdir, self.status), "w") as f:
-            print("ERROR: {}".format(logmessage), file=f)
+        with open(f"{self.workdir}/{self.status}", "w") as f:
+            print(f"ERROR: {logmessage}", file=f)
         raise SbyAbort(logmessage)
 
     def makedirs(self, path):
@@ -314,7 +314,7 @@ class SbyJob:
 
         for dstfile, lines in self.verbatim_files.items():
             dstfile = self.workdir + "/src/" + dstfile
-            self.log("Writing '{}'.".format(dstfile))
+            self.log(f"Writing '{dstfile}'.")
 
             with open(dstfile, "w") as f:
                 for line in lines:
@@ -322,7 +322,7 @@ class SbyJob:
 
         for dstfile, srcfile in self.files.items():
             if dstfile.startswith("/") or dstfile.startswith("../") or ("/../" in dstfile):
-                self.error("destination filename must be a relative path without /../: {}".format(dstfile))
+                self.error(f"destination filename must be a relative path without /../: {dstfile}")
             dstfile = self.workdir + "/src/" + dstfile
 
             srcfile = process_filename(srcfile)
@@ -331,7 +331,7 @@ class SbyJob:
             if basedir != "" and not os.path.exists(basedir):
                 os.makedirs(basedir)
 
-            self.log("Copy '{}' to '{}'.".format(os.path.abspath(srcfile), os.path.abspath(dstfile)))
+            self.log(f"Copy '{os.path.abspath(srcfile)}' to '{os.path.abspath(dstfile)}'.")
             copyfile(srcfile, dstfile)
 
     def handle_str_option(self, option_name, default_value):
@@ -351,19 +351,19 @@ class SbyJob:
     def handle_bool_option(self, option_name, default_value):
         if option_name in self.options:
             if self.options[option_name] not in ["on", "off"]:
-                self.error("Invalid value '{}' for boolean option {}.".format(self.options[option_name], option_name))
+                self.error(f"Invalid value '{self.options[option_name]}' for boolean option {option_name}.")
             self.__dict__["opt_" + option_name] = self.options[option_name] == "on"
             self.used_options.add(option_name)
         else:
             self.__dict__["opt_" + option_name] = default_value
 
     def make_model(self, model_name):
-        if not os.path.isdir("{}/model".format(self.workdir)):
-            os.makedirs("{}/model".format(self.workdir))
+        if not os.path.isdir(f"{self.workdir}/model"):
+            os.makedirs(f"{self.workdir}/model")
 
         if model_name in ["base", "nomem"]:
-            with open("{}/model/design{}.ys".format(self.workdir, "" if model_name == "base" else "_nomem"), "w") as f:
-                print("# running in {}/src/".format(self.workdir), file=f)
+            with open(f"""{self.workdir}/model/design{"" if model_name == "base" else "_nomem"}.ys""", "w") as f:
+                print(f"# running in {self.workdir}/src/", file=f)
                 for cmd in self.script:
                     print(cmd, file=f)
                 if model_name == "base":
@@ -387,19 +387,23 @@ class SbyJob:
                 print("opt -keepdc -fast", file=f)
                 print("check", file=f)
                 print("hierarchy -simcheck", file=f)
-                print("write_ilang ../model/design{}.il".format("" if model_name == "base" else "_nomem"), file=f)
+                print(f"""write_ilang ../model/design{"" if model_name == "base" else "_nomem"}.il""", file=f)
 
-            task = SbyTask(self, model_name, [],
-                    "cd {}/src; {} -ql ../model/design{s}.log ../model/design{s}.ys".format(self.workdir, self.exe_paths["yosys"],
-                    s="" if model_name == "base" else "_nomem"))
+            task = SbyTask(
+                self,
+                model_name,
+                [],
+                "cd {}/src; {} -ql ../model/design{s}.log ../model/design{s}.ys".format(self.workdir, self.exe_paths["yosys"],
+                    s="" if model_name == "base" else "_nomem")
+            )
             task.checkretcode = True
 
             return [task]
 
         if re.match(r"^smt2(_syn)?(_nomem)?(_stbv|_stdt)?$", model_name):
-            with open("{}/model/design_{}.ys".format(self.workdir, model_name), "w") as f:
-                print("# running in {}/model/".format(self.workdir), file=f)
-                print("read_ilang design{}.il".format("_nomem" if "_nomem" in model_name else ""), file=f)
+            with open(f"{self.workdir}/model/design_{model_name}.ys", "w") as f:
+                print(f"# running in {self.workdir}/model/", file=f)
+                print(f"""read_ilang design{"_nomem" if "_nomem" in model_name else ""}.il""", file=f)
                 if "_syn" in model_name:
                     print("techmap", file=f)
                     print("opt -fast", file=f)
@@ -408,22 +412,26 @@ class SbyJob:
                 print("dffunmap", file=f)
                 print("stat", file=f)
                 if "_stbv" in model_name:
-                    print("write_smt2 -stbv -wires design_{}.smt2".format(model_name), file=f)
+                    print(f"write_smt2 -stbv -wires design_{model_name}.smt2", file=f)
                 elif "_stdt" in model_name:
-                    print("write_smt2 -stdt -wires design_{}.smt2".format(model_name), file=f)
+                    print(f"write_smt2 -stdt -wires design_{model_name}.smt2", file=f)
                 else:
-                    print("write_smt2 -wires design_{}.smt2".format(model_name), file=f)
+                    print(f"write_smt2 -wires design_{model_name}.smt2", file=f)
 
-            task = SbyTask(self, model_name, self.model("nomem" if "_nomem" in model_name else "base"),
-                    "cd {}/model; {} -ql design_{s}.log design_{s}.ys".format(self.workdir, self.exe_paths["yosys"], s=model_name))
+            task = SbyTask(
+                self,
+                model_name,
+                self.model("nomem" if "_nomem" in model_name else "base"),
+                "cd {}/model; {} -ql design_{s}.log design_{s}.ys".format(self.workdir, self.exe_paths["yosys"], s=model_name)
+            )
             task.checkretcode = True
 
             return [task]
 
         if re.match(r"^btor(_syn)?(_nomem)?$", model_name):
-            with open("{}/model/design_{}.ys".format(self.workdir, model_name), "w") as f:
-                print("# running in {}/model/".format(self.workdir), file=f)
-                print("read_ilang design{}.il".format("_nomem" if "_nomem" in model_name else ""), file=f)
+            with open(f"{self.workdir}/model/design_{model_name}.ys", "w") as f:
+                print(f"# running in {self.workdir}/model/", file=f)
+                print(f"""read_ilang design{"_nomem" if "_nomem" in model_name else ""}.il""", file=f)
                 print("flatten", file=f)
                 print("setundef -undriven -anyseq", file=f)
                 if "_syn" in model_name:
@@ -439,15 +447,19 @@ class SbyJob:
                 print("stat", file=f)
                 print("write_btor {}-i design_{m}.info design_{m}.btor".format("-c " if self.opt_mode == "cover" else "", m=model_name), file=f)
 
-            task = SbyTask(self, model_name, self.model("nomem" if "_nomem" in model_name else "base"),
-                    "cd {}/model; {} -ql design_{s}.log design_{s}.ys".format(self.workdir, self.exe_paths["yosys"], s=model_name))
+            task = SbyTask(
+                self,
+                model_name, 
+                self.model("nomem" if "_nomem" in model_name else "base"),
+                "cd {}/model; {} -ql design_{s}.log design_{s}.ys".format(self.workdir, self.exe_paths["yosys"], s=model_name)
+            )
             task.checkretcode = True
 
             return [task]
 
         if model_name == "aig":
-            with open("{}/model/design_aiger.ys".format(self.workdir), "w") as f:
-                print("# running in {}/model/".format(self.workdir), file=f)
+            with open(f"{self.workdir}/model/design_aiger.ys", "w") as f:
+                print(f"# running in {self.workdir}/model/", file=f)
                 print("read_ilang design_nomem.il", file=f)
                 print("flatten", file=f)
                 print("setundef -undriven -anyseq", file=f)
@@ -462,8 +474,12 @@ class SbyJob:
                 print("stat", file=f)
                 print("write_aiger -I -B -zinit -map design_aiger.aim design_aiger.aig", file=f)
 
-            task = SbyTask(self, "aig", self.model("nomem"),
-                    "cd {}/model; {} -ql design_aiger.log design_aiger.ys".format(self.workdir, self.exe_paths["yosys"]))
+            task = SbyTask(
+                self,
+                "aig",
+                self.model("nomem"),
+                f"""cd {self.workdir}/model; {self.exe_paths["yosys"]} -ql design_aiger.log design_aiger.ys"""
+            )
             task.checkretcode = True
 
             return [task]
@@ -506,7 +522,7 @@ class SbyJob:
         mode = None
         key = None
 
-        with open("{}/config.sby".format(self.workdir), "r") as f:
+        with open(f"{self.workdir}/config.sby", "r") as f:
             for line in f:
                 raw_line = line
                 if mode in ["options", "engines", "files"]:
@@ -522,48 +538,48 @@ class SbyJob:
                 if match:
                     entries = match.group(1).split()
                     if len(entries) == 0:
-                        self.error("sby file syntax error: {}".format(line))
+                        self.error(f"sby file syntax error: {line}")
 
                     if entries[0] == "options":
                         mode = "options"
                         if len(self.options) != 0 or len(entries) != 1:
-                            self.error("sby file syntax error: {}".format(line))
+                            self.error(f"sby file syntax error: {line}")
                         continue
 
                     if entries[0] == "engines":
                         mode = "engines"
                         if len(self.engines) != 0 or len(entries) != 1:
-                            self.error("sby file syntax error: {}".format(line))
+                            self.error(f"sby file syntax error: {line}")
                         continue
 
                     if entries[0] == "script":
                         mode = "script"
                         if len(self.script) != 0 or len(entries) != 1:
-                            self.error("sby file syntax error: {}".format(line))
+                            self.error(f"sby file syntax error: {line}")
                         continue
 
                     if entries[0] == "file":
                         mode = "file"
                         if len(entries) != 2:
-                            self.error("sby file syntax error: {}".format(line))
+                            self.error(f"sby file syntax error: {line}")
                         current_verbatim_file = entries[1]
                         if current_verbatim_file in self.verbatim_files:
-                            self.error("duplicate file: {}".format(entries[1]))
+                            self.error(f"duplicate file: {entries[1]}")
                         self.verbatim_files[current_verbatim_file] = list()
                         continue
 
                     if entries[0] == "files":
                         mode = "files"
                         if len(entries) != 1:
-                            self.error("sby file syntax error: {}".format(line))
+                            self.error(f"sby file syntax error: {line}")
                         continue
 
-                    self.error("sby file syntax error: {}".format(line))
+                    self.error(f"sby file syntax error: {line}")
 
                 if mode == "options":
                     entries = line.split()
                     if len(entries) != 2:
-                        self.error("sby file syntax error: {}".format(line))
+                        self.error(f"sby file syntax error: {line}")
                     self.options[entries[0]] = entries[1]
                     continue
 
@@ -583,19 +599,19 @@ class SbyJob:
                     elif len(entries) == 2:
                         self.files[entries[0]] = entries[1]
                     else:
-                        self.error("sby file syntax error: {}".format(line))
+                        self.error(f"sby file syntax error: {line}")
                     continue
 
                 if mode == "file":
                     self.verbatim_files[current_verbatim_file].append(raw_line)
                     continue
 
-                self.error("sby file syntax error: {}".format(line))
+                self.error(f"sby file syntax error: {line}")
 
         self.handle_str_option("mode", None)
 
         if self.opt_mode not in ["bmc", "prove", "cover", "live"]:
-            self.error("Invalid mode: {}".format(self.opt_mode))
+            self.error(f"Invalid mode: {self.opt_mode}")
 
         self.expect = ["PASS"]
         if "expect" in self.options:
@@ -604,7 +620,7 @@ class SbyJob:
 
         for s in self.expect:
             if s not in ["PASS", "FAIL", "UNKNOWN", "ERROR", "TIMEOUT"]:
-                self.error("Invalid expect value: {}".format(s))
+                self.error(f"Invalid expect value: {s}")
 
         self.handle_bool_option("multiclock", False)
         self.handle_bool_option("wait", False)
@@ -631,7 +647,7 @@ class SbyJob:
             self.error("Config file is lacking engine configuration.")
 
         if self.reusedir:
-            rmtree("{}/model".format(self.workdir), ignore_errors=True)
+            rmtree(f"{self.workdir}/model", ignore_errors=True)
         else:
             self.copy_src()
 
@@ -660,7 +676,7 @@ class SbyJob:
 
         for opt in self.options.keys():
             if opt not in self.used_options:
-                self.error("Unused option: {}".format(opt))
+                self.error(f"Unused option: {opt}")
 
         self.taskloop()
 
@@ -685,7 +701,7 @@ class SbyJob:
             ] + self.summary
 
         for line in self.summary:
-            self.log("summary: {}".format(line))
+            self.log(f"summary: {line}")
 
         assert self.status in ["PASS", "FAIL", "UNKNOWN", "ERROR", "TIMEOUT"]
 
@@ -698,6 +714,6 @@ class SbyJob:
             if self.status == "TIMEOUT": self.retcode = 8
             if self.status == "ERROR": self.retcode = 16
 
-        with open("{}/{}".format(self.workdir, self.status), "w") as f:
+        with open(f"{self.workdir}/{self.status}", "w") as f:
             for line in self.summary:
                 print(line, file=f)
