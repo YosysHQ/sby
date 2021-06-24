@@ -423,12 +423,16 @@ def run_job(taskname):
     return job.retcode
 
 
+failed = []
 retcode = 0
-for t in tasknames:
-    retcode |= run_job(t)
+for task in tasknames:
+    task_retcode = run_job(task)
+    retcode |= task_retcode
+    if task_retcode:
+        failed.append(task)
 
-if retcode and (len(tasknames) > 1 or tasknames[0] is not None):
+if failed and (len(tasknames) > 1 or tasknames[0] is not None):
     tm = localtime()
-    print("SBY {:2d}:{:02d}:{:02d} One or more tasks produced a non-zero return code.".format(tm.tm_hour, tm.tm_min, tm.tm_sec))
+    print("SBY {:2d}:{:02d}:{:02d} The following tasks failed: {}".format(tm.tm_hour, tm.tm_min, tm.tm_sec, failed))
 
 sys.exit(retcode)
