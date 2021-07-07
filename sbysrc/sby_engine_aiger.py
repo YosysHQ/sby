@@ -19,7 +19,7 @@
 import re, os, getopt
 from sby_core import SbyTask
 
-def run(mode, job, engine_idx, engine):
+def init(mode, job, engine_idx, engine):
     opts, solver_args = getopt.getopt(engine[1:], "", [])
 
     if len(solver_args) == 0:

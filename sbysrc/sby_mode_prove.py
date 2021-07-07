@@ -19,7 +19,7 @@
 import re, os, getopt
 from sby_core import SbyTask
 
-def run(job):
+def init(job):
     job.handle_int_option("depth", 20)
     job.handle_int_option("append", 0)
     job.handle_str_option("aigsmt", "yices")
@@ -40,15 +40,15 @@ def run(job):
 
         if engine[0] == "smtbmc":
             import sby_engine_smtbmc
-            sby_engine_smtbmc.run("prove", job, engine_idx, engine)
+            sby_engine_smtbmc.init("prove", job, engine_idx, engine)
 
         elif engine[0] == "aiger":
             import sby_engine_aiger
-            sby_engine_aiger.run("prove", job, engine_idx, engine)
+            sby_engine_aiger.init("prove", job, engine_idx, engine)
 
         elif engine[0] == "abc":
             import sby_engine_abc
-            sby_engine_abc.run("prove", job, engine_idx, engine)
+            sby_engine_abc.init("prove", job, engine_idx, engine)
 
         else:
             job.error("Invalid engine '{}' for prove mode.".format(engine[0]))

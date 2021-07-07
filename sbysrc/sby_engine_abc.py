@@ -19,7 +19,7 @@
 import re, os, getopt
 from sby_core import SbyTask
 
-def run(mode, job, engine_idx, engine):
+def init(mode, job, engine_idx, engine):
     abc_opts, abc_command = getopt.getopt(engine[1:], "", [])
 
     if len(abc_command) == 0:
