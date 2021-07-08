@@ -33,7 +33,9 @@ parser = argparse.ArgumentParser(prog="sby",
 parser.set_defaults(exe_paths=dict())
 
 parser.add_argument("-d", metavar="<dirname>", dest="workdir",
-        help="set workdir name prefix. default: <jobname>. `_<taskname>` will be appended to the path for each task")
+        help="set workdir name. default: <jobname> or <jobname>_<taskname>. When there is more than one task, use --prefix instead")
+parser.add_argument("--prefix", metavar="<dirname>", dest="workdir_prefix",
+        help="set the workdir name prefix. `_<taskname>` will be appended to the path for each task")
 parser.add_argument("-f", action="store_true", dest="force",
         help="remove workdir if it already exists")
 parser.add_argument("-b", action="store_true", dest="backup",
@@ -82,6 +84,10 @@ args = parser.parse_args()
 
 sbyfile = args.sbyfile
 workdir = args.workdir
+workdir_prefix = args.workdir_prefix
+if workdir is not None and workdir_prefix is not None:
+    print("ERROR: -d and --prefix are mutually exclusive.", file=sys.stderr)
+    sys.exit(1)
 tasknames = args.arg_tasknames + args.tasknames
 opt_force = args.force
 opt_backup = args.backup
@@ -323,12 +329,18 @@ if dump_tasks:
             print(task)
     sys.exit(0)
 
+if (workdir is not None) and (len(tasknames) != 1):
+    print("ERROR: Exactly one task is required when workdir is specified. Specify the task or use --prefix instead of -d.", file=sys.stderr)
+    sys.exit(1)
+
 def run_job(taskname):
-    my_workdir = workdir
     my_opt_tmpdir = opt_tmpdir
 
-    if my_workdir is not None and len(taskname) > 1:
-        my_workdir += "_" + taskname
+    if workdir is not None:
+        my_workdir = workdir
+    elif workdir_prefix is not None:
+        my_workdir = workdir_prefix + "_" + taskname
+
     if my_workdir is None and sbyfile is not None and not my_opt_tmpdir:
         my_workdir = sbyfile[:-4]
         if taskname is not None:
