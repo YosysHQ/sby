@@ -76,10 +76,26 @@ https://github.com/Z3Prover/z3/wiki
 super_prove
 -----------
 
-https://bitbucket.org/sterin/super_prove_build
+https://github.com/sterin/super-prove-build
 
-Download the right binary .tar.gz for your system from http://downloads.bvsrc.org/super_prove/
-and extract it to ``/usr/local/super_prove``.
+.. code-block:: text
+
+   sudo apt-get install cmake ninja-build g++ python-dev python-setuptools \
+                        python-pip git
+   git clone --recursive https://github.com/sterin/super-prove-build
+   cd super-prove-build
+   mkdir build
+   cd build
+   cmake -DCMAKE_BUILD_TYPE=Release -G Ninja ..
+   ninja
+   ninja package
+
+This creates a .tar.gz archive for the target system. Extract it to
+``/usr/local/super_prove``
+
+.. code-block:: text
+
+   sudo tar -C /usr/local -x super_prove-X-Y-Release.tar.gz
 
 Then create a wrapper script ``/usr/local/bin/suprove`` with the following contents:
 
@@ -88,6 +104,12 @@ Then create a wrapper script ``/usr/local/bin/suprove`` with the following conte
    #!/bin/bash
    tool=super_prove; if [ "$1" != "${1#+}" ]; then tool="${1#+}"; shift; fi
    exec /usr/local/super_prove/bin/${tool}.sh "$@"
+
+And make this wrapper script executable:
+
+.. code-block:: text
+
+   sudo chmod +x /usr/local/bin/suprove
 
 Avy
 ---
