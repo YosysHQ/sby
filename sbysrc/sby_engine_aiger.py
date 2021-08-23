@@ -40,16 +40,20 @@ def run(mode, job, engine_idx, engine):
         solver_cmd = " ".join([job.exe_paths["aigbmc"]] + solver_args[1:])
 
     else:
-        job.error("Invalid solver command {}.".format(solver_args[0]))
+        job.error(f"Invalid solver command {solver_args[0]}.")
 
-    task = SbyTask(job, "engine_{}".format(engine_idx), job.model("aig"),
-            "cd {}; {} model/design_aiger.aig".format(job.workdir, solver_cmd),
-            logfile=open("{}/engine_{}/logfile.txt".format(job.workdir, engine_idx), "w"))
+    task = SbyTask(
+        job,
+        f"engine_{engine_idx}",
+        job.model("aig"),
+        f"cd {job.workdir}; {solver_cmd} model/design_aiger.aig",
+        logfile=open(f"{job.workdir}/engine_{engine_idx}/logfile.txt", "w")
+    )
 
     task_status = None
     produced_cex = False
     end_of_cex = False
-    aiw_file = open("{}/engine_{}/trace.aiw".format(job.workdir, engine_idx), "w")
+    aiw_file = open(f"{job.workdir}/engine_{engine_idx}/trace.aiw", "w")
 
     def output_callback(line):
         nonlocal task_status
@@ -66,7 +70,7 @@ def run(mode, job, engine_idx, engine):
             return None
 
         if line.startswith("u"):
-            return "No CEX up to depth {}.".format(int(line[1:])-1)
+            return f"No CEX up to depth {int(line[1:])-1}."
 
         if line in ["0", "1", "2"]:
             print(line, file=aiw_file)
@@ -84,29 +88,37 @@ def run(mode, job, engine_idx, engine):
         aiw_file.close()
 
         job.update_status(task_status)
-        job.log("engine_{}: Status returned by engine: {}".format(engine_idx, task_status))
-        job.summary.append("engine_{} ({}) returned {}".format(engine_idx, " ".join(engine), task_status))
+        job.log(f"engine_{engine_idx}: Status returned by engine: {task_status}")
+        job.summary.append(f"""engine_{engine_idx} ({" ".join(engine)}) returned {task_status}""")
 
         job.terminate()
 
         if task_status == "FAIL" and job.opt_aigsmt != "none":
             if produced_cex:
                 if mode == "live":
-                    task2 = SbyTask(job, "engine_{}".format(engine_idx), job.model("smt2"),
-                            ("cd {}; {} -g -s {}{} --noprogress --dump-vcd engine_{i}/trace.vcd --dump-vlogtb engine_{i}/trace_tb.v " +
+                    task2 = SbyTask(
+                        job,
+                        f"engine_{engine_idx}",
+                        job.model("smt2"),
+                        ("cd {}; {} -g -s {}{} --noprogress --dump-vcd engine_{i}/trace.vcd --dump-vlogtb engine_{i}/trace_tb.v " +
                              "--dump-smtc engine_{i}/trace.smtc --aig model/design_aiger.aim:engine_{i}/trace.aiw model/design_smt2.smt2").format
                                     (job.workdir, job.exe_paths["smtbmc"], job.opt_aigsmt,
-                                    "" if job.opt_tbtop is None else " --vlogtb-top {}".format(job.opt_tbtop),
+                                    "" if job.opt_tbtop is None else f" --vlogtb-top {job.opt_tbtop}",
                                     i=engine_idx),
-                            logfile=open("{}/engine_{}/logfile2.txt".format(job.workdir, engine_idx), "w"))
+                        logfile=open(f"{job.workdir}/engine_{engine_idx}/logfile2.txt", "w")
+                    )
                 else:
-                    task2 = SbyTask(job, "engine_{}".format(engine_idx), job.model("smt2"),
-                            ("cd {}; {} -s {}{} --noprogress --append {} --dump-vcd engine_{i}/trace.vcd --dump-vlogtb engine_{i}/trace_tb.v " +
+                    task2 = SbyTask(
+                        job,
+                        f"engine_{engine_idx}",
+                        job.model("smt2"),
+                        ("cd {}; {} -s {}{} --noprogress --append {} --dump-vcd engine_{i}/trace.vcd --dump-vlogtb engine_{i}/trace_tb.v " +
                              "--dump-smtc engine_{i}/trace.smtc --aig model/design_aiger.aim:engine_{i}/trace.aiw model/design_smt2.smt2").format
                                     (job.workdir, job.exe_paths["smtbmc"], job.opt_aigsmt,
-                                    "" if job.opt_tbtop is None else " --vlogtb-top {}".format(job.opt_tbtop),
+                                    "" if job.opt_tbtop is None else f" --vlogtb-top {job.opt_tbtop}",
                                     job.opt_append, i=engine_idx),
-                            logfile=open("{}/engine_{}/logfile2.txt".format(job.workdir, engine_idx), "w"))
+                        logfile=open(f"{job.workdir}/engine_{engine_idx}/logfile2.txt", "w")
+                    )
 
                 task2_status = None
 
@@ -128,14 +140,14 @@ def run(mode, job, engine_idx, engine):
                     else:
                         assert task2_status == "FAIL"
 
-                    if os.path.exists("{}/engine_{}/trace.vcd".format(job.workdir, engine_idx)):
-                        job.summary.append("counterexample trace: {}/engine_{}/trace.vcd".format(job.workdir, engine_idx))
+                    if os.path.exists(f"{job.workdir}/engine_{engine_idx}/trace.vcd"):
+                        job.summary.append(f"counterexample trace: {job.workdir}/engine_{engine_idx}/trace.vcd")
 
                 task2.output_callback = output_callback2
                 task2.exit_callback = exit_callback2
 
             else:
-                job.log("engine_{}: Engine did not produce a counter example.".format(engine_idx))
+                job.log(f"engine_{engine_idx}: Engine did not produce a counter example.")
 
     task.output_callback = output_callback
     task.exit_callback = exit_callback

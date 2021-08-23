@@ -27,8 +27,8 @@ def run(job):
         engine = job.engines[engine_idx]
         assert len(engine) > 0
 
-        job.log("engine_{}: {}".format(engine_idx, " ".join(engine)))
-        job.makedirs("{}/engine_{}".format(job.workdir, engine_idx))
+        job.log(f"""engine_{engine_idx}: {" ".join(engine)}""")
+        job.makedirs(f"{job.workdir}/engine_{engine_idx}")
 
         if engine[0] == "smtbmc":
             import sby_engine_smtbmc
@@ -39,4 +39,4 @@ def run(job):
             sby_engine_btor.run("cover", job, engine_idx, engine)
 
         else:
-            job.error("Invalid engine '{}' for cover mode.".format(engine[0]))
+            job.error(f"Invalid engine '{engine[0]}' for cover mode.")

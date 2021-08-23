@@ -24,7 +24,7 @@ from time import localtime
 
 class DictAction(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
-        assert isinstance(getattr(namespace, self.dest), dict), "Use ArgumentParser.set_defaults() to initialize {} to dict()".format(self.dest)
+        assert isinstance(getattr(namespace, self.dest), dict), f"Use ArgumentParser.set_defaults() to initialize {self.dest} to dict()"
         name = option_string.lstrip(parser.prefix_chars).replace("-", "_")
         getattr(namespace, self.dest)[name] = values
 
@@ -33,7 +33,9 @@ parser = argparse.ArgumentParser(prog="sby",
 parser.set_defaults(exe_paths=dict())
 
 parser.add_argument("-d", metavar="<dirname>", dest="workdir",
-        help="set workdir name. default: <jobname> or <jobname>_<taskname>")
+        help="set workdir name. default: <jobname> or <jobname>_<taskname>. When there is more than one task, use --prefix instead")
+parser.add_argument("--prefix", metavar="<dirname>", dest="workdir_prefix",
+        help="set the workdir name prefix. `_<taskname>` will be appended to the path for each task")
 parser.add_argument("-f", action="store_true", dest="force",
         help="remove workdir if it already exists")
 parser.add_argument("-b", action="store_true", dest="backup",
@@ -82,6 +84,10 @@ args = parser.parse_args()
 
 sbyfile = args.sbyfile
 workdir = args.workdir
+workdir_prefix = args.workdir_prefix
+if workdir is not None and workdir_prefix is not None:
+    print("ERROR: -d and --prefix are mutually exclusive.", file=sys.stderr)
+    sys.exit(1)
 tasknames = args.arg_tasknames + args.tasknames
 opt_force = args.force
 opt_backup = args.backup
@@ -124,21 +130,21 @@ elif init_config_file is not None:
     sv_file = init_config_file + ".sv"
     sby_file = init_config_file + ".sby"
     with open(sby_file, 'w') as config:
-        config.write("""[options]
+        config.write(f"""[options]
 mode bmc
 
 [engines]
 smtbmc
 
 [script]
-read -formal {0}
+read -formal {sv_file}
 prep -top top
 
 [files]
-{0}
-""".format(sv_file))
+{sv_file}
+""")
 
-    print("sby config written to {}".format(sby_file), file=sys.stderr)
+    print(f"sby config written to {sby_file}", file=sys.stderr)
     sys.exit(0)
 
 early_logmsgs = list()
@@ -220,7 +226,7 @@ def read_sbyconfig(sbydata, taskname):
         if len(task_tags_all) and not found_task_tag:
             tokens = line.split()
             if len(tokens) > 0 and tokens[0][0] == line[0] and tokens[0].endswith(":"):
-                print("ERROR: Invalid task specifier \"{}\".".format(tokens[0]), file=sys.stderr)
+                print(f"ERROR: Invalid task specifier \"{tokens[0]}\".", file=sys.stderr)
                 sys.exit(1)
 
         if task_skip_line or task_skip_block:
@@ -263,7 +269,7 @@ def read_sbyconfig(sbydata, taskname):
         handle_line(line)
 
     if taskname is not None and not task_matched:
-        print("ERROR: Task name '{}' didn't match any lines in [tasks].".format(taskname), file=sys.stderr)
+        print(f"ERROR: Task name '{taskname}' didn't match any lines in [tasks].", file=sys.stderr)
         sys.exit(1)
 
     return cfgdata, tasklist
@@ -324,12 +330,16 @@ if dump_tasks:
     sys.exit(0)
 
 if (workdir is not None) and (len(tasknames) != 1):
-    print("ERROR: Exactly one task is required when workdir is specified.", file=sys.stderr)
+    print("ERROR: Exactly one task is required when workdir is specified. Specify the task or use --prefix instead of -d.", file=sys.stderr)
     sys.exit(1)
 
 def run_job(taskname):
-    my_workdir = workdir
     my_opt_tmpdir = opt_tmpdir
+
+    if workdir is not None:
+        my_workdir = workdir
+    elif workdir_prefix is not None:
+        my_workdir = workdir_prefix + "_" + taskname
 
     if my_workdir is None and sbyfile is not None and not my_opt_tmpdir:
         my_workdir = sbyfile[:-4]
@@ -345,14 +355,14 @@ def run_job(taskname):
             shutil.move(my_workdir, "{}.bak{:03d}".format(my_workdir, backup_idx))
 
         if opt_force and not reusedir:
-            early_log(my_workdir, "Removing directory '{}'.".format(my_workdir))
+            early_log(my_workdir, f"Removing directory '{os.path.abspath(my_workdir)}'.")
             if sbyfile:
                 shutil.rmtree(my_workdir, ignore_errors=True)
 
         if reusedir:
             pass
         elif os.path.isdir(my_workdir):
-            print("ERROR: Directory '{}' already exists.".format(my_workdir))
+            print(f"ERROR: Directory '{my_workdir}' already exists.")
             sys.exit(1)
         else:
             os.makedirs(my_workdir)
@@ -390,13 +400,13 @@ def run_job(taskname):
             pass
 
     if my_opt_tmpdir:
-        job.log("Removing directory '{}'.".format(my_workdir))
+        job.log(f"Removing directory '{my_workdir}'.")
         shutil.rmtree(my_workdir, ignore_errors=True)
 
     if setupmode:
-        job.log("SETUP COMPLETE (rc={})".format(job.retcode))
+        job.log(f"SETUP COMPLETE (rc={job.retcode})")
     else:
-        job.log("DONE ({}, rc={})".format(job.status, job.retcode))
+        job.log(f"DONE ({job.status}, rc={job.retcode})")
     job.logfile.close()
 
     if not my_opt_tmpdir and not setupmode:
@@ -404,33 +414,37 @@ def run_job(taskname):
             junit_errors = 1 if job.retcode == 16 else 0
             junit_failures = 1 if job.retcode != 0 and junit_errors == 0 else 0
             print('<?xml version="1.0" encoding="UTF-8"?>', file=f)
-            print('<testsuites disabled="0" errors="{}" failures="{}" tests="1" time="{}">'.format(junit_errors, junit_failures, job.total_time), file=f)
-            print('<testsuite disabled="0" errors="{}" failures="{}" name="{}" skipped="0" tests="1" time="{}">'.format(junit_errors, junit_failures, junit_ts_name, job.total_time), file=f)
+            print(f'<testsuites disabled="0" errors="{junit_errors}" failures="{junit_failures}" tests="1" time="{job.total_time}">', file=f)
+            print(f'<testsuite disabled="0" errors="{junit_errors}" failures="{junit_failures}" name="{junit_ts_name}" skipped="0" tests="1" time="{job.total_time}">', file=f)
             print('<properties>', file=f)
-            print('<property name="os" value="{}"/>'.format(os.name), file=f)
+            print(f'<property name="os" value="{os.name}"/>', file=f)
             print('</properties>', file=f)
-            print('<testcase classname="{}" name="{}" status="{}" time="{}">'.format(junit_ts_name, junit_tc_name, job.status, job.total_time), file=f)
+            print(f'<testcase classname="{junit_ts_name}" name="{junit_tc_name}" status="{job.status}" time="{job.total_time}">', file=f)
             if junit_errors:
-                print('<error message="{}" type="{}"/>'.format(job.status, job.status), file=f)
+                print(f'<error message="{job.status}" type="{job.status}"/>', file=f)
             if junit_failures:
-                print('<failure message="{}" type="{}"/>'.format(job.status, job.status), file=f)
+                print(f'<failure message="{job.status}" type="{job.status}"/>', file=f)
             print('<system-out>', end="", file=f)
-            with open("{}/logfile.txt".format(job.workdir), "r") as logf:
+            with open(f"{job.workdir}/logfile.txt", "r") as logf:
                 for line in logf:
                     print(line.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;"), end="", file=f)
             print('</system-out></testcase></testsuite></testsuites>', file=f)
-        with open("{}/status".format(job.workdir), "w") as f:
-            print("{} {} {}".format(job.status, job.retcode, job.total_time), file=f)
+        with open(f"{job.workdir}/status", "w") as f:
+            print(f"{job.status} {job.retcode} {job.total_time}", file=f)
 
     return job.retcode
 
 
+failed = []
 retcode = 0
-for t in tasknames:
-    retcode |= run_job(t)
+for task in tasknames:
+    task_retcode = run_job(task)
+    retcode |= task_retcode
+    if task_retcode:
+        failed.append(task)
 
-if retcode and (len(tasknames) > 1 or tasknames[0] is not None):
+if failed and (len(tasknames) > 1 or tasknames[0] is not None):
     tm = localtime()
-    print("SBY {:2d}:{:02d}:{:02d} One or more tasks produced a non-zero return code.".format(tm.tm_hour, tm.tm_min, tm.tm_sec))
+    print("SBY {:2d}:{:02d}:{:02d} The following tasks failed: {}".format(tm.tm_hour, tm.tm_min, tm.tm_sec, failed))
 
 sys.exit(retcode)

@@ -68,7 +68,7 @@ def run(mode, job, engine_idx, engine):
         elif o == "--seed":
             random_seed = a
         else:
-            job.error("Invalid smtbmc options {}.".format(o))
+            job.error(f"Invalid smtbmc options {o}.")
 
     xtra_opts = False
     for i, a in enumerate(args):
@@ -89,7 +89,7 @@ def run(mode, job, engine_idx, engine):
         smtbmc_opts += ["--unroll"]
 
     if job.opt_smtc is not None:
-        smtbmc_opts += ["--smtc", "src/{}".format(job.opt_smtc)]
+        smtbmc_opts += ["--smtc", f"src/{job.opt_smtc}"]
 
     if job.opt_tbtop is not None:
          smtbmc_opts += ["--vlogtb-top", job.opt_tbtop]
@@ -107,9 +107,9 @@ def run(mode, job, engine_idx, engine):
             run("prove_induction", job, engine_idx, engine)
         return
 
-    taskname = "engine_{}".format(engine_idx)
-    trace_prefix = "engine_{}/trace".format(engine_idx)
-    logfile_prefix = "{}/engine_{}/logfile".format(job.workdir, engine_idx)
+    taskname = f"engine_{engine_idx}"
+    trace_prefix = f"engine_{engine_idx}/trace"
+    logfile_prefix = f"{job.workdir}/engine_{engine_idx}/logfile"
 
     if mode == "prove_basecase":
         taskname += ".basecase"
@@ -137,10 +137,15 @@ def run(mode, job, engine_idx, engine):
     else:
         t_opt = "{}".format(job.opt_depth)
 
-    task = SbyTask(job, taskname, job.model(model_name),
-            "cd {}; {} {} -t {} {} --append {} --dump-vcd {p}.vcd --dump-vlogtb {p}_tb.v --dump-smtc {p}.smtc model/design_{}.smt2".format
-                    (job.workdir, job.exe_paths["smtbmc"], " ".join(smtbmc_opts), t_opt, "--info \"(set-option :random-seed {})\"".format(random_seed) if random_seed else "", job.opt_append, model_name, p=trace_prefix),
-            logfile=open(logfile_prefix + ".txt", "w"), logstderr=(not progress))
+    random_seed = f"--info \"(set-option :random-seed {random_seed})\"" if random_seed else ""
+    task = SbyTask(
+        job,
+        taskname,
+        job.model(model_name),
+        f"""cd {job.workdir}; {job.exe_paths["smtbmc"]} {" ".join(smtbmc_opts)} -t {t_opt} {random_seed} --append {job.opt_append} --dump-vcd {trace_prefix}.vcd --dump-vlogtb {trace_prefix}_tb.v --dump-smtc {trace_prefix}.smtc model/design_{model_name}.smt2""",
+        logfile=open(logfile_prefix + ".txt", "w"),
+        logstderr=(not progress)
+    )
 
     if mode == "prove_basecase":
         job.basecase_tasks.append(task)
@@ -177,37 +182,37 @@ def run(mode, job, engine_idx, engine):
 
     def exit_callback(retcode):
         if task_status is None:
-            job.error("engine_{}: Engine terminated without status.".format(engine_idx))
+            job.error(f"engine_{engine_idx}: Engine terminated without status.")
 
         if mode == "bmc" or mode == "cover":
             job.update_status(task_status)
             task_status_lower = task_status.lower() if task_status == "PASS" else task_status
-            job.log("engine_{}: Status returned by engine: {}".format(engine_idx, task_status_lower))
-            job.summary.append("engine_{} ({}) returned {}".format(engine_idx, " ".join(engine), task_status_lower))
+            job.log(f"engine_{engine_idx}: Status returned by engine: {task_status_lower}")
+            job.summary.append(f"""engine_{engine_idx} ({" ".join(engine)}) returned {task_status_lower}""")
 
             if task_status == "FAIL" and mode != "cover":
-                if os.path.exists("{}/engine_{}/trace.vcd".format(job.workdir, engine_idx)):
-                    job.summary.append("counterexample trace: {}/engine_{}/trace.vcd".format(job.workdir, engine_idx))
+                if os.path.exists(f"{job.workdir}/engine_{engine_idx}/trace.vcd"):
+                    job.summary.append(f"counterexample trace: {job.workdir}/engine_{engine_idx}/trace.vcd")
             elif task_status == "PASS" and mode == "cover":
                 print_traces_max = 5
                 for i in range(print_traces_max):
-                    if os.path.exists("{}/engine_{}/trace{}.vcd".format(job.workdir, engine_idx, i)):
-                        job.summary.append("trace: {}/engine_{}/trace{}.vcd".format(job.workdir, engine_idx, i))
+                    if os.path.exists(f"{job.workdir}/engine_{engine_idx}/trace{i}.vcd"):
+                        job.summary.append(f"trace: {job.workdir}/engine_{engine_idx}/trace{i}.vcd")
                     else:
                         break
                 else:
                     excess_traces = 0
-                    while os.path.exists("{}/engine_{}/trace{}.vcd".format(job.workdir, engine_idx, print_traces_max + excess_traces)):
+                    while os.path.exists(f"{job.workdir}/engine_{engine_idx}/trace{print_traces_max + excess_traces}.vcd"):
                         excess_traces += 1
                     if excess_traces > 0:
-                        job.summary.append("and {} further trace{}".format(excess_traces, "s" if excess_traces > 1 else ""))
+                        job.summary.append(f"""and {excess_traces} further trace{"s" if excess_traces > 1 else ""}""")
 
             job.terminate()
 
         elif mode in ["prove_basecase", "prove_induction"]:
             task_status_lower = task_status.lower() if task_status == "PASS" else task_status
-            job.log("engine_{}: Status returned by engine for {}: {}".format(engine_idx, mode.split("_")[1], task_status_lower))
-            job.summary.append("engine_{} ({}) returned {} for {}".format(engine_idx, " ".join(engine), task_status_lower, mode.split("_")[1]))
+            job.log(f"""engine_{engine_idx}: Status returned by engine for {mode.split("_")[1]}: {task_status_lower}""")
+            job.summary.append(f"""engine_{engine_idx} ({" ".join(engine)}) returned {task_status_lower} for {mode.split("_")[1]}""")
 
             if mode == "prove_basecase":
                 for task in job.basecase_tasks:
@@ -218,8 +223,8 @@ def run(mode, job, engine_idx, engine):
 
                 else:
                     job.update_status(task_status)
-                    if os.path.exists("{}/engine_{}/trace.vcd".format(job.workdir, engine_idx)):
-                        job.summary.append("counterexample trace: {}/engine_{}/trace.vcd".format(job.workdir, engine_idx))
+                    if os.path.exists(f"{job.workdir}/engine_{engine_idx}/trace.vcd"):
+                        job.summary.append(f"counterexample trace: {job.workdir}/engine_{engine_idx}/trace.vcd")
                     job.terminate()
 
             elif mode == "prove_induction":
