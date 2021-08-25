@@ -217,7 +217,7 @@ def run(mode, job, engine_idx, engine):
         job,
         f"engine_{engine_idx}", job.model("btor"),
         f"cd {job.workdir}; {solver_cmd} model/design_btor.btor",
-        logfile=open("{job.workdir}/engine_{engine_idx}/logfile.txt", "w")
+        logfile=open(f"{job.workdir}/engine_{engine_idx}/logfile.txt", "w")
     )
 
     task.output_callback = output_callback
