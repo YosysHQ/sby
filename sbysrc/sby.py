@@ -335,6 +335,7 @@ if (workdir is not None) and (len(tasknames) != 1):
 
 def run_job(taskname):
     my_opt_tmpdir = opt_tmpdir
+    my_workdir = None
 
     if workdir is not None:
         my_workdir = workdir
