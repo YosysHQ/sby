@@ -17,7 +17,7 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #
 
-import argparse, os, sys, shutil, tempfile, re
+import argparse, os, sys, shutil, tempfile, re, multiprocessing, functools
 ##yosys-sys-path##
 from sby_core import SbyJob, SbyAbort, process_filename
 from time import localtime
@@ -46,6 +46,8 @@ parser.add_argument("-T", metavar="<taskname>", action="append", dest="tasknames
         help="add taskname (useful when sby file is read from stdin)")
 parser.add_argument("-E", action="store_true", dest="throw_err",
         help="throw an exception (incl stack trace) for most errors")
+parser.add_argument("-j", metavar="<N>", dest="num_jobs", type=int, default=1,
+        help="run up to <N> tasks in parallel")
 
 parser.add_argument("--yosys", metavar="<path_to_executable>",
         action=DictAction, dest="exe_paths")
@@ -94,6 +96,7 @@ opt_backup = args.backup
 opt_tmpdir = args.tmpdir
 exe_paths = args.exe_paths
 throw_err = args.throw_err
+num_jobs = args.num_jobs
 dump_cfg = args.dump_cfg
 dump_tasks = args.dump_tasks
 dump_files = args.dump_files
@@ -435,14 +438,12 @@ def run_job(taskname):
 
     return job.retcode
 
+task_retcodes = []
+with multiprocessing.Pool(num_jobs) as p:
+    task_retcodes = p.map(run_job, tasknames)
 
-failed = []
-retcode = 0
-for task in tasknames:
-    task_retcode = run_job(task)
-    retcode |= task_retcode
-    if task_retcode:
-        failed.append(task)
+retcode = functools.reduce(lambda a, b: a | b, task_retcodes)
+failed = [tasknames[idx] for (idx, rc) in enumerate(task_retcodes) if rc]
 
 if failed and (len(tasknames) > 1 or tasknames[0] is not None):
     tm = localtime()
