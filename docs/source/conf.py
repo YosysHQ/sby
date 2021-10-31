@@ -15,7 +15,7 @@ highlight_language = 'systemverilog'
 
 html_theme_options = {
     'extra_nav_links' : { 
-        'YosysHQ Docs' : 'https://yosyshq-docs.readthedocs.io' ,
+        'YosysHQ Docs' : 'https://yosyshq.readthedocs.io' ,
         'YosysHQ Website' : 'https://www.yosyshq.com',
     },
 #   'logo' : 'logo.png',

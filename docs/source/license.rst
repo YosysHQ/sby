@@ -8,7 +8,7 @@ SymbiYosys (sby) itself is licensed under the ISC license:
 
    SymbiYosys (sby) -- Front-end for Yosys-based formal verification flows
    
-   Copyright (C) 2016  Clifford Wolf <clifford@clifford.at>
+   Copyright (C) 2016  Claire Xenia Wolf <claire@yosyshq.com>
    
    Permission to use, copy, modify, and/or distribute this software for any
    purpose with or without fee is hereby granted, provided that the above
