@@ -20,7 +20,7 @@ import os, re, sys, signal
 if os.name == "posix":
     import resource, fcntl
 import subprocess
-from shutil import copyfile, rmtree
+from shutil import copyfile, copytree, rmtree
 from select import select
 from time import time, localtime, sleep
 
@@ -332,7 +332,10 @@ class SbyJob:
                 os.makedirs(basedir)
 
             self.log(f"Copy '{os.path.abspath(srcfile)}' to '{os.path.abspath(dstfile)}'.")
-            copyfile(srcfile, dstfile)
+            if os.path.isdir(srcfile):
+                copytree(srcfile, dstfile, dirs_exist_ok=True)
+            else:
+                copyfile(srcfile, dstfile)
 
     def handle_str_option(self, option_name, default_value):
         if option_name in self.options:
