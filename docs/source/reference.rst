@@ -231,6 +231,14 @@ the following options:
 +-----------------+---------------------------------------------------------+
 | ``--progress``  | Enable Yosys-SMTBMC timer display.                      |
 +-----------------+---------------------------------------------------------+
+| ``--anybase``   | Generate an arbitrary basecase trace in ``prove`` mode, |
+|                 | instead of one derived from the starting conditions.    |
+|                 | (This provides a weaker proof that there exists some    |
+|                 | basecase for which the assertions hold.                 |
+|                 | This is powerful when combined with a separate proof    |
+|                 | that the assertions hold for ``depth`` cycles after     |
+|                 | reset).                                                 |
++-----------------+---------------------------------------------------------+
 
 Any SMT2 solver that is compatible with ``yosys-smtbmc`` can be passed as
 argument to the ``smtbmc`` engine. The solver options are passed to the solver
