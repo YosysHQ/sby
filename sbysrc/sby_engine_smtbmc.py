@@ -29,12 +29,14 @@ def run(mode, job, engine_idx, engine):
     stdt_opt = False
     dumpsmt2 = False
     progress = False
+    anybase = False
     basecase_only = False
     induction_only = False
     random_seed = None
 
     opts, args = getopt.getopt(engine[1:], "", ["nomem", "syn", "stbv", "stdt", "presat",
-            "nopresat", "unroll", "nounroll", "dumpsmt2", "progress", "basecase", "induction", "seed="])
+            "nopresat", "unroll", "nounroll", "dumpsmt2", "progress", "anybase",
+            "basecase", "induction", "seed="])
 
     for o, a in opts:
         if o == "--nomem":
@@ -57,6 +59,8 @@ def run(mode, job, engine_idx, engine):
             dumpsmt2 = True
         elif o == "--progress":
             progress = True
+        elif o == "--anybase":
+            anybase = True
         elif o == "--basecase":
             if induction_only:
                 job.error("smtbmc options --basecase and --induction are exclusive.")
@@ -114,6 +118,8 @@ def run(mode, job, engine_idx, engine):
     if mode == "prove_basecase":
         taskname += ".basecase"
         logfile_prefix += "_basecase"
+        if anybase:
+            smtbmc_opts.append("-g")
 
     if mode == "prove_induction":
         taskname += ".induction"
@@ -218,14 +224,24 @@ def run(mode, job, engine_idx, engine):
                 for task in job.basecase_tasks:
                     task.terminate()
 
-                if task_status == "PASS":
-                    job.basecase_pass = True
+                if not anybase:
+                    if task_status == "PASS":
+                        job.basecase_pass = True
 
+                    else:
+                        job.update_status(task_status)
+                        if os.path.exists(f"{job.workdir}/engine_{engine_idx}/trace.vcd"):
+                            job.summary.append(f"counterexample trace: {job.workdir}/engine_{engine_idx}/trace.vcd")
+                        job.terminate()
                 else:
-                    job.update_status(task_status)
-                    if os.path.exists(f"{job.workdir}/engine_{engine_idx}/trace.vcd"):
-                        job.summary.append(f"counterexample trace: {job.workdir}/engine_{engine_idx}/trace.vcd")
-                    job.terminate()
+                    if task_status == "PASS":
+                        job.basecase_pass = True
+                        if os.path.exists(f"{job.workdir}/engine_{engine_idx}/trace.vcd"):
+                            job.summary.append(f"basecase trace: {job.workdir}/engine_{engine_idx}/trace.vcd")
+
+                    else:
+                        job.update_status(task_status)
+                        job.terminate()
 
             elif mode == "prove_induction":
                 for task in job.induction_tasks:
