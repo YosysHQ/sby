@@ -1,0 +1,35 @@
+h1, h3, p.topic-title, a.current, a:hover,
+.content li.toctree-l1 > a {
+  color: #d6368f !important;
+}
+
+h2, p.admonition-title, dt,
+.content li.toctree-l2 > a {
+  color: #4b72b8;
+}
+
+a {
+  color: #8857a3;
+}
+
+a.external {
+  color: #d6368f;
+  text-decoration: underline;
+}
+
+.vp-sidebar a {
+  color: #d6368f;
+}
+
+.vp-sidebar .toctree-l1.current a {
+  border-left: 0.5rem solid #6ecbd7;
+}
+
+.vp-sidebar .toctree-l1 a.current {
+  border-left: 0.5rem solid #8857a3;
+}
+
+.injected .rst-current-version,
+.injected dt {
+  color: #6ecbd7 !important;  
+}
