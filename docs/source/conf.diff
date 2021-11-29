@@ -1,0 +1,9 @@
+--- a/docs/source/conf.py
++++ b/docs/source/conf.py
+@@ -1,5 +1,5 @@
+ #!/usr/bin/env python3
+-project = 'YosysHQ Docs'
++project = 'YosysHQ SBY'
+ author = 'YosysHQ GmbH'
+ copyright ='2021 YosysHQ GmbH'
+ 
