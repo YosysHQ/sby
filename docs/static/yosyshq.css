@@ -30,6 +30,11 @@ p {
     color: #4b72b8;
 }
 
+.vp-sidebar li li li a {
+    color: #2c3e50;
+    font-weight: 400;
+}
+
 .vp-sidebar h3 {
     padding-left: 1.5rem !important;
 }
@@ -40,6 +45,10 @@ p {
 
 .vp-sidebar ul ul a {
     padding-left: 3rem !important;
+}
+
+.vp-sidebar ul ul ul a {
+    padding-left: 4.5rem !important;
 }
 
 .vp-sidebar .toctree-l1.current a {
