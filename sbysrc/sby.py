@@ -20,7 +20,7 @@
 import argparse, os, sys, shutil, tempfile, re
 ##yosys-sys-path##
 from sby_core import SbyTask, SbyAbort, process_filename
-from time import localtime
+import time
 
 class DictAction(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
@@ -156,7 +156,7 @@ prep -top top
 early_logmsgs = list()
 
 def early_log(workdir, msg):
-    tm = localtime()
+    tm = time.localtime()
     early_logmsgs.append("SBY {:2d}:{:02d}:{:02d} [{}] {}".format(tm.tm_hour, tm.tm_min, tm.tm_sec, workdir, msg))
     print(early_logmsgs[-1])
 
@@ -455,24 +455,47 @@ def run_task(taskname):
 
     if not my_opt_tmpdir and not setupmode:
         with open("{}/{}.xml".format(task.workdir, junit_filename), "w") as f:
+            # TODO: create necessary data
+            # checks: collection of assert/cover statements active in task
+            # elements: dicts with entries 'type', 'hierarchy', 'location', 'status', 'tracefile'
+            checks = [ #for testing purposes
+            {'type':'assert', 'hierarchy':'top.dut.submod1', 'location':'test.v:404', 'status':'unknown', 'tracefile':'/home/user/path/task/engine_0/trace0.vcd'},
+            {'type':'assert', 'hierarchy':'top.dut.submod1', 'location':'test.v:412', 'status':'fail', 'tracefile':'/home/user/path/task/engine_0/trace1.vcd'},
+            {'type':'cover', 'hierarchy':'top.dut.submod2', 'location':'test3.v:42', 'status':'pass', 'tracefile':'/home/user/path/task/engine_1/trace0.vcd'},
+            {'type':'cover', 'hierarchy':'top.dut.submod2', 'location':'test3.v:666', 'status':'error', 'tracefile':'/home/user/path/task/engine_1/trace1.vcd'}
+            ]
+            junit_tests = len(checks)
             junit_errors = 1 if task.retcode == 16 else 0
             junit_failures = 1 if task.retcode != 0 and junit_errors == 0 else 0
-            print('<?xml version="1.0" encoding="UTF-8"?>', file=f)
-            print(f'<testsuites disabled="0" errors="{junit_errors}" failures="{junit_failures}" tests="1" time="{task.total_time}">', file=f)
-            print(f'<testsuite disabled="0" errors="{junit_errors}" failures="{junit_failures}" name="{junit_ts_name}" skipped="0" tests="1" time="{task.total_time}">', file=f)
-            print('<properties>', file=f)
+            junit_type = "cover" if task.opt_mode == "cover" else "assert" #should this be here or individual for each check?
+            junit_time = time.strftime('%Y-%m-%dT%H:%M:%S')
+            print(f'<?xml version="1.0" encoding="UTF-8"?>', file=f)
+            print(f'<testsuites>', file=f)
+            #TODO: check with Micko if os.uname().nodename is sane enough in most places
+            print(f'<testsuite timestamp="{junit_time}" hostname="{os.uname().nodename}" package="" id="1" name="{junit_tc_name}" tests="{junit_tests}" errors="{junit_errors}" failures="{junit_failures}" time="{task.total_time}" skipped="{junit_tests - junit_failures}">', file=f)
+            print(f'<properties>', file=f)
             print(f'<property name="os" value="{os.name}"/>', file=f)
-            print('</properties>', file=f)
-            print(f'<testcase classname="{junit_ts_name}" name="{junit_tc_name}" status="{task.status}" time="{task.total_time}">', file=f)
-            if junit_errors:
-                print(f'<error message="{task.status}" type="{task.status}"/>', file=f)
-            if junit_failures:
-                print(f'<failure message="{task.status}" type="{task.status}"/>', file=f)
+            print(f'</properties>', file=f)
+            for check in checks:
+                print(f'<testcase classname="{junit_tc_name}" name="" time="{task.total_time}">', file=f) # name required
+                if check["status"] == "unknown":
+                    print(f'<skipped />', file=f)
+                elif check["status"] == "fail":
+                    print(f'<failure type="{check["type"]}" message="Property in {check["hierarchy"]} at {check["location"]} failed. Trace file: {check["tracefile"]}" />', file=f)
+                elif check["status"] == "error":
+                    print(f'<error type="error"/>', file=f) # type mandatory, message optional
+                print(f'</testcase>', file=f)
             print('<system-out>', end="", file=f)
             with open(f"{task.workdir}/logfile.txt", "r") as logf:
                 for line in logf:
                     print(line.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;"), end="", file=f)
-            print('</system-out></testcase></testsuite></testsuites>', file=f)
+            print('</system-out>', file=f)
+            print('<system-err>', file=f)
+            #TODO: can we handle errors and still output this file?
+            print('</system-err>', file=f)
+            print(f'</testsuite>', file=f)
+            print(f'</testsuites>', file=f)
+
         with open(f"{task.workdir}/status", "w") as f:
             print(f"{task.status} {task.retcode} {task.total_time}", file=f)
 
@@ -488,7 +511,7 @@ for task in tasknames:
         failed.append(task)
 
 if failed and (len(tasknames) > 1 or tasknames[0] is not None):
-    tm = localtime()
+    tm = time.localtime()
     print("SBY {:2d}:{:02d}:{:02d} The following tasks failed: {}".format(tm.tm_hour, tm.tm_min, tm.tm_sec, failed))
 
 sys.exit(retcode)
