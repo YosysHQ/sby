@@ -4,7 +4,8 @@ Proving and Using Inductive Invariants for Interval Property Checking
 Inductive invariants are boolean functions over the design state, that
  1. return true for every reachable state (=invariants), and
  2. if they return true for a state then they will also return true
-    for every state reachable from the given state (=inductive).
+    for every state reachable from the given state (=inductive)
+    
 Formally, inductive invariants are sets of states that are closed under
 the state transition function (=inductive), and contain the entire set
 of reachable states (=invariants).
@@ -67,14 +68,14 @@ first set of states. Let's call the `state != 0` property `p0`:
 let p0 = (state != 0);
 ```
 
-So `state != 0` is a true invariant for our circuit, but it is not an inductive invariant,
-because we can go from a state for which `state != 0` is true to a state for
-which it is false. Specifically there are two such states for this circuit: 1 and 17
+So `p0` is a true invariant for our circuit, but it is not an inductive invariant,
+because we can go from a state for which `p0` is true to a state for which it is
+false. Specifically there are two such states for this circuit: 1 and 17
 
-(The property `state != 0` is k-inductive for k=4, but for this example we are
-only interested in 1-induction.)
+(The property `p0` is k-inductive for k=6, but for this example we are
+only interested in proofs via 1-induction.)
 
-However, the following property would be inductive, as can be easily confirmed
+The following property however would be inductive, as can be easily confirmed
 by looking up the 4 states in the state chart above.
 
 ```SystemVerilog
