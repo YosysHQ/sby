@@ -17,9 +17,12 @@ the following technique for proving and using inductive invariants.
 Consider the following circuit (stripped-down [example.sv](example.sv)):
 
 ```SystemVerilog
-module example(input logic clk, output reg [4:0] state); 
-	initial state = 27;
+module example(clk, state); 
+	input logic clk;
+	output logic [4:0] state = 27;
+
 	always_ff @(posedge clk) state <= (5'd 2 * state - 5'd 1) ^ (state & 5'd 7);
+
 	always_comb assert (state != 0);
 endmodule
 ```
