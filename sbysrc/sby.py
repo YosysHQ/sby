@@ -244,36 +244,45 @@ def read_sbyconfig(sbydata, taskname):
 
             line = line.split(":")
             if len(line) == 1:
-                tnames, line = line[:1], line[1:]
+                line = line[0].split()
+                if len(line) > 0:
+                    lhs, rhs = line[:1], line[1:]
+                else:
+                    return
             elif len(line) == 2:
-                tnames, line = line[0].split(), line[1].split()
+                lhs, rhs = line[0].split(), line[1].split()
             else:
                 print("ERROR: Syntax error in tasks block.", file=sys.stderr)
                 sys.exit(1)
 
-            for tname in tnames:
-                if tname == "":
-                    continue
-                tpattern = False
+            for tagname in rhs:
+                for c in tagname:
+                    if c in "(?*.[]|)":
+                        break
+                else:
+                    task_tags_all.add(tagname)
+
+            for tname in lhs:
                 for c in tname:
                     if c in "(?*.[]|)":
-                        tpattern = True
-                if not tpattern:
+                        break
+                else:
                     if tname not in tasklist:
                         tasklist.append(tname)
                     task_tags_all.add(tname)
+
                 if taskname is not None and re.fullmatch(tname, taskname):
                     task_matched = True
                     task_tags_active.add(tname)
-                    for t in line:
-                        if t == "":
-                            continue
-                        task_tags_active.add(t)
-
-            for t in line:
-                if t == "":
-                    continue
-                task_tags_all.add(t)
+                    for tagname in rhs:
+                        for c in tagname:
+                            if c in "(?*.[]|)":
+                                for t in task_tags_all:
+                                    if re.fullmatch(tagname, t):
+                                        task_tags_active.add(t)
+                                break
+                        else:
+                            task_tags_active.add(tagname)
 
         elif line == "[tasks]":
             if taskname is None:
