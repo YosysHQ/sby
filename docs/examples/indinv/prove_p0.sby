@@ -1,0 +1,27 @@
+[tasks]
+: p0
+: p1
+p2
+p3
+k
+
+[options]
+mode prove
+k:  depth 6
+~k: depth 1
+
+[engines]
+smtbmc
+
+[script]
+read -verific
+read -define ASSERT_PX=p0
+p0: read -define ASSUME_PX=p0
+p1: read -define ASSUME_PX=p1
+p2: read -define ASSUME_PX=p2
+p3: read -define ASSUME_PX=p3
+read -sv example.sv
+prep -top example
+
+[files]
+example.sv

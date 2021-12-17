@@ -1,0 +1,26 @@
+[tasks]
+: p0 unknown
+: p1 failing
+p2
+p3
+
+[options]
+mode prove
+depth 1
+unknown: expect unknown
+failing: expect fail
+
+[engines]
+smtbmc
+
+[script]
+read -verific
+p0: read -define ASSERT_PX=p0
+p1: read -define ASSERT_PX=p1
+p2: read -define ASSERT_PX=p2
+p3: read -define ASSERT_PX=p3
+read -sv example.sv
+prep -top example
+
+[files]
+example.sv
