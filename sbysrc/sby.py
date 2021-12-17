@@ -66,6 +66,8 @@ parser.add_argument("--pono", metavar="<path_to_executable>",
         help="configure which executable to use for the respective tool")
 parser.add_argument("--dumpcfg", action="store_true", dest="dump_cfg",
         help="print the pre-processed configuration file")
+parser.add_argument("--dumptags", action="store_true", dest="dump_tags",
+        help="print the list of task tags")
 parser.add_argument("--dumptasks", action="store_true", dest="dump_tasks",
         help="print the list of tasks")
 parser.add_argument("--dumpfiles", action="store_true", dest="dump_files",
@@ -95,6 +97,7 @@ opt_tmpdir = args.tmpdir
 exe_paths = args.exe_paths
 throw_err = args.throw_err
 dump_cfg = args.dump_cfg
+dump_tags = args.dump_tags
 dump_tasks = args.dump_tasks
 dump_files = args.dump_files
 reusedir = False
@@ -200,62 +203,77 @@ def read_sbyconfig(sbydata, taskname):
                 task_skiping_blocks = False
                 return
 
-        found_task_tag = False
-        task_skip_line = False
+        if not tasks_section:
+            found_task_tag = False
+            task_skip_line = False
 
-        for t in task_tags_all:
-            if line.startswith(t+":"):
-                line = line[len(t)+1:].lstrip()
-                match = t in task_tags_active
-            elif line.startswith("~"+t+":"):
-                line = line[len(t)+2:].lstrip()
-                match = t not in task_tags_active
-            else:
-                continue
+            for t in task_tags_all:
+                if line.startswith(t+":"):
+                    line = line[len(t)+1:].lstrip()
+                    match = t in task_tags_active
+                elif line.startswith("~"+t+":"):
+                    line = line[len(t)+2:].lstrip()
+                    match = t not in task_tags_active
+                else:
+                    continue
 
-            if line == "":
-                task_skiping_blocks = True
-                task_skip_block = not match
-                task_skip_line = True
-            else:
-                task_skip_line = not match
+                if line == "":
+                    task_skiping_blocks = True
+                    task_skip_block = not match
+                    task_skip_line = True
+                else:
+                    task_skip_line = not match
 
-            found_task_tag = True
-            break
+                found_task_tag = True
+                break
 
-        if len(task_tags_all) and not found_task_tag:
-            tokens = line.split()
-            if len(tokens) > 0 and tokens[0][0] == line[0] and tokens[0].endswith(":"):
-                print(f"ERROR: Invalid task specifier \"{tokens[0]}\".", file=sys.stderr)
-                sys.exit(1)
+            if len(task_tags_all) and not found_task_tag:
+                tokens = line.split()
+                if len(tokens) > 0 and tokens[0][0] == line[0] and tokens[0].endswith(":"):
+                    print(f"ERROR: Invalid task specifier \"{tokens[0]}\".", file=sys.stderr)
+                    sys.exit(1)
 
-        if task_skip_line or task_skip_block:
-            return
+            if task_skip_line or task_skip_block:
+                return
 
         if tasks_section:
             if taskname is None:
                 cfgdata.append(line)
             if line.startswith("#"):
                 return
-            line = line.split()
-            if len(line) > 0:
-                tname = line[0]
+
+            line = line.split(":")
+            if len(line) == 1:
+                tnames, line = line[:1], line[1:]
+            elif len(line) == 2:
+                tnames, line = line[0].split(), line[1].split()
+            else:
+                print("ERROR: Syntax error in tasks block.", file=sys.stderr)
+                sys.exit(1)
+
+            for tname in tnames:
+                if tname == "":
+                    continue
                 tpattern = False
                 for c in tname:
                     if c in "(?*.[]|)":
                         tpattern = True
                 if not tpattern:
-                    tasklist.append(tname)
+                    if tname not in tasklist:
+                        tasklist.append(tname)
                     task_tags_all.add(tname)
                 if taskname is not None and re.fullmatch(tname, taskname):
                     task_matched = True
                     task_tags_active.add(tname)
-                    for t in line[1:]:
+                    for t in line:
+                        if t == "":
+                            continue
                         task_tags_active.add(t)
-                        task_tags_all.add(t)
-                else:
-                    for t in line[1:]:
-                        task_tags_all.add(t)
+
+            for t in line:
+                if t == "":
+                    continue
+                task_tags_all.add(t)
 
         elif line == "[tasks]":
             if taskname is None:
@@ -272,7 +290,7 @@ def read_sbyconfig(sbydata, taskname):
         print(f"ERROR: Task name '{taskname}' didn't match any lines in [tasks].", file=sys.stderr)
         sys.exit(1)
 
-    return cfgdata, tasklist
+    return cfgdata, tasklist, sorted(list(task_tags_all))
 
 
 sbydata = list()
@@ -282,7 +300,7 @@ with (open(sbyfile, "r") if sbyfile is not None else sys.stdin) as f:
 
 if dump_cfg:
     assert len(tasknames) < 2
-    sbyconfig, _ = read_sbyconfig(sbydata, tasknames[0] if len(tasknames) else None)
+    sbyconfig, _, _ = read_sbyconfig(sbydata, tasknames[0] if len(tasknames) else None)
     print("\n".join(sbyconfig))
     sys.exit(0)
 
@@ -290,7 +308,7 @@ if dump_files:
     file_set = set()
 
     def find_files(taskname):
-        sbyconfig, _ = read_sbyconfig(sbydata, taskname)
+        sbyconfig, _, _ = read_sbyconfig(sbydata, taskname)
 
         start_index = -1
         for i in range(len(sbyconfig)):
@@ -319,9 +337,15 @@ if dump_files:
     sys.exit(0)
 
 if len(tasknames) == 0:
-    _, tasknames = read_sbyconfig(sbydata, None)
+    _, tasknames, _ = read_sbyconfig(sbydata, None)
     if len(tasknames) == 0:
         tasknames = [None]
+
+if dump_tags:
+    _, _, tagnames = read_sbyconfig(sbydata, None)
+    for tag in tagnames:
+        print(tag)
+    sys.exit(0)
 
 if dump_tasks:
     for task in tasknames:
@@ -386,7 +410,7 @@ def run_job(taskname):
     else:
         junit_filename = "junit"
 
-    sbyconfig, _ = read_sbyconfig(sbydata, taskname)
+    sbyconfig, _, _ = read_sbyconfig(sbydata, taskname)
     job = SbyJob(sbyconfig, my_workdir, early_logmsgs, reusedir)
 
     for k, v in exe_paths.items():
