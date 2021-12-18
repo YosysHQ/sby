@@ -70,6 +70,8 @@ parser.add_argument("--dumptags", action="store_true", dest="dump_tags",
         help="print the list of task tags")
 parser.add_argument("--dumptasks", action="store_true", dest="dump_tasks",
         help="print the list of tasks")
+parser.add_argument("--dumpdefaults", action="store_true", dest="dump_defaults",
+        help="print the list of default tasks")
 parser.add_argument("--dumpfiles", action="store_true", dest="dump_files",
         help="print the list of source files")
 parser.add_argument("--setup", action="store_true", dest="setupmode",
@@ -99,6 +101,7 @@ throw_err = args.throw_err
 dump_cfg = args.dump_cfg
 dump_tags = args.dump_tags
 dump_tasks = args.dump_tasks
+dump_defaults = args.dump_defaults
 dump_files = args.dump_files
 reusedir = False
 setupmode = args.setupmode
@@ -160,6 +163,7 @@ def early_log(workdir, msg):
 def read_sbyconfig(sbydata, taskname):
     cfgdata = list()
     tasklist = list()
+    defaultlist = None
     task_matched = False
 
     pycode = None
@@ -172,6 +176,7 @@ def read_sbyconfig(sbydata, taskname):
     def handle_line(line):
         nonlocal pycode, tasks_section, task_tags_active, task_tags_all
         nonlocal task_skip_block, task_skiping_blocks, task_matched
+        nonlocal defaultlist
 
         line = line.rstrip("\n")
         line = line.rstrip("\r")
@@ -256,33 +261,34 @@ def read_sbyconfig(sbydata, taskname):
                 sys.exit(1)
 
             for tagname in rhs:
-                for c in tagname:
-                    if c in "(?*.[]|)":
-                        break
-                else:
+                if tagname == "default":
+                    continue
+                if all(map(lambda c: c not in "(?*.[]|)", tagname)):
                     task_tags_all.add(tagname)
 
             for tname in lhs:
-                for c in tname:
-                    if c in "(?*.[]|)":
-                        break
-                else:
+                if all(map(lambda c: c not in "(?*.[]|)", tname)):
                     if tname not in tasklist:
                         tasklist.append(tname)
+                    if "default" in rhs:
+                        if defaultlist is None:
+                            defaultlist = list()
+                        if tname not in defaultlist:
+                            defaultlist.append(tname)
                     task_tags_all.add(tname)
 
                 if taskname is not None and re.fullmatch(tname, taskname):
                     task_matched = True
                     task_tags_active.add(tname)
                     for tagname in rhs:
-                        for c in tagname:
-                            if c in "(?*.[]|)":
-                                for t in task_tags_all:
-                                    if re.fullmatch(tagname, t):
-                                        task_tags_active.add(t)
-                                break
-                        else:
+                        if tagname == "default":
+                            continue
+                        if all(map(lambda c: c not in "(?*.[]|)", tagname)):
                             task_tags_active.add(tagname)
+                        else:
+                            for t in task_tags_all:
+                                if re.fullmatch(tagname, t):
+                                    task_tags_active.add(t)
 
         elif line == "[tasks]":
             if taskname is None:
@@ -299,7 +305,10 @@ def read_sbyconfig(sbydata, taskname):
         print(f"ERROR: Task name '{taskname}' didn't match any lines in [tasks].", file=sys.stderr)
         sys.exit(1)
 
-    return cfgdata, tasklist, sorted(list(task_tags_all))
+    if defaultlist is None:
+        defaultlist = tasklist
+
+    return cfgdata, tasklist, defaultlist, sorted(list(task_tags_all))
 
 
 sbydata = list()
@@ -309,7 +318,7 @@ with (open(sbyfile, "r") if sbyfile is not None else sys.stdin) as f:
 
 if dump_cfg:
     assert len(tasknames) < 2
-    sbyconfig, _, _ = read_sbyconfig(sbydata, tasknames[0] if len(tasknames) else None)
+    sbyconfig, _, _, _ = read_sbyconfig(sbydata, tasknames[0] if len(tasknames) else None)
     print("\n".join(sbyconfig))
     sys.exit(0)
 
@@ -317,7 +326,7 @@ if dump_files:
     file_set = set()
 
     def find_files(taskname):
-        sbyconfig, _, _ = read_sbyconfig(sbydata, taskname)
+        sbyconfig, _, _, _ = read_sbyconfig(sbydata, taskname)
 
         start_index = -1
         for i in range(len(sbyconfig)):
@@ -345,22 +354,23 @@ if dump_files:
     print("\n".join(file_set))
     sys.exit(0)
 
-if len(tasknames) == 0:
-    _, tasknames, _ = read_sbyconfig(sbydata, None)
-    if len(tasknames) == 0:
-        tasknames = [None]
-
 if dump_tags:
-    _, _, tagnames = read_sbyconfig(sbydata, None)
+    _, _, _, tagnames = read_sbyconfig(sbydata, None)
     for tag in tagnames:
         print(tag)
     sys.exit(0)
 
-if dump_tasks:
-    for task in tasknames:
-        if task is not None:
-            print(task)
+if dump_tasks or dump_defaults or dump_tags:
+    _, tasks, dtasks, tags = read_sbyconfig(sbydata, None)
+    for name in tasks if dump_tasks else dtasks if dump_defaults else tags:
+        if name is not None:
+            print(name)
     sys.exit(0)
+
+if len(tasknames) == 0:
+    _, _, tasknames, _ = read_sbyconfig(sbydata, None)
+    if len(tasknames) == 0:
+        tasknames = [None]
 
 if (workdir is not None) and (len(tasknames) != 1):
     print("ERROR: Exactly one task is required when workdir is specified. Specify the task or use --prefix instead of -d.", file=sys.stderr)
@@ -419,7 +429,7 @@ def run_job(taskname):
     else:
         junit_filename = "junit"
 
-    sbyconfig, _, _ = read_sbyconfig(sbydata, taskname)
+    sbyconfig, _, _, _ = read_sbyconfig(sbydata, taskname)
     job = SbyJob(sbyconfig, my_workdir, early_logmsgs, reusedir)
 
     for k, v in exe_paths.items():

@@ -1,9 +1,6 @@
 [tasks]
-: p0
-: p1
-p2
-p3
-k
+p0 p1 p2 p3 k :
+p2 p3 k : default
 
 [options]
 mode prove

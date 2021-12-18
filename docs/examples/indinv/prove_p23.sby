@@ -1,8 +1,7 @@
 [tasks]
-: p0 unknown
-: p1 failing
-p2
-p3
+p0 unknown
+p1 failing
+p2 p3 : default
 
 [options]
 mode prove
