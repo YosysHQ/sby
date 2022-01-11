@@ -24,12 +24,12 @@ from shutil import copyfile, copytree, rmtree
 from select import select
 from time import time, localtime, sleep
 
-all_tasks_running = []
+all_procs_running = []
 
 def force_shutdown(signum, frame):
     print("SBY ---- Keyboard interrupt or external termination signal ----", flush=True)
-    for task in list(all_tasks_running):
-        task.terminate()
+    for proc in list(all_procs_running):
+        proc.terminate()
     sys.exit(1)
 
 if os.name == "posix":
@@ -45,13 +45,13 @@ def process_filename(filename):
 
     return filename
 
-class SbyTask:
-    def __init__(self, job, info, deps, cmdline, logfile=None, logstderr=True, silent=False):
+class SbyProc:
+    def __init__(self, task, info, deps, cmdline, logfile=None, logstderr=True, silent=False):
         self.running = False
         self.finished = False
         self.terminated = False
         self.checkretcode = False
-        self.job = job
+        self.task = task
         self.info = info
         self.deps = deps
         if os.name == "posix":
@@ -79,7 +79,7 @@ class SbyTask:
         self.logstderr = logstderr
         self.silent = silent
 
-        self.job.tasks_pending.append(self)
+        self.task.procs_pending.append(self)
 
         for dep in self.deps:
             dep.register_dep(self)
@@ -87,17 +87,17 @@ class SbyTask:
         self.output_callback = None
         self.exit_callback = None
 
-    def register_dep(self, next_task):
+    def register_dep(self, next_proc):
         if self.finished:
-            next_task.poll()
+            next_proc.poll()
         else:
-            self.notify.append(next_task)
+            self.notify.append(next_proc)
 
     def log(self, line):
         if line is not None and (self.noprintregex is None or not self.noprintregex.match(line)):
             if self.logfile is not None:
                 print(line, file=self.logfile)
-            self.job.log(f"{self.info}: {line}")
+            self.task.log(f"{self.info}: {line}")
 
     def handle_output(self, line):
         if self.terminated or len(line) == 0:
@@ -115,19 +115,19 @@ class SbyTask:
             self.exit_callback(retcode)
 
     def terminate(self, timeout=False):
-        if self.job.opt_wait and not timeout:
+        if self.task.opt_wait and not timeout:
             return
         if self.running:
             if not self.silent:
-                self.job.log(f"{self.info}: terminating process")
+                self.task.log(f"{self.info}: terminating process")
             if os.name == "posix":
                 try:
                     os.killpg(self.p.pid, signal.SIGTERM)
                 except PermissionError:
                     pass
             self.p.terminate()
-            self.job.tasks_running.remove(self)
-            all_tasks_running.remove(self)
+            self.task.procs_running.remove(self)
+            all_procs_running.remove(self)
         self.terminated = True
 
     def poll(self):
@@ -140,7 +140,7 @@ class SbyTask:
                     return
 
             if not self.silent:
-                self.job.log(f"{self.info}: starting process \"{self.cmdline}\"")
+                self.task.log(f"{self.info}: starting process \"{self.cmdline}\"")
 
             if os.name == "posix":
                 def preexec_fn():
@@ -157,9 +157,9 @@ class SbyTask:
                 self.p = subprocess.Popen(self.cmdline, shell=True, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
                         stderr=(subprocess.STDOUT if self.logstderr else None))
 
-            self.job.tasks_pending.remove(self)
-            self.job.tasks_running.append(self)
-            all_tasks_running.append(self)
+            self.task.procs_pending.remove(self)
+            self.task.procs_running.append(self)
+            all_procs_running.append(self)
             self.running = True
             return
 
@@ -175,32 +175,32 @@ class SbyTask:
 
         if self.p.poll() is not None:
             if not self.silent:
-                self.job.log(f"{self.info}: finished (returncode={self.p.returncode})")
-            self.job.tasks_running.remove(self)
-            all_tasks_running.remove(self)
+                self.task.log(f"{self.info}: finished (returncode={self.p.returncode})")
+            self.task.procs_running.remove(self)
+            all_procs_running.remove(self)
             self.running = False
 
             if self.p.returncode == 127:
-                self.job.status = "ERROR"
+                self.task.status = "ERROR"
                 if not self.silent:
-                    self.job.log(f"{self.info}: COMMAND NOT FOUND. ERROR.")
+                    self.task.log(f"{self.info}: COMMAND NOT FOUND. ERROR.")
                 self.terminated = True
-                self.job.terminate()
+                self.task.terminate()
                 return
 
             self.handle_exit(self.p.returncode)
 
             if self.checkretcode and self.p.returncode != 0:
-                self.job.status = "ERROR"
+                self.task.status = "ERROR"
                 if not self.silent:
-                    self.job.log(f"{self.info}: job failed. ERROR.")
+                    self.task.log(f"{self.info}: task failed. ERROR.")
                 self.terminated = True
-                self.job.terminate()
+                self.task.terminate()
                 return
 
             self.finished = True
-            for next_task in self.notify:
-                next_task.poll()
+            for next_proc in self.notify:
+                next_proc.poll()
             return
 
 
@@ -208,7 +208,7 @@ class SbyAbort(BaseException):
     pass
 
 
-class SbyJob:
+class SbyTask:
     def __init__(self, sbyconfig, workdir, early_logs, reusedir):
         self.options = dict()
         self.used_options = set()
@@ -235,8 +235,8 @@ class SbyJob:
             "pono": os.getenv("PONO", "pono"),
         }
 
-        self.tasks_running = []
-        self.tasks_pending = []
+        self.procs_running = []
+        self.procs_pending = []
 
         self.start_clock_time = time()
 
@@ -257,14 +257,14 @@ class SbyJob:
                     print(line, file=f)
 
     def taskloop(self):
-        for task in self.tasks_pending:
-            task.poll()
+        for proc in self.procs_pending:
+            proc.poll()
 
-        while len(self.tasks_running):
+        while len(self.procs_running):
             fds = []
-            for task in self.tasks_running:
-                if task.running:
-                    fds.append(task.p.stdout)
+            for proc in self.procs_running:
+                if proc.running:
+                    fds.append(proc.p.stdout)
 
             if os.name == "posix":
                 try:
@@ -274,16 +274,16 @@ class SbyJob:
             else:
                 sleep(0.1)
 
-            for task in self.tasks_running:
-                task.poll()
+            for proc in self.procs_running:
+                proc.poll()
 
-            for task in self.tasks_pending:
-                task.poll()
+            for proc in self.procs_pending:
+                proc.poll()
 
             if self.opt_timeout is not None:
                 total_clock_time = int(time() - self.start_clock_time)
                 if total_clock_time > self.opt_timeout:
-                    self.log(f"Reached TIMEOUT ({self.opt_timeout} seconds). Terminating all tasks.")
+                    self.log(f"Reached TIMEOUT ({self.opt_timeout} seconds). Terminating all subprocesses.")
                     self.status = "TIMEOUT"
                     self.terminate(timeout=True)
 
@@ -392,16 +392,16 @@ class SbyJob:
                 print("hierarchy -simcheck", file=f)
                 print(f"""write_ilang ../model/design{"" if model_name == "base" else "_nomem"}.il""", file=f)
 
-            task = SbyTask(
+            proc = SbyProc(
                 self,
                 model_name,
                 [],
                 "cd {}/src; {} -ql ../model/design{s}.log ../model/design{s}.ys".format(self.workdir, self.exe_paths["yosys"],
                     s="" if model_name == "base" else "_nomem")
             )
-            task.checkretcode = True
+            proc.checkretcode = True
 
-            return [task]
+            return [proc]
 
         if re.match(r"^smt2(_syn)?(_nomem)?(_stbv|_stdt)?$", model_name):
             with open(f"{self.workdir}/model/design_{model_name}.ys", "w") as f:
@@ -421,15 +421,15 @@ class SbyJob:
                 else:
                     print(f"write_smt2 -wires design_{model_name}.smt2", file=f)
 
-            task = SbyTask(
+            proc = SbyProc(
                 self,
                 model_name,
                 self.model("nomem" if "_nomem" in model_name else "base"),
                 "cd {}/model; {} -ql design_{s}.log design_{s}.ys".format(self.workdir, self.exe_paths["yosys"], s=model_name)
             )
-            task.checkretcode = True
+            proc.checkretcode = True
 
-            return [task]
+            return [proc]
 
         if re.match(r"^btor(_syn)?(_nomem)?$", model_name):
             with open(f"{self.workdir}/model/design_{model_name}.ys", "w") as f:
@@ -450,15 +450,15 @@ class SbyJob:
                 print("stat", file=f)
                 print("write_btor {}-i design_{m}.info design_{m}.btor".format("-c " if self.opt_mode == "cover" else "", m=model_name), file=f)
 
-            task = SbyTask(
+            proc = SbyProc(
                 self,
-                model_name, 
+                model_name,
                 self.model("nomem" if "_nomem" in model_name else "base"),
                 "cd {}/model; {} -ql design_{s}.log design_{s}.ys".format(self.workdir, self.exe_paths["yosys"], s=model_name)
             )
-            task.checkretcode = True
+            proc.checkretcode = True
 
-            return [task]
+            return [proc]
 
         if model_name == "aig":
             with open(f"{self.workdir}/model/design_aiger.ys", "w") as f:
@@ -477,15 +477,15 @@ class SbyJob:
                 print("stat", file=f)
                 print("write_aiger -I -B -zinit -map design_aiger.aim design_aiger.aig", file=f)
 
-            task = SbyTask(
+            proc = SbyProc(
                 self,
                 "aig",
                 self.model("nomem"),
                 f"""cd {self.workdir}/model; {self.exe_paths["yosys"]} -ql design_aiger.log design_aiger.ys"""
             )
-            task.checkretcode = True
+            proc.checkretcode = True
 
-            return [task]
+            return [proc]
 
         assert False
 
@@ -495,8 +495,8 @@ class SbyJob:
         return self.models[model_name]
 
     def terminate(self, timeout=False):
-        for task in list(self.tasks_running):
-            task.terminate(timeout=timeout)
+        for proc in list(self.procs_running):
+            proc.terminate(timeout=timeout)
 
     def update_status(self, new_status):
         assert new_status in ["PASS", "FAIL", "UNKNOWN", "ERROR"]

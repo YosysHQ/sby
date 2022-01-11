@@ -17,9 +17,9 @@
 #
 
 import re, os, getopt
-from sby_core import SbyTask
+from sby_core import SbyProc
 
-def run(mode, job, engine_idx, engine):
+def run(mode, task, engine_idx, engine):
     smtbmc_opts = []
     nomem_opt = False
     presat_opt = True
@@ -59,16 +59,16 @@ def run(mode, job, engine_idx, engine):
             progress = True
         elif o == "--basecase":
             if induction_only:
-                job.error("smtbmc options --basecase and --induction are exclusive.")
+                task.error("smtbmc options --basecase and --induction are exclusive.")
             basecase_only = True
         elif o == "--induction":
             if basecase_only:
-                job.error("smtbmc options --basecase and --induction are exclusive.")
+                task.error("smtbmc options --basecase and --induction are exclusive.")
             induction_only = True
         elif o == "--seed":
             random_seed = a
         else:
-            job.error(f"Invalid smtbmc options {o}.")
+            task.error(f"Invalid smtbmc options {o}.")
 
     xtra_opts = False
     for i, a in enumerate(args):
@@ -88,11 +88,11 @@ def run(mode, job, engine_idx, engine):
     if unroll_opt is None or unroll_opt:
         smtbmc_opts += ["--unroll"]
 
-    if job.opt_smtc is not None:
-        smtbmc_opts += ["--smtc", f"src/{job.opt_smtc}"]
+    if task.opt_smtc is not None:
+        smtbmc_opts += ["--smtc", f"src/{task.opt_smtc}"]
 
-    if job.opt_tbtop is not None:
-         smtbmc_opts += ["--vlogtb-top", job.opt_tbtop]
+    if task.opt_tbtop is not None:
+         smtbmc_opts += ["--vlogtb-top", task.opt_tbtop]
 
     model_name = "smt2"
     if syn_opt: model_name += "_syn"
@@ -102,21 +102,21 @@ def run(mode, job, engine_idx, engine):
 
     if mode == "prove":
         if not induction_only:
-            run("prove_basecase", job, engine_idx, engine)
+            run("prove_basecase", task, engine_idx, engine)
         if not basecase_only:
-            run("prove_induction", job, engine_idx, engine)
+            run("prove_induction", task, engine_idx, engine)
         return
 
-    taskname = f"engine_{engine_idx}"
+    procname = f"engine_{engine_idx}"
     trace_prefix = f"engine_{engine_idx}/trace"
-    logfile_prefix = f"{job.workdir}/engine_{engine_idx}/logfile"
+    logfile_prefix = f"{task.workdir}/engine_{engine_idx}/logfile"
 
     if mode == "prove_basecase":
-        taskname += ".basecase"
+        procname += ".basecase"
         logfile_prefix += "_basecase"
 
     if mode == "prove_induction":
-        taskname += ".induction"
+        procname += ".induction"
         trace_prefix += "_induct"
         logfile_prefix += "_induction"
         smtbmc_opts.append("-i")
@@ -132,118 +132,118 @@ def run(mode, job, engine_idx, engine):
         smtbmc_opts.append("--noprogress")
 
 
-    if job.opt_skip is not None:
-        t_opt = "{}:{}".format(job.opt_skip, job.opt_depth)
+    if task.opt_skip is not None:
+        t_opt = "{}:{}".format(task.opt_skip, task.opt_depth)
     else:
-        t_opt = "{}".format(job.opt_depth)
+        t_opt = "{}".format(task.opt_depth)
 
     random_seed = f"--info \"(set-option :random-seed {random_seed})\"" if random_seed else ""
-    task = SbyTask(
-        job,
-        taskname,
-        job.model(model_name),
-        f"""cd {job.workdir}; {job.exe_paths["smtbmc"]} {" ".join(smtbmc_opts)} -t {t_opt} {random_seed} --append {job.opt_append} --dump-vcd {trace_prefix}.vcd --dump-vlogtb {trace_prefix}_tb.v --dump-smtc {trace_prefix}.smtc model/design_{model_name}.smt2""",
+    proc = SbyProc(
+        task,
+        procname,
+        task.model(model_name),
+        f"""cd {task.workdir}; {task.exe_paths["smtbmc"]} {" ".join(smtbmc_opts)} -t {t_opt} {random_seed} --append {task.opt_append} --dump-vcd {trace_prefix}.vcd --dump-vlogtb {trace_prefix}_tb.v --dump-smtc {trace_prefix}.smtc model/design_{model_name}.smt2""",
         logfile=open(logfile_prefix + ".txt", "w"),
         logstderr=(not progress)
     )
 
     if mode == "prove_basecase":
-        job.basecase_tasks.append(task)
+        task.basecase_procs.append(proc)
 
     if mode == "prove_induction":
-        job.induction_tasks.append(task)
+        task.induction_procs.append(proc)
 
-    task_status = None
+    proc_status = None
 
     def output_callback(line):
-        nonlocal task_status
+        nonlocal proc_status
 
         match = re.match(r"^## [0-9: ]+ Status: FAILED", line)
         if match:
-            task_status = "FAIL"
+            proc_status = "FAIL"
             return line.replace("FAILED", "failed")
 
         match = re.match(r"^## [0-9: ]+ Status: PASSED", line)
         if match:
-            task_status = "PASS"
+            proc_status = "PASS"
             return line.replace("PASSED", "passed")
 
         match = re.match(r"^## [0-9: ]+ Status: PREUNSAT", line)
         if match:
-            task_status = "ERROR"
+            proc_status = "ERROR"
             return line
 
         match = re.match(r"^## [0-9: ]+ Unexpected response from solver:", line)
         if match:
-            task_status = "ERROR"
+            proc_status = "ERROR"
             return line
 
         return line
 
     def exit_callback(retcode):
-        if task_status is None:
-            job.error(f"engine_{engine_idx}: Engine terminated without status.")
+        if proc_status is None:
+            task.error(f"engine_{engine_idx}: Engine terminated without status.")
 
         if mode == "bmc" or mode == "cover":
-            job.update_status(task_status)
-            task_status_lower = task_status.lower() if task_status == "PASS" else task_status
-            job.log(f"engine_{engine_idx}: Status returned by engine: {task_status_lower}")
-            job.summary.append(f"""engine_{engine_idx} ({" ".join(engine)}) returned {task_status_lower}""")
+            task.update_status(proc_status)
+            proc_status_lower = proc_status.lower() if proc_status == "PASS" else proc_status
+            task.log(f"engine_{engine_idx}: Status returned by engine: {proc_status_lower}")
+            task.summary.append(f"""engine_{engine_idx} ({" ".join(engine)}) returned {proc_status_lower}""")
 
-            if task_status == "FAIL" and mode != "cover":
-                if os.path.exists(f"{job.workdir}/engine_{engine_idx}/trace.vcd"):
-                    job.summary.append(f"counterexample trace: {job.workdir}/engine_{engine_idx}/trace.vcd")
-            elif task_status == "PASS" and mode == "cover":
+            if proc_status == "FAIL" and mode != "cover":
+                if os.path.exists(f"{task.workdir}/engine_{engine_idx}/trace.vcd"):
+                    task.summary.append(f"counterexample trace: {task.workdir}/engine_{engine_idx}/trace.vcd")
+            elif proc_status == "PASS" and mode == "cover":
                 print_traces_max = 5
                 for i in range(print_traces_max):
-                    if os.path.exists(f"{job.workdir}/engine_{engine_idx}/trace{i}.vcd"):
-                        job.summary.append(f"trace: {job.workdir}/engine_{engine_idx}/trace{i}.vcd")
+                    if os.path.exists(f"{task.workdir}/engine_{engine_idx}/trace{i}.vcd"):
+                        task.summary.append(f"trace: {task.workdir}/engine_{engine_idx}/trace{i}.vcd")
                     else:
                         break
                 else:
                     excess_traces = 0
-                    while os.path.exists(f"{job.workdir}/engine_{engine_idx}/trace{print_traces_max + excess_traces}.vcd"):
+                    while os.path.exists(f"{task.workdir}/engine_{engine_idx}/trace{print_traces_max + excess_traces}.vcd"):
                         excess_traces += 1
                     if excess_traces > 0:
-                        job.summary.append(f"""and {excess_traces} further trace{"s" if excess_traces > 1 else ""}""")
+                        task.summary.append(f"""and {excess_traces} further trace{"s" if excess_traces > 1 else ""}""")
 
-            job.terminate()
+            task.terminate()
 
         elif mode in ["prove_basecase", "prove_induction"]:
-            task_status_lower = task_status.lower() if task_status == "PASS" else task_status
-            job.log(f"""engine_{engine_idx}: Status returned by engine for {mode.split("_")[1]}: {task_status_lower}""")
-            job.summary.append(f"""engine_{engine_idx} ({" ".join(engine)}) returned {task_status_lower} for {mode.split("_")[1]}""")
+            proc_status_lower = proc_status.lower() if proc_status == "PASS" else proc_status
+            task.log(f"""engine_{engine_idx}: Status returned by engine for {mode.split("_")[1]}: {proc_status_lower}""")
+            task.summary.append(f"""engine_{engine_idx} ({" ".join(engine)}) returned {proc_status_lower} for {mode.split("_")[1]}""")
 
             if mode == "prove_basecase":
-                for task in job.basecase_tasks:
-                    task.terminate()
+                for proc in task.basecase_procs:
+                    proc.terminate()
 
-                if task_status == "PASS":
-                    job.basecase_pass = True
+                if proc_status == "PASS":
+                    task.basecase_pass = True
 
                 else:
-                    job.update_status(task_status)
-                    if os.path.exists(f"{job.workdir}/engine_{engine_idx}/trace.vcd"):
-                        job.summary.append(f"counterexample trace: {job.workdir}/engine_{engine_idx}/trace.vcd")
-                    job.terminate()
-
-            elif mode == "prove_induction":
-                for task in job.induction_tasks:
+                    task.update_status(proc_status)
+                    if os.path.exists(f"{task.workdir}/engine_{engine_idx}/trace.vcd"):
+                        task.summary.append(f"counterexample trace: {task.workdir}/engine_{engine_idx}/trace.vcd")
                     task.terminate()
 
-                if task_status == "PASS":
-                    job.induction_pass = True
+            elif mode == "prove_induction":
+                for proc in task.induction_procs:
+                    proc.terminate()
+
+                if proc_status == "PASS":
+                    task.induction_pass = True
 
             else:
                 assert False
 
-            if job.basecase_pass and job.induction_pass:
-                job.update_status("PASS")
-                job.summary.append("successful proof by k-induction.")
-                job.terminate()
+            if task.basecase_pass and task.induction_pass:
+                task.update_status("PASS")
+                task.summary.append("successful proof by k-induction.")
+                task.terminate()
 
         else:
             assert False
 
-    task.output_callback = output_callback
-    task.exit_callback = exit_callback
+    proc.output_callback = output_callback
+    proc.exit_callback = exit_callback

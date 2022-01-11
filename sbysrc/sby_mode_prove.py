@@ -17,38 +17,38 @@
 #
 
 import re, os, getopt
-from sby_core import SbyTask
+from sby_core import SbyProc
 
-def run(job):
-    job.handle_int_option("depth", 20)
-    job.handle_int_option("append", 0)
-    job.handle_str_option("aigsmt", "yices")
+def run(task):
+    task.handle_int_option("depth", 20)
+    task.handle_int_option("append", 0)
+    task.handle_str_option("aigsmt", "yices")
 
-    job.status = "UNKNOWN"
+    task.status = "UNKNOWN"
 
-    job.basecase_pass = False
-    job.induction_pass = False
-    job.basecase_tasks = list()
-    job.induction_tasks = list()
+    task.basecase_pass = False
+    task.induction_pass = False
+    task.basecase_procs = list()
+    task.induction_procs = list()
 
-    for engine_idx in range(len(job.engines)):
-        engine = job.engines[engine_idx]
+    for engine_idx in range(len(task.engines)):
+        engine = task.engines[engine_idx]
         assert len(engine) > 0
 
-        job.log(f"""engine_{engine_idx}: {" ".join(engine)}""")
-        job.makedirs(f"{job.workdir}/engine_{engine_idx}")
+        task.log(f"""engine_{engine_idx}: {" ".join(engine)}""")
+        task.makedirs(f"{task.workdir}/engine_{engine_idx}")
 
         if engine[0] == "smtbmc":
             import sby_engine_smtbmc
-            sby_engine_smtbmc.run("prove", job, engine_idx, engine)
+            sby_engine_smtbmc.run("prove", task, engine_idx, engine)
 
         elif engine[0] == "aiger":
             import sby_engine_aiger
-            sby_engine_aiger.run("prove", job, engine_idx, engine)
+            sby_engine_aiger.run("prove", task, engine_idx, engine)
 
         elif engine[0] == "abc":
             import sby_engine_abc
-            sby_engine_abc.run("prove", job, engine_idx, engine)
+            sby_engine_abc.run("prove", task, engine_idx, engine)
 
         else:
-            job.error(f"Invalid engine '{engine[0]}' for prove mode.")
+            task.error(f"Invalid engine '{engine[0]}' for prove mode.")
