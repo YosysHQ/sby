@@ -17,31 +17,31 @@
 #
 
 import re, os, getopt
-from sby_core import SbyTask
+from sby_core import SbyProc
 
-def run(job):
-    job.handle_int_option("depth", 20)
-    job.handle_int_option("append", 0)
-    job.handle_str_option("aigsmt", "yices")
+def run(task):
+    task.handle_int_option("depth", 20)
+    task.handle_int_option("append", 0)
+    task.handle_str_option("aigsmt", "yices")
 
-    for engine_idx in range(len(job.engines)):
-        engine = job.engines[engine_idx]
+    for engine_idx in range(len(task.engines)):
+        engine = task.engines[engine_idx]
         assert len(engine) > 0
 
-        job.log(f"""engine_{engine_idx}: {" ".join(engine)}""")
-        job.makedirs(f"{job.workdir}/engine_{engine_idx}")
+        task.log(f"""engine_{engine_idx}: {" ".join(engine)}""")
+        task.makedirs(f"{task.workdir}/engine_{engine_idx}")
 
         if engine[0] == "smtbmc":
             import sby_engine_smtbmc
-            sby_engine_smtbmc.run("bmc", job, engine_idx, engine)
+            sby_engine_smtbmc.run("bmc", task, engine_idx, engine)
 
         elif engine[0] == "abc":
             import sby_engine_abc
-            sby_engine_abc.run("bmc", job, engine_idx, engine)
+            sby_engine_abc.run("bmc", task, engine_idx, engine)
 
         elif engine[0] == "btor":
             import sby_engine_btor
-            sby_engine_btor.run("bmc", job, engine_idx, engine)
+            sby_engine_btor.run("bmc", task, engine_idx, engine)
 
         else:
-            job.error(f"Invalid engine '{engine[0]}' for bmc mode.")
+            task.error(f"Invalid engine '{engine[0]}' for bmc mode.")

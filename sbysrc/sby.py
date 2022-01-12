@@ -19,7 +19,7 @@
 
 import argparse, os, sys, shutil, tempfile, re
 ##yosys-sys-path##
-from sby_core import SbyJob, SbyAbort, process_filename
+from sby_core import SbyTask, SbyAbort, process_filename
 from time import localtime
 
 class DictAction(argparse.Action):
@@ -376,7 +376,7 @@ if (workdir is not None) and (len(tasknames) != 1):
     print("ERROR: Exactly one task is required when workdir is specified. Specify the task or use --prefix instead of -d.", file=sys.stderr)
     sys.exit(1)
 
-def run_job(taskname):
+def run_task(taskname):
     my_opt_tmpdir = opt_tmpdir
     my_workdir = None
 
@@ -430,59 +430,59 @@ def run_job(taskname):
         junit_filename = "junit"
 
     sbyconfig, _, _, _ = read_sbyconfig(sbydata, taskname)
-    job = SbyJob(sbyconfig, my_workdir, early_logmsgs, reusedir)
+    task = SbyTask(sbyconfig, my_workdir, early_logmsgs, reusedir)
 
     for k, v in exe_paths.items():
-        job.exe_paths[k] = v
+        task.exe_paths[k] = v
 
     if throw_err:
-        job.run(setupmode)
+        task.run(setupmode)
     else:
         try:
-            job.run(setupmode)
+            task.run(setupmode)
         except SbyAbort:
             pass
 
     if my_opt_tmpdir:
-        job.log(f"Removing directory '{my_workdir}'.")
+        task.log(f"Removing directory '{my_workdir}'.")
         shutil.rmtree(my_workdir, ignore_errors=True)
 
     if setupmode:
-        job.log(f"SETUP COMPLETE (rc={job.retcode})")
+        task.log(f"SETUP COMPLETE (rc={task.retcode})")
     else:
-        job.log(f"DONE ({job.status}, rc={job.retcode})")
-    job.logfile.close()
+        task.log(f"DONE ({task.status}, rc={task.retcode})")
+    task.logfile.close()
 
     if not my_opt_tmpdir and not setupmode:
-        with open("{}/{}.xml".format(job.workdir, junit_filename), "w") as f:
-            junit_errors = 1 if job.retcode == 16 else 0
-            junit_failures = 1 if job.retcode != 0 and junit_errors == 0 else 0
+        with open("{}/{}.xml".format(task.workdir, junit_filename), "w") as f:
+            junit_errors = 1 if task.retcode == 16 else 0
+            junit_failures = 1 if task.retcode != 0 and junit_errors == 0 else 0
             print('<?xml version="1.0" encoding="UTF-8"?>', file=f)
-            print(f'<testsuites disabled="0" errors="{junit_errors}" failures="{junit_failures}" tests="1" time="{job.total_time}">', file=f)
-            print(f'<testsuite disabled="0" errors="{junit_errors}" failures="{junit_failures}" name="{junit_ts_name}" skipped="0" tests="1" time="{job.total_time}">', file=f)
+            print(f'<testsuites disabled="0" errors="{junit_errors}" failures="{junit_failures}" tests="1" time="{task.total_time}">', file=f)
+            print(f'<testsuite disabled="0" errors="{junit_errors}" failures="{junit_failures}" name="{junit_ts_name}" skipped="0" tests="1" time="{task.total_time}">', file=f)
             print('<properties>', file=f)
             print(f'<property name="os" value="{os.name}"/>', file=f)
             print('</properties>', file=f)
-            print(f'<testcase classname="{junit_ts_name}" name="{junit_tc_name}" status="{job.status}" time="{job.total_time}">', file=f)
+            print(f'<testcase classname="{junit_ts_name}" name="{junit_tc_name}" status="{task.status}" time="{task.total_time}">', file=f)
             if junit_errors:
-                print(f'<error message="{job.status}" type="{job.status}"/>', file=f)
+                print(f'<error message="{task.status}" type="{task.status}"/>', file=f)
             if junit_failures:
-                print(f'<failure message="{job.status}" type="{job.status}"/>', file=f)
+                print(f'<failure message="{task.status}" type="{task.status}"/>', file=f)
             print('<system-out>', end="", file=f)
-            with open(f"{job.workdir}/logfile.txt", "r") as logf:
+            with open(f"{task.workdir}/logfile.txt", "r") as logf:
                 for line in logf:
                     print(line.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;"), end="", file=f)
             print('</system-out></testcase></testsuite></testsuites>', file=f)
-        with open(f"{job.workdir}/status", "w") as f:
-            print(f"{job.status} {job.retcode} {job.total_time}", file=f)
+        with open(f"{task.workdir}/status", "w") as f:
+            print(f"{task.status} {task.retcode} {task.total_time}", file=f)
 
-    return job.retcode
+    return task.retcode
 
 
 failed = []
 retcode = 0
 for task in tasknames:
-    task_retcode = run_job(task)
+    task_retcode = run_task(task)
     retcode |= task_retcode
     if task_retcode:
         failed.append(task)
