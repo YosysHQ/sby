@@ -1,0 +1,24 @@
+[tasks]
+btormc
+pono
+
+[options]
+mode bmc
+depth 5
+expect fail
+
+[engines]
+btormc: btor btormc
+pono: btor pono
+
+[script]
+read_verilog -sv multi_assert.v
+prep -top test
+
+[file multi_assert.v]
+module test();
+always @* begin
+assert (1);
+assert (0);
+end
+endmodule
