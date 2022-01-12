@@ -449,6 +449,7 @@ class SbyTask:
                 print("dffunmap", file=f)
                 print("stat", file=f)
                 print("write_btor {}-i design_{m}.info design_{m}.btor".format("-c " if self.opt_mode == "cover" else "", m=model_name), file=f)
+                print("write_btor -s {}-i design_{m}_single.info design_{m}_single.btor".format("-c " if self.opt_mode == "cover" else "", m=model_name), file=f)
 
             proc = SbyProc(
                 self,

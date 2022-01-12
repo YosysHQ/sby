@@ -153,7 +153,7 @@ def run(mode, task, engine_idx, engine):
                     task,
                     f"engine_{engine_idx}_{common_state.produced_cex}",
                     task.model("btor"),
-                    "cd {dir} ; btorsim -c --vcd engine_{idx}/trace{i}.vcd --hierarchical-symbols --info model/design_btor.info model/design_btor.btor engine_{idx}/trace{i}.wit".format(dir=task.workdir, idx=engine_idx, i=suffix),
+                    "cd {dir} ; btorsim -c --vcd engine_{idx}/trace{i}.vcd --hierarchical-symbols --info model/design_btor{s}.info model/design_btor{s}.btor engine_{idx}/trace{i}.wit".format(dir=task.workdir, idx=engine_idx, i=suffix, s='_single' if solver_args[0] == 'pono' else ''),
                     logfile=open(f"{task.workdir}/engine_{engine_idx}/logfile2.txt", "w")
                 )
                 proc2.output_callback = output_callback2
@@ -216,7 +216,7 @@ def run(mode, task, engine_idx, engine):
     proc = SbyProc(
         task,
         f"engine_{engine_idx}", task.model("btor"),
-        f"cd {task.workdir}; {solver_cmd} model/design_btor.btor",
+        f"cd {task.workdir}; {solver_cmd} model/design_btor{'_single' if solver_args[0]=='pono' else ''}.btor",
         logfile=open(f"{task.workdir}/engine_{engine_idx}/logfile.txt", "w")
     )
 
