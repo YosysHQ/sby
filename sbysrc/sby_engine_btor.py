@@ -46,7 +46,7 @@ def run(mode, task, engine_idx, engine):
     elif solver_args[0] == "pono":
         if random_seed:
             task.error("Setting the random seed is not available for the pono solver.")
-        solver_cmd = task.exe_paths["pono"] + f" -v 1 -e bmc -k {task.opt_depth - 1}"
+        solver_cmd = task.exe_paths["pono"] + f" --witness -v 1 -e bmc -k {task.opt_depth - 1}"
 
     else:
         task.error(f"Invalid solver command {solver_args[0]}.")
