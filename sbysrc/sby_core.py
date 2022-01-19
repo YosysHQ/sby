@@ -23,6 +23,7 @@ import subprocess
 from shutil import copyfile, copytree, rmtree
 from select import select
 from time import time, localtime, sleep
+from sby_design import SbyProperty, SbyModule, design_hierarchy
 
 all_procs_running = []
 
@@ -222,6 +223,7 @@ class SbyTask:
         self.status = "UNKNOWN"
         self.total_time = 0
         self.expect = []
+        self.design_hierarchy = None
 
         yosys_program_prefix = "" ##yosys-program-prefix##
         self.exe_paths = {
@@ -390,6 +392,8 @@ class SbyTask:
                 print("opt -keepdc -fast", file=f)
                 print("check", file=f)
                 print("hierarchy -simcheck", file=f)
+                # FIXME: can using design and design_nomem in the same task happen?
+                print(f"""write_json ../model/design{"" if model_name == "base" else "_nomem"}.json""", file=f)
                 print(f"""write_ilang ../model/design{"" if model_name == "base" else "_nomem"}.il""", file=f)
 
             proc = SbyProc(
@@ -400,6 +404,14 @@ class SbyTask:
                     s="" if model_name == "base" else "_nomem")
             )
             proc.checkretcode = True
+
+            def instance_hierarchy_callback(retcode):
+                assert retcode == 0
+                assert self.design_hierarchy == None # verify this assumption
+                with open(f"""{self.workdir}/model/design{"" if model_name == "base" else "_nomem"}.json""") as f:
+                    self.design_hierarchy = design_hierarchy(f)
+
+            proc.exit_callback = instance_hierarchy_callback
 
             return [proc]
 

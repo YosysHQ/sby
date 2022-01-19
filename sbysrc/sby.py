@@ -455,18 +455,14 @@ def run_task(taskname):
 
     if not my_opt_tmpdir and not setupmode:
         with open("{}/{}.xml".format(task.workdir, junit_filename), "w") as f:
-            # TODO: create necessary data
-            # checks: collection of assert/cover statements active in task
-            # elements: dicts with entries 'type', 'hierarchy', 'location', 'status', 'tracefile'
-            checks = [ #for testing purposes
-            {'type':'assert', 'hierarchy':'top.dut.submod1', 'location':'test.v:404', 'status':'unknown', 'tracefile':'/home/user/path/task/engine_0/trace0.vcd'},
-            {'type':'assert', 'hierarchy':'top.dut.submod1', 'location':'test.v:412', 'status':'fail', 'tracefile':'/home/user/path/task/engine_0/trace1.vcd'},
-            {'type':'cover', 'hierarchy':'top.dut.submod2', 'location':'test3.v:42', 'status':'pass', 'tracefile':'/home/user/path/task/engine_1/trace0.vcd'},
-            {'type':'cover', 'hierarchy':'top.dut.submod2', 'location':'test3.v:666', 'status':'error', 'tracefile':'/home/user/path/task/engine_1/trace1.vcd'}
-            ]
+            checks = task.design_hierarchy.get_property_list()
             junit_tests = len(checks)
             junit_errors = 1 if task.retcode == 16 else 0
-            junit_failures = 1 if task.retcode != 0 and junit_errors == 0 else 0
+            junit_failures = 0
+            if task.retcode != 0 and junit_errors == 0:
+                for check in checks:
+                    if check.status == "FAIL":
+                        junit_failures += 1
             junit_type = "cover" if task.opt_mode == "cover" else "assert" #should this be here or individual for each check?
             junit_time = time.strftime('%Y-%m-%dT%H:%M:%S')
             print(f'<?xml version="1.0" encoding="UTF-8"?>', file=f)
@@ -478,12 +474,12 @@ def run_task(taskname):
             print(f'</properties>', file=f)
             for check in checks:
                 print(f'<testcase classname="{junit_tc_name}" name="" time="{task.total_time}">', file=f) # name required
-                if check["status"] == "unknown":
+                if check.status == "UNKNOWN":
                     print(f'<skipped />', file=f)
-                elif check["status"] == "fail":
-                    print(f'<failure type="{check["type"]}" message="Property in {check["hierarchy"]} at {check["location"]} failed. Trace file: {check["tracefile"]}" />', file=f)
-                elif check["status"] == "error":
-                    print(f'<error type="error"/>', file=f) # type mandatory, message optional
+                elif check.status == "FAIL":
+                    print(f'<failure type="{check.type}" message="Property in {check.hierarchy} at {check.location} failed. Trace file: {check.tracefile}" />', file=f)
+                elif check.status == "ERROR":
+                    print(f'<error type="ERROR"/>', file=f) # type mandatory, message optional
                 print(f'</testcase>', file=f)
             print('<system-out>', end="", file=f)
             with open(f"{task.workdir}/logfile.txt", "r") as logf:
