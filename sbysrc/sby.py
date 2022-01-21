@@ -458,11 +458,15 @@ def run_task(taskname):
             checks = task.design_hierarchy.get_property_list()
             junit_tests = len(checks)
             junit_errors = 1 if task.retcode == 16 else 0
+            solver_gives_line = task.status == "FAIL" and any(check.status != "UNKNOWN" for check in checks)
             junit_failures = 0
-            if task.retcode != 0 and junit_errors == 0:
-                for check in checks:
-                    if check.status == "FAIL":
-                        junit_failures += 1
+            if junit_errors == 0 and task.retcode != 0:
+                if solver_gives_line:
+                    for check in checks:
+                        if check.status == "FAIL":
+                            junit_failures += 1
+            else:
+                junit_failures = 1
             junit_type = "cover" if task.opt_mode == "cover" else "assert" #should this be here or individual for each check?
             junit_time = time.strftime('%Y-%m-%dT%H:%M:%S')
             print(f'<?xml version="1.0" encoding="UTF-8"?>', file=f)
@@ -472,13 +476,23 @@ def run_task(taskname):
             print(f'<properties>', file=f)
             print(f'<property name="os" value="{os.name}"/>', file=f)
             print(f'</properties>', file=f)
-            for check in checks:
+            if solver_gives_line:
+                for check in checks:
+                    print(f'<testcase classname="{junit_tc_name}" name="" time="{task.total_time}">', file=f) # name required
+                    if check.status == "UNKNOWN":
+                        print(f'<skipped />', file=f)
+                    elif check.status == "FAIL":
+                        print(f'<failure type="{check.type}" message="Property in {check.hierarchy} at {check.location} failed. Trace file: {check.tracefile}" />', file=f)
+                    elif check.status == "ERROR":
+                        print(f'<error type="ERROR"/>', file=f) # type mandatory, message optional
+                    print(f'</testcase>', file=f)
+            else:
                 print(f'<testcase classname="{junit_tc_name}" name="" time="{task.total_time}">', file=f) # name required
-                if check.status == "UNKNOWN":
+                if task.status == "UNKNOWN":
                     print(f'<skipped />', file=f)
-                elif check.status == "FAIL":
-                    print(f'<failure type="{check.type}" message="Property in {check.hierarchy} at {check.location} failed. Trace file: {check.tracefile}" />', file=f)
-                elif check.status == "ERROR":
+                elif task.status == "FAIL":
+                    print(f'<failure type="{junit_type}" message="{task.status}" />', file=f)
+                elif task.status == "ERROR":
                     print(f'<error type="ERROR"/>', file=f) # type mandatory, message optional
                 print(f'</testcase>', file=f)
             print('<system-out>', end="", file=f)
