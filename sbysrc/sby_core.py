@@ -222,8 +222,9 @@ class SbyTask:
         self.reusedir = reusedir
         self.status = "UNKNOWN"
         self.total_time = 0
-        self.expect = []
+        self.expect = list()
         self.design_hierarchy = None
+        self.precise_prop_status = False
 
         yosys_program_prefix = "" ##yosys-program-prefix##
         self.exe_paths = {
@@ -371,6 +372,9 @@ class SbyTask:
                 print(f"# running in {self.workdir}/src/", file=f)
                 for cmd in self.script:
                     print(cmd, file=f)
+                # assumptions at this point: hierarchy has been run and a top module has been designated
+                print("hierarchy -simcheck", file=f)
+                print(f"""write_json ../model/design.json""", file=f)
                 if model_name == "base":
                     print("memory_nordff", file=f)
                 else:
@@ -392,8 +396,6 @@ class SbyTask:
                 print("opt -keepdc -fast", file=f)
                 print("check", file=f)
                 print("hierarchy -simcheck", file=f)
-                # FIXME: can using design and design_nomem in the same task happen?
-                print(f"""write_json ../model/design{"" if model_name == "base" else "_nomem"}.json""", file=f)
                 print(f"""write_ilang ../model/design{"" if model_name == "base" else "_nomem"}.il""", file=f)
 
             proc = SbyProc(
@@ -407,9 +409,9 @@ class SbyTask:
 
             def instance_hierarchy_callback(retcode):
                 assert retcode == 0
-                assert self.design_hierarchy == None # verify this assumption
-                with open(f"""{self.workdir}/model/design{"" if model_name == "base" else "_nomem"}.json""") as f:
-                    self.design_hierarchy = design_hierarchy(f)
+                if self.design_hierarchy == None:
+                    with open(f"""{self.workdir}/model/design{"" if model_name == "base" else "_nomem"}.json""") as f:
+                        self.design_hierarchy = design_hierarchy(f)
 
             proc.exit_callback = instance_hierarchy_callback
 

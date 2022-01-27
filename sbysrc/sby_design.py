@@ -28,7 +28,7 @@ class SbyProperty:
         COVER = auto()
         LIVE = auto()
 
-        def __repr__(self):
+        def __str__(self):
             return self.name
 
         @classmethod
@@ -50,6 +50,9 @@ class SbyProperty:
     status: str = field(default="UNKNOWN")
     tracefile: str = field(default="")
 
+    def __repr__(self):
+        return f"SbyProperty<{self.type} {self.name} at {self.location}: status={self.status}, tracefile=\"{self.tracefile}\""
+
 @dataclass
 class SbyModule:
     name: str
@@ -57,12 +60,34 @@ class SbyModule:
     submodules: dict = field(default_factory=dict)
     properties: list = field(default_factory=list)
 
+    def __repr__(self):
+        return f"SbyModule<{self.name} : {self.type}, submodules={self.submodules}, properties={self.properties}>"
+
     def get_property_list(self):
         l = list()
         l.extend(self.properties)
-        for submod in self.submodules:
+        for submod in self.submodules.values():
             l.extend(submod.get_property_list())
         return l
+
+    def find_property(self, hierarchy, location):
+        # FIXME: use that RE that works with escaped paths from https://stackoverflow.com/questions/46207665/regex-pattern-to-split-verilog-path-in-different-instances-using-python
+        path = hierarchy.split('.')
+        mod = path.pop(0)
+        if self.name != mod:
+            raise ValueError(f"{self.name} is not the first module in hierarchical path {hierarchy}.")
+        try:
+            mod_hier = self
+            while path:
+                mod = path.pop(0)
+                mod_hier = mod_hier.submodules[mod]
+        except KeyError:
+            raise KeyError(f"Could not find {hierarchy} in design hierarchy!")
+        try:
+            prop = next(p for p in mod_hier.properties if location in p.location)
+        except StopIteration:
+            raise KeyError(f"Could not find assert at {location} in properties list!")
+        return prop
 
 def design_hierarchy(filename):
     design_json = json.load(filename)

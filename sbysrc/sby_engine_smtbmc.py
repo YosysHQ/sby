@@ -32,6 +32,7 @@ def run(mode, task, engine_idx, engine):
     basecase_only = False
     induction_only = False
     random_seed = None
+    task.precise_prop_status = True
 
     opts, args = getopt.getopt(engine[1:], "", ["nomem", "syn", "stbv", "stdt", "presat",
             "nopresat", "unroll", "nounroll", "dumpsmt2", "progress", "basecase", "induction", "seed="])
@@ -154,9 +155,11 @@ def run(mode, task, engine_idx, engine):
         task.induction_procs.append(proc)
 
     proc_status = None
+    last_prop = None
 
     def output_callback(line):
         nonlocal proc_status
+        nonlocal last_prop
 
         match = re.match(r"^## [0-9: ]+ Status: FAILED", line)
         if match:
@@ -177,6 +180,28 @@ def run(mode, task, engine_idx, engine):
         if match:
             proc_status = "ERROR"
             return line
+
+        match = re.match(r"^## [0-9: ]+ Assert failed in (([a-z_][a-z0-9$_]*|\\\S*|\.)+): (\S*).*", line)
+        if match:
+            module_path = match[1]
+            location = match[3]
+            try:
+                prop = task.design_hierarchy.find_property(module_path, location)
+            except KeyError as e:
+                task.precise_prop_status = False
+                return line + f" (Warning: {str(e)})"
+            prop.status = "FAIL"
+            last_prop = prop
+            return line
+
+        match = re.match(r"^## [0-9: ]+ Reached cover statement at (\S+) in step \d+.", line)
+        if match:
+            location = match[1]
+
+        match = re.match(r"^## [0-9: ]+ Writing trace to VCD file: (\S+)", line)
+        if match and last_prop:
+            last_prop.tracefile = match[1]
+            last_prop = None
 
         return line
 

@@ -478,7 +478,7 @@ def run_task(taskname):
             print(f'</properties>', file=f)
             if solver_gives_line:
                 for check in checks:
-                    print(f'<testcase classname="{junit_tc_name}" name="" time="{task.total_time}">', file=f) # name required
+                    print(f'<testcase classname="{junit_tc_name}" name="Property {check.type} in {check.hierarchy} at {check.location}" time="{task.total_time}">', file=f) # name required
                     if check.status == "UNKNOWN":
                         print(f'<skipped />', file=f)
                     elif check.status == "FAIL":
