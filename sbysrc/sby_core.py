@@ -367,50 +367,47 @@ class SbyTask:
         if not os.path.isdir(f"{self.workdir}/model"):
             os.makedirs(f"{self.workdir}/model")
 
-        if model_name in ["base", "nomem"]:
-            with open(f"""{self.workdir}/model/design{"" if model_name == "base" else "_nomem"}.ys""", "w") as f:
+        def print_common_prep():
+            if self.opt_multiclock:
+                print("clk2fflogic", file=f)
+            else:
+                print("async2sync", file=f)
+                print("chformal -assume -early", file=f)
+            if self.opt_mode in ["bmc", "prove"]:
+                print("chformal -live -fair -cover -remove", file=f)
+            if self.opt_mode == "cover":
+                print("chformal -live -fair -remove", file=f)
+            if self.opt_mode == "live":
+                print("chformal -assert2assume", file=f)
+                print("chformal -cover -remove", file=f)
+            print("opt_clean", file=f)
+            print("setundef -anyseq", file=f)
+            print("opt -keepdc -fast", file=f)
+            print("check", file=f)
+            print("hierarchy -simcheck", file=f)
+
+        if model_name == "base":
+            with open(f"""{self.workdir}/model/design.ys""", "w") as f:
                 print(f"# running in {self.workdir}/src/", file=f)
                 for cmd in self.script:
                     print(cmd, file=f)
-                # assumptions at this point: hierarchy has been run and a top module has been designated
+                # the user must designate a top module in [script]
                 print("hierarchy -simcheck", file=f)
                 print(f"""write_json ../model/design.json""", file=f)
-                if model_name == "base":
-                    print("memory_nordff", file=f)
-                else:
-                    print("memory_map", file=f)
-                if self.opt_multiclock:
-                    print("clk2fflogic", file=f)
-                else:
-                    print("async2sync", file=f)
-                    print("chformal -assume -early", file=f)
-                if self.opt_mode in ["bmc", "prove"]:
-                    print("chformal -live -fair -cover -remove", file=f)
-                if self.opt_mode == "cover":
-                    print("chformal -live -fair -remove", file=f)
-                if self.opt_mode == "live":
-                    print("chformal -assert2assume", file=f)
-                    print("chformal -cover -remove", file=f)
-                print("opt_clean", file=f)
-                print("setundef -anyseq", file=f)
-                print("opt -keepdc -fast", file=f)
-                print("check", file=f)
-                print("hierarchy -simcheck", file=f)
-                print(f"""write_ilang ../model/design{"" if model_name == "base" else "_nomem"}.il""", file=f)
+                print(f"""write_rtlil ../model/design.il""", file=f)
 
             proc = SbyProc(
                 self,
                 model_name,
                 [],
-                "cd {}/src; {} -ql ../model/design{s}.log ../model/design{s}.ys".format(self.workdir, self.exe_paths["yosys"],
-                    s="" if model_name == "base" else "_nomem")
+                "cd {}/src; {} -ql ../model/design.log ../model/design.ys".format(self.workdir, self.exe_paths["yosys"])
             )
             proc.checkretcode = True
 
             def instance_hierarchy_callback(retcode):
                 assert retcode == 0
                 if self.design_hierarchy == None:
-                    with open(f"""{self.workdir}/model/design{"" if model_name == "base" else "_nomem"}.json""") as f:
+                    with open(f"{self.workdir}/model/design.json") as f:
                         self.design_hierarchy = design_hierarchy(f)
 
             proc.exit_callback = instance_hierarchy_callback
@@ -420,7 +417,12 @@ class SbyTask:
         if re.match(r"^smt2(_syn)?(_nomem)?(_stbv|_stdt)?$", model_name):
             with open(f"{self.workdir}/model/design_{model_name}.ys", "w") as f:
                 print(f"# running in {self.workdir}/model/", file=f)
-                print(f"""read_ilang design{"_nomem" if "_nomem" in model_name else ""}.il""", file=f)
+                print(f"""read_ilang design.il""", file=f)
+                if "_nomem" in model_name:
+                    print("memory_map", file=f)
+                else:
+                    print("memory_nordff", file=f)
+                print_common_prep()
                 if "_syn" in model_name:
                     print("techmap", file=f)
                     print("opt -fast", file=f)
@@ -438,7 +440,7 @@ class SbyTask:
             proc = SbyProc(
                 self,
                 model_name,
-                self.model("nomem" if "_nomem" in model_name else "base"),
+                self.model("base"),
                 "cd {}/model; {} -ql design_{s}.log design_{s}.ys".format(self.workdir, self.exe_paths["yosys"], s=model_name)
             )
             proc.checkretcode = True
@@ -448,7 +450,12 @@ class SbyTask:
         if re.match(r"^btor(_syn)?(_nomem)?$", model_name):
             with open(f"{self.workdir}/model/design_{model_name}.ys", "w") as f:
                 print(f"# running in {self.workdir}/model/", file=f)
-                print(f"""read_ilang design{"_nomem" if "_nomem" in model_name else ""}.il""", file=f)
+                print(f"""read_ilang design.il""", file=f)
+                if "_nomem" in model_name:
+                    print("memory_map", file=f)
+                else:
+                    print("memory_nordff", file=f)
+                print_common_prep()
                 print("flatten", file=f)
                 print("setundef -undriven -anyseq", file=f)
                 if "_syn" in model_name:
@@ -468,7 +475,7 @@ class SbyTask:
             proc = SbyProc(
                 self,
                 model_name,
-                self.model("nomem" if "_nomem" in model_name else "base"),
+                self.model("base"),
                 "cd {}/model; {} -ql design_{s}.log design_{s}.ys".format(self.workdir, self.exe_paths["yosys"], s=model_name)
             )
             proc.checkretcode = True
@@ -478,7 +485,9 @@ class SbyTask:
         if model_name == "aig":
             with open(f"{self.workdir}/model/design_aiger.ys", "w") as f:
                 print(f"# running in {self.workdir}/model/", file=f)
-                print("read_ilang design_nomem.il", file=f)
+                print("read_ilang design.il", file=f)
+                print("memory_map", file=f)
+                print_common_prep()
                 print("flatten", file=f)
                 print("setundef -undriven -anyseq", file=f)
                 print("setattr -unset keep", file=f)
@@ -495,7 +504,7 @@ class SbyTask:
             proc = SbyProc(
                 self,
                 "aig",
-                self.model("nomem"),
+                self.model("base"),
                 f"""cd {self.workdir}/model; {self.exe_paths["yosys"]} -ql design_aiger.log design_aiger.ys"""
             )
             proc.checkretcode = True
