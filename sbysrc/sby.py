@@ -20,7 +20,7 @@
 import argparse, os, sys, shutil, tempfile, re
 ##yosys-sys-path##
 from sby_core import SbyTask, SbyAbort, process_filename
-import time
+import time, platform
 
 class DictAction(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
@@ -458,7 +458,6 @@ def run_task(taskname):
             checks = task.design_hierarchy.get_property_list()
             junit_tests = len(checks)
             junit_errors = 1 if task.retcode == 16 else 0
-            solver_gives_line = task.status == "FAIL" and any(check.status != "UNKNOWN" for check in checks)
             junit_failures = 0
             if junit_errors == 0 and task.retcode != 0:
                 if solver_gives_line:
@@ -471,15 +470,17 @@ def run_task(taskname):
             junit_time = time.strftime('%Y-%m-%dT%H:%M:%S')
             print(f'<?xml version="1.0" encoding="UTF-8"?>', file=f)
             print(f'<testsuites>', file=f)
-            #TODO: check with Micko if os.uname().nodename is sane enough in most places
-            print(f'<testsuite timestamp="{junit_time}" hostname="{os.uname().nodename}" package="" id="1" name="{junit_tc_name}" tests="{junit_tests}" errors="{junit_errors}" failures="{junit_failures}" time="{task.total_time}" skipped="{junit_tests - junit_failures}">', file=f)
+            print(f'<testsuite timestamp="{junit_time}" hostname="{platform.node()}" package="{junit_ts_name}" id="1" name="{junit_tc_name}" tests="{junit_tests}" errors="{junit_errors}" failures="{junit_failures}" time="{task.total_time}" skipped="{junit_tests - junit_failures}">', file=f)
             print(f'<properties>', file=f)
-            print(f'<property name="os" value="{os.name}"/>', file=f)
+            print(f'<property name="os" value="{platform.system()}"/>', file=f)
             print(f'</properties>', file=f)
-            if solver_gives_line:
+            if task.precise_prop_status:
                 for check in checks:
-                    print(f'<testcase classname="{junit_tc_name}" name="Property {check.type} in {check.hierarchy} at {check.location}" time="{task.total_time}">', file=f) # name required
-                    if check.status == "UNKNOWN":
+                    detail_attrs = f' type="{check.type}" location="{check.location}" id="{check.name}"'
+                    print(f'<testcase classname="{junit_tc_name}" name="Property {check.type} in {check.hierarchy} at {check.location}" time="{task.total_time}"{detail_attrs}>', file=f) # name required
+                    if check.status == "PASS":
+                        pass
+                    elif check.status == "UNKNOWN":
                         print(f'<skipped />', file=f)
                     elif check.status == "FAIL":
                         print(f'<failure type="{check.type}" message="Property in {check.hierarchy} at {check.location} failed. Trace file: {check.tracefile}" />', file=f)

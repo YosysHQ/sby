@@ -143,7 +143,7 @@ def run(mode, task, engine_idx, engine):
         task,
         procname,
         task.model(model_name),
-        f"""cd {task.workdir}; {task.exe_paths["smtbmc"]} {" ".join(smtbmc_opts)} -t {t_opt} {random_seed} --append {task.opt_append} --dump-vcd {trace_prefix}.vcd --dump-vlogtb {trace_prefix}_tb.v --dump-smtc {trace_prefix}.smtc model/design_{model_name}.smt2""",
+        f"""cd {task.workdir}; {task.exe_paths["smtbmc"]} {" ".join(smtbmc_opts)} -t {t_opt} {random_seed} --append {task.opt_append} --cellinfo --dump-vcd {trace_prefix}.vcd --dump-vlogtb {trace_prefix}_tb.v --dump-smtc {trace_prefix}.smtc model/design_{model_name}.smt2""",
         logfile=open(logfile_prefix + ".txt", "w"),
         logstderr=(not progress)
     )
@@ -181,22 +181,20 @@ def run(mode, task, engine_idx, engine):
             proc_status = "ERROR"
             return line
 
-        match = re.match(r"^## [0-9: ]+ Assert failed in (([a-z_][a-z0-9$_]*|\\\S*|\.)+): (\S*).*", line)
+        match = re.match(r"^## [0-9: ]+ Assert failed in (\S+): (\S+) \((\S+)\)", line)
         if match:
-            module_path = match[1]
-            location = match[3]
-            try:
-                prop = task.design_hierarchy.find_property(module_path, location)
-            except KeyError as e:
-                task.precise_prop_status = False
-                return line + f" (Warning: {str(e)})"
+            cell_name = match[3]
+            prop = task.design_hierarchy.find_property_by_cellname(cell_name)
             prop.status = "FAIL"
             last_prop = prop
             return line
 
-        match = re.match(r"^## [0-9: ]+ Reached cover statement at (\S+) in step \d+.", line)
+        match = re.match(r"^## [0-9: ]+ Reached cover statement at (\S+) \((\S+)\) in step \d+.", line)
         if match:
-            location = match[1]
+            cell_name = match[2]
+            prop = task.design_hierarchy.find_property_by_cellname(cell_name)
+            prop.status = "PASS"
+            last_prop = prop
 
         match = re.match(r"^## [0-9: ]+ Writing trace to VCD file: (\S+)", line)
         if match and last_prop:
@@ -231,6 +229,10 @@ def run(mode, task, engine_idx, engine):
                         excess_traces += 1
                     if excess_traces > 0:
                         task.summary.append(f"""and {excess_traces} further trace{"s" if excess_traces > 1 else ""}""")
+            elif proc_status == "PASS" and mode == "bmc":
+                for prop in task.design_hierarchy:
+                    if prop.type == prop.Type.ASSERT and prop.status == "UNKNOWN":
+                        prop.status = "PASS"
 
             task.terminate()
 

@@ -63,12 +63,14 @@ class SbyModule:
     def __repr__(self):
         return f"SbyModule<{self.name} : {self.type}, submodules={self.submodules}, properties={self.properties}>"
 
-    def get_property_list(self):
-        l = list()
-        l.extend(self.properties)
+    def __iter__(self):
+        for prop in self.properties:
+            yield prop
         for submod in self.submodules.values():
-            l.extend(submod.get_property_list())
-        return l
+            yield from submod.__iter__()
+
+    def get_property_list(self):
+        return [p for p in self if p.type != p.Type.ASSUME]
 
     def find_property(self, hierarchy, location):
         # FIXME: use that RE that works with escaped paths from https://stackoverflow.com/questions/46207665/regex-pattern-to-split-verilog-path-in-different-instances-using-python
@@ -88,6 +90,12 @@ class SbyModule:
         except StopIteration:
             raise KeyError(f"Could not find assert at {location} in properties list!")
         return prop
+
+    def find_property_by_cellname(self, cell_name):
+        for prop in self:
+            if prop.name == cell_name:
+                return prop
+        raise KeyError(f"No such property: {cell_name}")
 
 def design_hierarchy(filename):
     design_json = json.load(filename)
@@ -121,7 +129,10 @@ def main():
     if len(sys.argv) != 2:
         print(f"""Usage: {sys.argv[0]} design.json""")
     with open(sys.argv[1]) as f:
-        print(design_hierarchy(f))
+        d = design_hierarchy(f)
+        print("Design Hierarchy:", d)
+        for p in d.get_property_list():
+            print("Property:", p)
 
 if __name__ == '__main__':
     main()
