@@ -455,7 +455,7 @@ def run_task(taskname):
 
     if not my_opt_tmpdir and not setupmode:
         with open("{}/{}.xml".format(task.workdir, junit_filename), "w") as f:
-            task.print_junit_result(f, junit_ts_name, junit_tc_name)
+            task.print_junit_result(f, junit_ts_name, junit_tc_name, junit_format_strict=False)
 
         with open(f"{task.workdir}/status", "w") as f:
             print(f"{task.status} {task.retcode} {task.total_time}", file=f)

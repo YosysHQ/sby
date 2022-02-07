@@ -756,6 +756,7 @@ class SbyTask:
             junit_failures = 0
         else:
             if self.precise_prop_status:
+                junit_failures = 0
                 for check in checks:
                     if check.status not in self.expect:
                         junit_failures += 1
@@ -777,7 +778,8 @@ class SbyTask:
                 elif check.status == "UNKNOWN":
                     print(f'<skipped />', file=f)
                 elif check.status == "FAIL":
-                    print(f'<failure type="{check.type}" message="Property in {check.hierarchy} at {check.location} failed. Trace file: {check.tracefile}" />', file=f)
+                    traceinfo = f' Trace file: {check.tracefile}' if check.type == check.Type.ASSERT else ''
+                    print(f'<failure type="{check.type}" message="Property {check.type} in {check.hierarchy} at {check.location} failed.{traceinfo}" />', file=f)
                 elif check.status == "ERROR":
                     print(f'<error type="ERROR"/>', file=f) # type mandatory, message optional
                 print(f'</testcase>', file=f)

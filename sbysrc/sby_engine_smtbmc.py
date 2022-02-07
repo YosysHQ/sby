@@ -201,6 +201,12 @@ def run(mode, task, engine_idx, engine):
             last_prop.tracefile = match[1]
             last_prop = None
 
+        match = re.match(r"^## [0-9: ]+ Unreached cover statement at (\S+) \((\S+)\).", line)
+        if match:
+            cell_name = match[2]
+            prop = task.design_hierarchy.find_property_by_cellname(cell_name)
+            prop.status = "FAIL"
+
         return line
 
     def exit_callback(retcode):
