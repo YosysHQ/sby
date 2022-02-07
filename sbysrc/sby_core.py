@@ -302,6 +302,8 @@ class SbyTask:
         self.status = "ERROR"
         if "ERROR" not in self.expect:
             self.retcode = 16
+        else:
+            self.retcode = 0
         self.terminate()
         with open(f"{self.workdir}/{self.status}", "w") as f:
             print(f"ERROR: {logmessage}", file=f)
@@ -746,33 +748,44 @@ class SbyTask:
                 print(line, file=f)
 
     def print_junit_result(self, f, junit_ts_name, junit_tc_name, junit_format_strict=False):
-        junit_errors = 1 if self.retcode == 16 else 0
+        junit_time = strftime('%Y-%m-%dT%H:%M:%S')
         if self.precise_prop_status:
             checks = self.design_hierarchy.get_property_list()
             junit_tests = len(checks)
+            junit_failures = 0
+            junit_errors = 0
+            junit_skipped = 0
+            for check in checks:
+                if check.status == "PASS":
+                    pass
+                elif check.status == "FAIL":
+                    junit_failures += 1
+                elif check.status == "UNKNOWN":
+                    junit_skipped += 1
+                else:
+                    junit_errors += 1
+            if junit_errors == 0 and self.status == "ERROR":
+                junit_errors = 1
         else:
             junit_tests = 1
-        if self.retcode in [0, 16]:
-            junit_failures = 0
-        else:
-            if self.precise_prop_status:
-                junit_failures = 0
-                for check in checks:
-                    if check.status not in self.expect:
-                        junit_failures += 1
-            else:
-                junit_failures = 1
-        junit_time = strftime('%Y-%m-%dT%H:%M:%S')
+            junit_errors = 1 if self.retcode == 16 else 0
+            junit_failures = 1 if self.retcode != 0 and junit_errors == 0 else 0
+            junit_skipped = 0
         print(f'<?xml version="1.0" encoding="UTF-8"?>', file=f)
         print(f'<testsuites>', file=f)
-        print(f'<testsuite timestamp="{junit_time}" hostname="{platform.node()}" package="{junit_ts_name}" id="1" name="{junit_tc_name}" tests="{junit_tests}" errors="{junit_errors}" failures="{junit_failures}" time="{self.total_time}" skipped="{junit_tests - junit_failures}">', file=f)
+        print(f'<testsuite timestamp="{junit_time}" hostname="{platform.node()}" package="{junit_ts_name}" id="1" name="{junit_tc_name}" tests="{junit_tests}" errors="{junit_errors}" failures="{junit_failures}" time="{self.total_time}" skipped="{junit_skipped}">', file=f)
         print(f'<properties>', file=f)
         print(f'<property name="os" value="{platform.system()}"/>', file=f)
         print(f'</properties>', file=f)
         if self.precise_prop_status:
             for check in checks:
-                detail_attrs = '' if junit_format_strict else f' type="{check.type}" location="{check.location}" id="{check.name}"'
-                print(f'<testcase classname="{junit_tc_name}" name="Property {check.type} in {check.hierarchy} at {check.location}" time="{self.total_time}"{detail_attrs}>', file=f) # name required
+                if junit_format_strict:
+                    detail_attrs = ''
+                else:
+                    detail_attrs = f' type="{check.type}" location="{check.location}" id="{check.name}"'
+                    if check.tracefile:
+                        detail_attrs += f' tracefile="{check.tracefile}"'
+                print(f'<testcase classname="{junit_tc_name}" name="Property {check.type} in {check.hierarchy} at {check.location}" time="0"{detail_attrs}>', file=f)
                 if check.status == "PASS":
                     pass
                 elif check.status == "UNKNOWN":
@@ -785,13 +798,11 @@ class SbyTask:
                 print(f'</testcase>', file=f)
         else:
             junit_type = "assert" if self.opt_mode in ["bmc", "prove"] else self.opt_mode
-            print(f'<testcase classname="{junit_tc_name}" name="{junit_tc_name}" time="{self.total_time}">', file=f) # name required
-            if self.status == "UNKNOWN":
-                print(f'<skipped />', file=f)
-            elif self.status == "FAIL":
-                print(f'<failure type="{junit_type}" message="{self.status}" />', file=f)
-            elif self.status == "ERROR":
+            print(f'<testcase classname="{junit_tc_name}" name="{junit_tc_name}" time="{self.total_time}">', file=f)
+            if junit_errors:
                 print(f'<error type="ERROR"/>', file=f) # type mandatory, message optional
+            elif junit_failures:
+                print(f'<failure type="{junit_type}" message="{self.status}" />', file=f)
             print(f'</testcase>', file=f)
         print('<system-out>', end="", file=f)
         with open(f"{self.workdir}/logfile.txt", "r") as logf:

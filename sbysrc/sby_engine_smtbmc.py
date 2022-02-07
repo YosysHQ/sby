@@ -143,7 +143,7 @@ def run(mode, task, engine_idx, engine):
         task,
         procname,
         task.model(model_name),
-        f"""cd {task.workdir}; {task.exe_paths["smtbmc"]} {" ".join(smtbmc_opts)} -t {t_opt} {random_seed} --append {task.opt_append} --cellinfo --dump-vcd {trace_prefix}.vcd --dump-vlogtb {trace_prefix}_tb.v --dump-smtc {trace_prefix}.smtc model/design_{model_name}.smt2""",
+        f"""cd {task.workdir}; {task.exe_paths["smtbmc"]} {" ".join(smtbmc_opts)} -t {t_opt} {random_seed} --append {task.opt_append} --dump-vcd {trace_prefix}.vcd --dump-vlogtb {trace_prefix}_tb.v --dump-smtc {trace_prefix}.smtc model/design_{model_name}.smt2""",
         logfile=open(logfile_prefix + ".txt", "w"),
         logstderr=(not progress)
     )
@@ -195,11 +195,13 @@ def run(mode, task, engine_idx, engine):
             prop = task.design_hierarchy.find_property_by_cellname(cell_name)
             prop.status = "PASS"
             last_prop = prop
+            return line
 
         match = re.match(r"^## [0-9: ]+ Writing trace to VCD file: (\S+)", line)
         if match and last_prop:
             last_prop.tracefile = match[1]
             last_prop = None
+            return line
 
         match = re.match(r"^## [0-9: ]+ Unreached cover statement at (\S+) \((\S+)\).", line)
         if match:
