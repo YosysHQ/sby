@@ -6,7 +6,7 @@ expect pass
 btor btormc
 
 [script]
-read_verilog -formal redxor.v
+read -formal redxor.v
 prep -top test
 
 [files]

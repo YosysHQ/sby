@@ -12,7 +12,7 @@ expect fail
 smtbmc boolector
 
 [script]
-read_verilog -sv test.sv
+read -sv test.sv
 prep -top top
 
 [file test.sv]

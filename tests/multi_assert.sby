@@ -12,7 +12,7 @@ btormc: btor btormc
 pono: btor pono
 
 [script]
-read_verilog -sv multi_assert.v
+read -sv multi_assert.v
 prep -top test
 
 [file multi_assert.v]

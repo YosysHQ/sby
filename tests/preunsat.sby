@@ -12,7 +12,7 @@ btormc: btor btormc
 yices: smtbmc yices
 
 [script]
-read_verilog -sv test.sv
+read -sv test.sv
 prep -top test
 
 [file test.sv]

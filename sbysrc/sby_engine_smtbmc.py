@@ -273,6 +273,9 @@ def run(mode, task, engine_idx, engine):
                 assert False
 
             if task.basecase_pass and task.induction_pass:
+                for prop in task.design_hierarchy:
+                    if prop.type == prop.Type.ASSERT and prop.status == "UNKNOWN":
+                        prop.status = "PASS"
                 task.update_status("PASS")
                 task.summary.append("successful proof by k-induction.")
                 task.terminate()

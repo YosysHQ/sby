@@ -773,7 +773,7 @@ class SbyTask:
             junit_skipped = 0
         print(f'<?xml version="1.0" encoding="UTF-8"?>', file=f)
         print(f'<testsuites>', file=f)
-        print(f'<testsuite timestamp="{junit_time}" hostname="{platform.node()}" package="{junit_ts_name}" id="1" name="{junit_tc_name}" tests="{junit_tests}" errors="{junit_errors}" failures="{junit_failures}" time="{self.total_time}" skipped="{junit_skipped}">', file=f)
+        print(f'<testsuite timestamp="{junit_time}" hostname="{platform.node()}" package="{junit_ts_name}" id="0" name="{junit_tc_name}" tests="{junit_tests}" errors="{junit_errors}" failures="{junit_failures}" time="{self.total_time}" skipped="{junit_skipped}">', file=f)
         print(f'<properties>', file=f)
         print(f'<property name="os" value="{platform.system()}"/>', file=f)
         print(f'</properties>', file=f)
