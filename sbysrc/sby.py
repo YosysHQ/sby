@@ -455,57 +455,7 @@ def run_task(taskname):
 
     if not my_opt_tmpdir and not setupmode:
         with open("{}/{}.xml".format(task.workdir, junit_filename), "w") as f:
-            checks = task.design_hierarchy.get_property_list()
-            junit_tests = len(checks)
-            junit_errors = 1 if task.retcode == 16 else 0
-            junit_failures = 0
-            if junit_errors == 0 and task.retcode != 0:
-                if solver_gives_line:
-                    for check in checks:
-                        if check.status == "FAIL":
-                            junit_failures += 1
-            else:
-                junit_failures = 1
-            junit_type = "cover" if task.opt_mode == "cover" else "assert" #should this be here or individual for each check?
-            junit_time = time.strftime('%Y-%m-%dT%H:%M:%S')
-            print(f'<?xml version="1.0" encoding="UTF-8"?>', file=f)
-            print(f'<testsuites>', file=f)
-            print(f'<testsuite timestamp="{junit_time}" hostname="{platform.node()}" package="{junit_ts_name}" id="1" name="{junit_tc_name}" tests="{junit_tests}" errors="{junit_errors}" failures="{junit_failures}" time="{task.total_time}" skipped="{junit_tests - junit_failures}">', file=f)
-            print(f'<properties>', file=f)
-            print(f'<property name="os" value="{platform.system()}"/>', file=f)
-            print(f'</properties>', file=f)
-            if task.precise_prop_status:
-                for check in checks:
-                    detail_attrs = f' type="{check.type}" location="{check.location}" id="{check.name}"'
-                    print(f'<testcase classname="{junit_tc_name}" name="Property {check.type} in {check.hierarchy} at {check.location}" time="{task.total_time}"{detail_attrs}>', file=f) # name required
-                    if check.status == "PASS":
-                        pass
-                    elif check.status == "UNKNOWN":
-                        print(f'<skipped />', file=f)
-                    elif check.status == "FAIL":
-                        print(f'<failure type="{check.type}" message="Property in {check.hierarchy} at {check.location} failed. Trace file: {check.tracefile}" />', file=f)
-                    elif check.status == "ERROR":
-                        print(f'<error type="ERROR"/>', file=f) # type mandatory, message optional
-                    print(f'</testcase>', file=f)
-            else:
-                print(f'<testcase classname="{junit_tc_name}" name="" time="{task.total_time}">', file=f) # name required
-                if task.status == "UNKNOWN":
-                    print(f'<skipped />', file=f)
-                elif task.status == "FAIL":
-                    print(f'<failure type="{junit_type}" message="{task.status}" />', file=f)
-                elif task.status == "ERROR":
-                    print(f'<error type="ERROR"/>', file=f) # type mandatory, message optional
-                print(f'</testcase>', file=f)
-            print('<system-out>', end="", file=f)
-            with open(f"{task.workdir}/logfile.txt", "r") as logf:
-                for line in logf:
-                    print(line.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;"), end="", file=f)
-            print('</system-out>', file=f)
-            print('<system-err>', file=f)
-            #TODO: can we handle errors and still output this file?
-            print('</system-err>', file=f)
-            print(f'</testsuite>', file=f)
-            print(f'</testsuites>', file=f)
+            task.print_junit_result(f, junit_ts_name, junit_tc_name)
 
         with open(f"{task.workdir}/status", "w") as f:
             print(f"{task.status} {task.retcode} {task.total_time}", file=f)
