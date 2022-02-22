@@ -407,7 +407,9 @@ class SbyTask:
             proc.checkretcode = True
 
             def instance_hierarchy_callback(retcode):
-                assert retcode == 0
+                if retcode != 0:
+                    self.precise_prop_status = False
+                    return
                 if self.design_hierarchy == None:
                     with open(f"{self.workdir}/model/design.json") as f:
                         self.design_hierarchy = design_hierarchy(f)
@@ -776,6 +778,8 @@ class SbyTask:
         print(f'<testsuite timestamp="{junit_time}" hostname="{platform.node()}" package="{junit_ts_name}" id="0" name="{junit_tc_name}" tests="{junit_tests}" errors="{junit_errors}" failures="{junit_failures}" time="{self.total_time}" skipped="{junit_skipped}">', file=f)
         print(f'<properties>', file=f)
         print(f'<property name="os" value="{platform.system()}"/>', file=f)
+        print(f'<property name="expect" value="{", ".join(self.expect)}"/>', file=f)
+        print(f'<property name="status" value="{self.status}"/>', file=f)
         print(f'</properties>', file=f)
         if self.precise_prop_status:
             for check in checks:

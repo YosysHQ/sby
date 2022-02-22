@@ -130,6 +130,26 @@ Permission to waive conditions of this license may be requested from Windy Road 
 							<xs:documentation xml:lang="en">Time taken (in seconds) to execute the test</xs:documentation>
 						</xs:annotation>
 					</xs:attribute>
+					<xs:attribute name="id" type="xs:string" use="optional">
+						<xs:annotation>
+							<xs:documentation xml:lang="en">Cell ID of the property</xs:documentation>
+						</xs:annotation>
+					</xs:attribute>
+					<xs:attribute name="type" type="xs:token" use="optional">
+						<xs:annotation>
+							<xs:documentation xml:lang="en">Kind of property (assert, cover, live)</xs:documentation>
+						</xs:annotation>
+					</xs:attribute>
+					<xs:attribute name="location" type="xs:token" use="optional">
+						<xs:annotation>
+							<xs:documentation xml:lang="en">Source location of the property</xs:documentation>
+						</xs:annotation>
+					</xs:attribute>
+					<xs:attribute name="tracefile" type="xs:token" use="optional">
+						<xs:annotation>
+							<xs:documentation xml:lang="en">Tracefile for the property</xs:documentation>
+						</xs:annotation>
+					</xs:attribute>
 				</xs:complexType>
 			</xs:element>
 			<xs:element name="system-out">

@@ -1,0 +1,38 @@
+[tasks]
+pass
+fail
+preunsat
+
+[options]
+mode bmc
+depth 1
+
+pass: expect pass
+fail: expect fail
+preunsat: expect error
+
+[engines]
+smtbmc boolector
+
+[script]
+fail: read -define FAIL
+preunsat: read -define PREUNSAT
+read -sv test.sv
+prep -top top
+
+[file test.sv]
+module test(input foo);
+always @* assert(foo);
+`ifdef FAIL
+always @* assert(!foo);
+`endif
+`ifdef PREUNSAT
+always @* assume(!foo);
+`endif
+endmodule
+
+module top();
+test test_i (
+.foo(1'b1)
+);
+endmodule

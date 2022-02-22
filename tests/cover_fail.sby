@@ -1,7 +1,7 @@
 [options]
 mode cover
 depth 5
-expect fail
+expect pass,fail
 
 [engines]
 smtbmc boolector
