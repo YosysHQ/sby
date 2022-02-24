@@ -766,8 +766,10 @@ class SbyTask:
                     junit_skipped += 1
                 else:
                     junit_errors += 1
-            if junit_errors == 0 and self.status == "ERROR":
-                junit_errors = 1
+            if self.retcode == 16:
+                junit_errors += 1
+            elif self.retcode != 0:
+                junit_failures += 1
         else:
             junit_tests = 1
             junit_errors = 1 if self.retcode == 16 else 0
@@ -782,6 +784,13 @@ class SbyTask:
         print(f'<property name="status" value="{self.status}"/>', file=f)
         print(f'</properties>', file=f)
         if self.precise_prop_status:
+            print(f'<testcase classname="{junit_tc_name}" name="build execution" time="0">', file=f)
+            if self.retcode == 16:
+                print(f'<error type="ERROR"/>', file=f) # type mandatory, message optional
+            elif self.retcode != 0:
+                print(f'<failure type="{junit_type}" message="{self.status}" />', file=f)
+            print(f'</testcase>', file=f)
+
             for check in checks:
                 if junit_format_strict:
                     detail_attrs = ''
@@ -789,14 +798,18 @@ class SbyTask:
                     detail_attrs = f' type="{check.type}" location="{check.location}" id="{check.name}"'
                     if check.tracefile:
                         detail_attrs += f' tracefile="{check.tracefile}"'
-                print(f'<testcase classname="{junit_tc_name}" name="Property {check.type} in {check.hierarchy} at {check.location}" time="0"{detail_attrs}>', file=f)
+                if check.location:
+                    junit_prop_name = f"Property {check.type} in {check.hierarchy} at {check.location}"
+                else:
+                    junit_prop_name = f"Property {check.type} {check.name} in {check.hierarchy}"
+                print(f'<testcase classname="{junit_tc_name}" name="{junit_prop_name}" time="0"{detail_attrs}>', file=f)
                 if check.status == "PASS":
                     pass
                 elif check.status == "UNKNOWN":
                     print(f'<skipped />', file=f)
                 elif check.status == "FAIL":
                     traceinfo = f' Trace file: {check.tracefile}' if check.type == check.Type.ASSERT else ''
-                    print(f'<failure type="{check.type}" message="Property {check.type} in {check.hierarchy} at {check.location} failed.{traceinfo}" />', file=f)
+                    print(f'<failure type="{check.type}" message="{junit_prop_name} failed.{traceinfo}" />', file=f)
                 elif check.status == "ERROR":
                     print(f'<error type="ERROR"/>', file=f) # type mandatory, message optional
                 print(f'</testcase>', file=f)

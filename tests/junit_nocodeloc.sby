@@ -1,0 +1,20 @@
+[options]
+mode bmc
+
+expect fail
+
+[engines]
+smtbmc boolector
+
+[script]
+read -sv multi_assert.v
+prep -top test
+setattr -unset src
+
+[file multi_assert.v]
+module test();
+always @* begin
+assert (1);
+assert (0);
+end
+endmodule
