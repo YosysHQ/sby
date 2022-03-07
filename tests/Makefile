@@ -14,4 +14,4 @@ test_%: %.sby FORCE
 	python3 ../sbysrc/sby.py -f $<
 
 $(JUNIT_TESTS): $(SBY_TESTS)
-	python validate_junit.py $@/$@.xml
+	python3 validate_junit.py $@/$@.xml
