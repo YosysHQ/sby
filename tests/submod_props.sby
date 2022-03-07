@@ -1,0 +1,30 @@
+[tasks]
+bmc
+cover
+
+[options]
+bmc: mode bmc
+cover: mode cover
+
+expect fail
+
+[engines]
+smtbmc boolector
+
+[script]
+read -sv test.sv
+prep -top top
+
+[file test.sv]
+module test(input foo);
+always @* assert(foo);
+always @* assert(!foo);
+always @* cover(foo);
+always @* cover(!foo);
+endmodule
+
+module top();
+test test_i (
+.foo(1'b1)
+);
+endmodule

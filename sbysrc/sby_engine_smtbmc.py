@@ -32,6 +32,7 @@ def run(mode, task, engine_idx, engine):
     basecase_only = False
     induction_only = False
     random_seed = None
+    task.precise_prop_status = True
 
     opts, args = getopt.getopt(engine[1:], "", ["nomem", "syn", "stbv", "stdt", "presat",
             "nopresat", "unroll", "nounroll", "dumpsmt2", "progress", "basecase", "induction", "seed="])
@@ -154,9 +155,11 @@ def run(mode, task, engine_idx, engine):
         task.induction_procs.append(proc)
 
     proc_status = None
+    last_prop = None
 
     def output_callback(line):
         nonlocal proc_status
+        nonlocal last_prop
 
         match = re.match(r"^## [0-9: ]+ Status: FAILED", line)
         if match:
@@ -177,6 +180,34 @@ def run(mode, task, engine_idx, engine):
         if match:
             proc_status = "ERROR"
             return line
+
+        match = re.match(r"^## [0-9: ]+ Assert failed in (\S+): (\S+) \((\S+)\)", line)
+        if match:
+            cell_name = match[3]
+            prop = task.design_hierarchy.find_property_by_cellname(cell_name)
+            prop.status = "FAIL"
+            last_prop = prop
+            return line
+
+        match = re.match(r"^## [0-9: ]+ Reached cover statement at (\S+) \((\S+)\) in step \d+.", line)
+        if match:
+            cell_name = match[2]
+            prop = task.design_hierarchy.find_property_by_cellname(cell_name)
+            prop.status = "PASS"
+            last_prop = prop
+            return line
+
+        match = re.match(r"^## [0-9: ]+ Writing trace to VCD file: (\S+)", line)
+        if match and last_prop:
+            last_prop.tracefile = match[1]
+            last_prop = None
+            return line
+
+        match = re.match(r"^## [0-9: ]+ Unreached cover statement at (\S+) \((\S+)\).", line)
+        if match:
+            cell_name = match[2]
+            prop = task.design_hierarchy.find_property_by_cellname(cell_name)
+            prop.status = "FAIL"
 
         return line
 
@@ -206,6 +237,10 @@ def run(mode, task, engine_idx, engine):
                         excess_traces += 1
                     if excess_traces > 0:
                         task.summary.append(f"""and {excess_traces} further trace{"s" if excess_traces > 1 else ""}""")
+            elif proc_status == "PASS" and mode == "bmc":
+                for prop in task.design_hierarchy:
+                    if prop.type == prop.Type.ASSERT and prop.status == "UNKNOWN":
+                        prop.status = "PASS"
 
             task.terminate()
 
@@ -238,6 +273,9 @@ def run(mode, task, engine_idx, engine):
                 assert False
 
             if task.basecase_pass and task.induction_pass:
+                for prop in task.design_hierarchy:
+                    if prop.type == prop.Type.ASSERT and prop.status == "UNKNOWN":
+                        prop.status = "PASS"
                 task.update_status("PASS")
                 task.summary.append("successful proof by k-induction.")
                 task.terminate()

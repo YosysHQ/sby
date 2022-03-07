@@ -6,7 +6,7 @@ expect fail
 btor btormc
 
 [script]
-read_verilog -sv test.sv
+read -sv test.sv
 prep -top test
 
 [file test.sv]

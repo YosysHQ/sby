@@ -16,13 +16,14 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #
 
-import os, re, sys, signal
+import os, re, sys, signal, platform
 if os.name == "posix":
     import resource, fcntl
 import subprocess
 from shutil import copyfile, copytree, rmtree
 from select import select
-from time import time, localtime, sleep
+from time import time, localtime, sleep, strftime
+from sby_design import SbyProperty, SbyModule, design_hierarchy
 
 all_procs_running = []
 
@@ -221,7 +222,9 @@ class SbyTask:
         self.reusedir = reusedir
         self.status = "UNKNOWN"
         self.total_time = 0
-        self.expect = []
+        self.expect = list()
+        self.design_hierarchy = None
+        self.precise_prop_status = False
 
         yosys_program_prefix = "" ##yosys-program-prefix##
         self.exe_paths = {
@@ -299,6 +302,8 @@ class SbyTask:
         self.status = "ERROR"
         if "ERROR" not in self.expect:
             self.retcode = 16
+        else:
+            self.retcode = 0
         self.terminate()
         with open(f"{self.workdir}/{self.status}", "w") as f:
             print(f"ERROR: {logmessage}", file=f)
@@ -364,49 +369,64 @@ class SbyTask:
         if not os.path.isdir(f"{self.workdir}/model"):
             os.makedirs(f"{self.workdir}/model")
 
-        if model_name in ["base", "nomem"]:
-            with open(f"""{self.workdir}/model/design{"" if model_name == "base" else "_nomem"}.ys""", "w") as f:
+        def print_common_prep():
+            if self.opt_multiclock:
+                print("clk2fflogic", file=f)
+            else:
+                print("async2sync", file=f)
+                print("chformal -assume -early", file=f)
+            if self.opt_mode in ["bmc", "prove"]:
+                print("chformal -live -fair -cover -remove", file=f)
+            if self.opt_mode == "cover":
+                print("chformal -live -fair -remove", file=f)
+            if self.opt_mode == "live":
+                print("chformal -assert2assume", file=f)
+                print("chformal -cover -remove", file=f)
+            print("opt_clean", file=f)
+            print("setundef -anyseq", file=f)
+            print("opt -keepdc -fast", file=f)
+            print("check", file=f)
+            print("hierarchy -simcheck", file=f)
+
+        if model_name == "base":
+            with open(f"""{self.workdir}/model/design.ys""", "w") as f:
                 print(f"# running in {self.workdir}/src/", file=f)
                 for cmd in self.script:
                     print(cmd, file=f)
-                if model_name == "base":
-                    print("memory_nordff", file=f)
-                else:
-                    print("memory_map", file=f)
-                if self.opt_multiclock:
-                    print("clk2fflogic", file=f)
-                else:
-                    print("async2sync", file=f)
-                    print("chformal -assume -early", file=f)
-                if self.opt_mode in ["bmc", "prove"]:
-                    print("chformal -live -fair -cover -remove", file=f)
-                if self.opt_mode == "cover":
-                    print("chformal -live -fair -remove", file=f)
-                if self.opt_mode == "live":
-                    print("chformal -assert2assume", file=f)
-                    print("chformal -cover -remove", file=f)
-                print("opt_clean", file=f)
-                print("setundef -anyseq", file=f)
-                print("opt -keepdc -fast", file=f)
-                print("check", file=f)
+                # the user must designate a top module in [script]
                 print("hierarchy -simcheck", file=f)
-                print(f"""write_ilang ../model/design{"" if model_name == "base" else "_nomem"}.il""", file=f)
+                print(f"""write_json ../model/design.json""", file=f)
+                print(f"""write_rtlil ../model/design.il""", file=f)
 
             proc = SbyProc(
                 self,
                 model_name,
                 [],
-                "cd {}/src; {} -ql ../model/design{s}.log ../model/design{s}.ys".format(self.workdir, self.exe_paths["yosys"],
-                    s="" if model_name == "base" else "_nomem")
+                "cd {}/src; {} -ql ../model/design.log ../model/design.ys".format(self.workdir, self.exe_paths["yosys"])
             )
             proc.checkretcode = True
+
+            def instance_hierarchy_callback(retcode):
+                if retcode != 0:
+                    self.precise_prop_status = False
+                    return
+                if self.design_hierarchy == None:
+                    with open(f"{self.workdir}/model/design.json") as f:
+                        self.design_hierarchy = design_hierarchy(f)
+
+            proc.exit_callback = instance_hierarchy_callback
 
             return [proc]
 
         if re.match(r"^smt2(_syn)?(_nomem)?(_stbv|_stdt)?$", model_name):
             with open(f"{self.workdir}/model/design_{model_name}.ys", "w") as f:
                 print(f"# running in {self.workdir}/model/", file=f)
-                print(f"""read_ilang design{"_nomem" if "_nomem" in model_name else ""}.il""", file=f)
+                print(f"""read_ilang design.il""", file=f)
+                if "_nomem" in model_name:
+                    print("memory_map", file=f)
+                else:
+                    print("memory_nordff", file=f)
+                print_common_prep()
                 if "_syn" in model_name:
                     print("techmap", file=f)
                     print("opt -fast", file=f)
@@ -424,7 +444,7 @@ class SbyTask:
             proc = SbyProc(
                 self,
                 model_name,
-                self.model("nomem" if "_nomem" in model_name else "base"),
+                self.model("base"),
                 "cd {}/model; {} -ql design_{s}.log design_{s}.ys".format(self.workdir, self.exe_paths["yosys"], s=model_name)
             )
             proc.checkretcode = True
@@ -434,7 +454,12 @@ class SbyTask:
         if re.match(r"^btor(_syn)?(_nomem)?$", model_name):
             with open(f"{self.workdir}/model/design_{model_name}.ys", "w") as f:
                 print(f"# running in {self.workdir}/model/", file=f)
-                print(f"""read_ilang design{"_nomem" if "_nomem" in model_name else ""}.il""", file=f)
+                print(f"""read_ilang design.il""", file=f)
+                if "_nomem" in model_name:
+                    print("memory_map", file=f)
+                else:
+                    print("memory_nordff", file=f)
+                print_common_prep()
                 print("flatten", file=f)
                 print("setundef -undriven -anyseq", file=f)
                 if "_syn" in model_name:
@@ -454,7 +479,7 @@ class SbyTask:
             proc = SbyProc(
                 self,
                 model_name,
-                self.model("nomem" if "_nomem" in model_name else "base"),
+                self.model("base"),
                 "cd {}/model; {} -ql design_{s}.log design_{s}.ys".format(self.workdir, self.exe_paths["yosys"], s=model_name)
             )
             proc.checkretcode = True
@@ -464,7 +489,9 @@ class SbyTask:
         if model_name == "aig":
             with open(f"{self.workdir}/model/design_aiger.ys", "w") as f:
                 print(f"# running in {self.workdir}/model/", file=f)
-                print("read_ilang design_nomem.il", file=f)
+                print("read_ilang design.il", file=f)
+                print("memory_map", file=f)
+                print_common_prep()
                 print("flatten", file=f)
                 print("setundef -undriven -anyseq", file=f)
                 print("setattr -unset keep", file=f)
@@ -481,7 +508,7 @@ class SbyTask:
             proc = SbyProc(
                 self,
                 "aig",
-                self.model("nomem"),
+                self.model("base"),
                 f"""cd {self.workdir}/model; {self.exe_paths["yosys"]} -ql design_aiger.log design_aiger.ys"""
             )
             proc.checkretcode = True
@@ -721,3 +748,86 @@ class SbyTask:
         with open(f"{self.workdir}/{self.status}", "w") as f:
             for line in self.summary:
                 print(line, file=f)
+
+    def print_junit_result(self, f, junit_ts_name, junit_tc_name, junit_format_strict=False):
+        junit_time = strftime('%Y-%m-%dT%H:%M:%S')
+        if self.precise_prop_status:
+            checks = self.design_hierarchy.get_property_list()
+            junit_tests = len(checks)
+            junit_failures = 0
+            junit_errors = 0
+            junit_skipped = 0
+            for check in checks:
+                if check.status == "PASS":
+                    pass
+                elif check.status == "FAIL":
+                    junit_failures += 1
+                elif check.status == "UNKNOWN":
+                    junit_skipped += 1
+                else:
+                    junit_errors += 1
+            if self.retcode == 16:
+                junit_errors += 1
+            elif self.retcode != 0:
+                junit_failures += 1
+        else:
+            junit_tests = 1
+            junit_errors = 1 if self.retcode == 16 else 0
+            junit_failures = 1 if self.retcode != 0 and junit_errors == 0 else 0
+            junit_skipped = 0
+        print(f'<?xml version="1.0" encoding="UTF-8"?>', file=f)
+        print(f'<testsuites>', file=f)
+        print(f'<testsuite timestamp="{junit_time}" hostname="{platform.node()}" package="{junit_ts_name}" id="0" name="{junit_tc_name}" tests="{junit_tests}" errors="{junit_errors}" failures="{junit_failures}" time="{self.total_time}" skipped="{junit_skipped}">', file=f)
+        print(f'<properties>', file=f)
+        print(f'<property name="os" value="{platform.system()}"/>', file=f)
+        print(f'<property name="expect" value="{", ".join(self.expect)}"/>', file=f)
+        print(f'<property name="status" value="{self.status}"/>', file=f)
+        print(f'</properties>', file=f)
+        if self.precise_prop_status:
+            print(f'<testcase classname="{junit_tc_name}" name="build execution" time="0">', file=f)
+            if self.retcode == 16:
+                print(f'<error type="ERROR"/>', file=f) # type mandatory, message optional
+            elif self.retcode != 0:
+                print(f'<failure type="{junit_type}" message="{self.status}" />', file=f)
+            print(f'</testcase>', file=f)
+
+            for check in checks:
+                if junit_format_strict:
+                    detail_attrs = ''
+                else:
+                    detail_attrs = f' type="{check.type}" location="{check.location}" id="{check.name}"'
+                    if check.tracefile:
+                        detail_attrs += f' tracefile="{check.tracefile}"'
+                if check.location:
+                    junit_prop_name = f"Property {check.type} in {check.hierarchy} at {check.location}"
+                else:
+                    junit_prop_name = f"Property {check.type} {check.name} in {check.hierarchy}"
+                print(f'<testcase classname="{junit_tc_name}" name="{junit_prop_name}" time="0"{detail_attrs}>', file=f)
+                if check.status == "PASS":
+                    pass
+                elif check.status == "UNKNOWN":
+                    print(f'<skipped />', file=f)
+                elif check.status == "FAIL":
+                    traceinfo = f' Trace file: {check.tracefile}' if check.type == check.Type.ASSERT else ''
+                    print(f'<failure type="{check.type}" message="{junit_prop_name} failed.{traceinfo}" />', file=f)
+                elif check.status == "ERROR":
+                    print(f'<error type="ERROR"/>', file=f) # type mandatory, message optional
+                print(f'</testcase>', file=f)
+        else:
+            junit_type = "assert" if self.opt_mode in ["bmc", "prove"] else self.opt_mode
+            print(f'<testcase classname="{junit_tc_name}" name="{junit_tc_name}" time="{self.total_time}">', file=f)
+            if junit_errors:
+                print(f'<error type="ERROR"/>', file=f) # type mandatory, message optional
+            elif junit_failures:
+                print(f'<failure type="{junit_type}" message="{self.status}" />', file=f)
+            print(f'</testcase>', file=f)
+        print('<system-out>', end="", file=f)
+        with open(f"{self.workdir}/logfile.txt", "r") as logf:
+            for line in logf:
+                print(line.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;"), end="", file=f)
+        print('</system-out>', file=f)
+        print('<system-err>', file=f)
+        #TODO: can we handle errors and still output this file?
+        print('</system-err>', file=f)
+        print(f'</testsuite>', file=f)
+        print(f'</testsuites>', file=f)

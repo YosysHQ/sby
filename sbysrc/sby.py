@@ -20,7 +20,7 @@
 import argparse, os, sys, shutil, tempfile, re
 ##yosys-sys-path##
 from sby_core import SbyTask, SbyAbort, process_filename
-from time import localtime
+import time, platform
 
 class DictAction(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
@@ -156,7 +156,7 @@ prep -top top
 early_logmsgs = list()
 
 def early_log(workdir, msg):
-    tm = localtime()
+    tm = time.localtime()
     early_logmsgs.append("SBY {:2d}:{:02d}:{:02d} [{}] {}".format(tm.tm_hour, tm.tm_min, tm.tm_sec, workdir, msg))
     print(early_logmsgs[-1])
 
@@ -455,24 +455,8 @@ def run_task(taskname):
 
     if not my_opt_tmpdir and not setupmode:
         with open("{}/{}.xml".format(task.workdir, junit_filename), "w") as f:
-            junit_errors = 1 if task.retcode == 16 else 0
-            junit_failures = 1 if task.retcode != 0 and junit_errors == 0 else 0
-            print('<?xml version="1.0" encoding="UTF-8"?>', file=f)
-            print(f'<testsuites disabled="0" errors="{junit_errors}" failures="{junit_failures}" tests="1" time="{task.total_time}">', file=f)
-            print(f'<testsuite disabled="0" errors="{junit_errors}" failures="{junit_failures}" name="{junit_ts_name}" skipped="0" tests="1" time="{task.total_time}">', file=f)
-            print('<properties>', file=f)
-            print(f'<property name="os" value="{os.name}"/>', file=f)
-            print('</properties>', file=f)
-            print(f'<testcase classname="{junit_ts_name}" name="{junit_tc_name}" status="{task.status}" time="{task.total_time}">', file=f)
-            if junit_errors:
-                print(f'<error message="{task.status}" type="{task.status}"/>', file=f)
-            if junit_failures:
-                print(f'<failure message="{task.status}" type="{task.status}"/>', file=f)
-            print('<system-out>', end="", file=f)
-            with open(f"{task.workdir}/logfile.txt", "r") as logf:
-                for line in logf:
-                    print(line.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;"), end="", file=f)
-            print('</system-out></testcase></testsuite></testsuites>', file=f)
+            task.print_junit_result(f, junit_ts_name, junit_tc_name, junit_format_strict=False)
+
         with open(f"{task.workdir}/status", "w") as f:
             print(f"{task.status} {task.retcode} {task.total_time}", file=f)
 
@@ -488,7 +472,7 @@ for task in tasknames:
         failed.append(task)
 
 if failed and (len(tasknames) > 1 or tasknames[0] is not None):
-    tm = localtime()
+    tm = time.localtime()
     print("SBY {:2d}:{:02d}:{:02d} The following tasks failed: {}".format(tm.tm_hour, tm.tm_min, tm.tm_sec, failed))
 
 sys.exit(retcode)

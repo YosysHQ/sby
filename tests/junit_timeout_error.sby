@@ -1,0 +1,42 @@
+[tasks]
+syntax error
+solver error
+timeout
+
+[options]
+mode cover
+depth 1
+timeout: timeout 1
+error: expect error
+timeout: expect timeout
+
+[engines]
+~solver: smtbmc --dumpsmt2 --progress --stbv z3
+solver: smtbmc foo
+
+[script]
+read -noverific
+syntax: read -define SYNTAX_ERROR
+read -sv primes.sv
+prep -top primes
+
+[file primes.sv]
+module primes;
+	parameter [8:0] offset = 7;
+	(* anyconst *) reg [8:0] prime1;
+	wire [9:0] prime2 = prime1 + offset;
+	(* allconst *) reg [4:0] factor;
+
+`ifdef SYNTAX_ERROR
+	foo
+`endif
+
+	always @* begin
+		if (1 < factor && factor < prime1)
+			assume ((prime1 % factor) != 0);
+		if (1 < factor && factor < prime2)
+			assume ((prime2 % factor) != 0);
+		assume (1 < prime1);
+		cover (1);
+	end
+endmodule

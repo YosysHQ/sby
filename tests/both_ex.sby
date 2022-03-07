@@ -15,7 +15,7 @@ pono: btor pono
 cover: btor btormc
 
 [script]
-read_verilog -sv both_ex.v
+read -sv both_ex.v
 prep -top test
 
 [files]

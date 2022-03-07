@@ -1,19 +1,15 @@
-[tasks]
-btormc
-pono
-
 [options]
 mode bmc
-depth 5
+
 expect fail
 
 [engines]
-btormc: btor btormc
-pono: btor pono
+smtbmc boolector
 
 [script]
 read -sv multi_assert.v
 prep -top test
+setattr -unset src
 
 [file multi_assert.v]
 module test();
