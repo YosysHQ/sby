@@ -103,26 +103,34 @@ def design_hierarchy(filename):
     design_json = json.load(filename)
     def make_mod_hier(instance_name, module_name, hierarchy=""):
         # print(instance_name,":", module_name)
+        sub_hierarchy=f"{hierarchy}/{instance_name}" if hierarchy else instance_name
         mod = SbyModule(name=instance_name, type=module_name)
 
-        cells = design_json["modules"][module_name]["cells"]
-        for cell_name, cell in cells.items():
-            sub_hierarchy=f"{hierarchy}/{instance_name}" if hierarchy else instance_name
-            if cell["type"][0] != '$' or cell["type"].startswith("$paramod"):
-                mod.submodules[cell_name] = make_mod_hier(cell_name, cell["type"], hierarchy=sub_hierarchy)
-            if cell["type"] in ["$assume", "$assert", "$cover", "$live"]:
-                try:
-                    location = cell["attributes"]["src"]
-                except KeyError:
-                    location = ""
-                p = SbyProperty(name=cell_name, type=SbyProperty.Type.from_cell(cell["type"]), location=location, hierarchy=sub_hierarchy)
-                mod.properties.append(p)
+        for m in design_json["modules"]:
+            if m["name"] == module_name:
+                cell_sorts = m["cell_sorts"]
+                break
+        else:
+            raise ValueError(f"Cannot find module {module_name}")
+
+        for sort in cell_sorts:
+            if sort["type"] in ["$assume", "$assert", "$cover", "$live"]:
+                for cell in sort["cells"]:
+                    try:
+                        location = cell["attributes"]["src"]
+                    except KeyError:
+                        location = ""
+                    p = SbyProperty(name=cell["name"], type=SbyProperty.Type.from_cell(sort["type"]), location=location, hierarchy=sub_hierarchy)
+                    mod.properties.append(p)
+            if sort["type"][0] != '$' or sort["type"].startswith("$paramod"):
+                for cell in sort["cells"]:
+                    mod.submodules[cell["name"]] = make_mod_hier(cell["name"], sort["type"], hierarchy=sub_hierarchy)
         return mod
 
-    for module_name in design_json["modules"]:
-        attrs = design_json["modules"][module_name]["attributes"]
+    for m in design_json["modules"]:
+        attrs = m["attributes"]
         if "top" in attrs and int(attrs["top"]) == 1:
-            hierarchy = make_mod_hier(module_name, module_name)
+            hierarchy = make_mod_hier(m["name"], m["name"])
             return hierarchy
     else:
         raise ValueError("Cannot find top module")

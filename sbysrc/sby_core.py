@@ -395,7 +395,7 @@ class SbyTask:
                     print(cmd, file=f)
                 # the user must designate a top module in [script]
                 print("hierarchy -simcheck", file=f)
-                print(f"""write_json ../model/design.json""", file=f)
+                print(f"""write_jny -no-connections ../model/design.json""", file=f)
                 print(f"""write_rtlil ../model/design.il""", file=f)
 
             proc = SbyProc(
