@@ -6,8 +6,6 @@ junit_timeout_error_timeout junit_timeout_error_syntax junit_timeout_error_solve
 
 .PHONY: test validate_junit
 
-FORCE:
-
 test: $(JUNIT_TESTS)
 
 test_%: %.sby FORCE
@@ -15,3 +13,5 @@ test_%: %.sby FORCE
 
 $(JUNIT_TESTS): $(SBY_TESTS)
 	python3 validate_junit.py $@/$@.xml
+
+FORCE:
