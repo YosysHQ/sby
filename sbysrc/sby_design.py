@@ -91,11 +91,13 @@ class SbyModule:
             raise KeyError(f"Could not find assert at {location} in properties list!")
         return prop
 
-    def find_property_by_cellname(self, cell_name):
+    def find_property_by_cellname(self, cell_name, trans_dict=dict()):
+        # backends may need to mangle names irreversibly, so allow applying
+        # the same transformation here
         for prop in self:
-            if prop.name == cell_name:
+            if cell_name == prop.name.translate(str.maketrans(trans_dict)):
                 return prop
-        raise KeyError(f"No such property: {cell_name}")
+        raise KeyError(f"No such property: {smt2_name}")
 
 def design_hierarchy(filename):
     design_json = json.load(filename)
