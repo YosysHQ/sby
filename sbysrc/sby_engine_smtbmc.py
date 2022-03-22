@@ -155,7 +155,7 @@ def run(mode, task, engine_idx, engine):
         task.induction_procs.append(proc)
 
     proc_status = None
-    last_prop = None
+    last_prop = []
 
     def output_callback(line):
         nonlocal proc_status
@@ -186,7 +186,7 @@ def run(mode, task, engine_idx, engine):
             cell_name = match[3]
             prop = task.design_hierarchy.find_property_by_cellname(cell_name)
             prop.status = "FAIL"
-            last_prop = prop
+            last_prop.append(prop)
             return line
 
         match = re.match(r"^## [0-9: ]+ Reached cover statement at (\S+) \((\S+)\) in step \d+.", line)
@@ -194,13 +194,14 @@ def run(mode, task, engine_idx, engine):
             cell_name = match[2]
             prop = task.design_hierarchy.find_property_by_cellname(cell_name)
             prop.status = "PASS"
-            last_prop = prop
+            last_prop.append(prop)
             return line
 
         match = re.match(r"^## [0-9: ]+ Writing trace to VCD file: (\S+)", line)
         if match and last_prop:
-            last_prop.tracefile = match[1]
-            last_prop = None
+            for p in last_prop:
+                p.tracefile = match[1]
+            last_prop = []
             return line
 
         match = re.match(r"^## [0-9: ]+ Unreached cover statement at (\S+) \((\S+)\).", line)

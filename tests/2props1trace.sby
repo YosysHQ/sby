@@ -1,0 +1,22 @@
+[options]
+mode bmc
+depth 1
+expect fail
+
+[engines]
+smtbmc
+
+[script]
+read -sv top.sv
+prep -top top
+
+[file top.sv]
+module top(
+input foo,
+input bar
+);
+always @(*) begin
+	assert (foo);
+	assert (bar);
+end
+endmodule
