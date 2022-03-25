@@ -120,9 +120,11 @@ Mode      Description
 ``prove`` Unbounded model check to verify safety properties (``assert(...)`` statements)
 ``live``  Unbounded model check to verify liveness properties (``assert(s_eventually ...)`` statements)
 ``cover`` Generate set of shortest traces required to reach all cover() statements
-``equiv`` Formal equivalence checking (usually to verify pre- and post-synthesis equivalence)
-``synth`` Reactive Synthesis (synthesis of circuit from safety properties)
 ========= ===========
+
+..
+   ``equiv`` Formal equivalence checking (usually to verify pre- and post-synthesis equivalence)
+   ``synth`` Reactive Synthesis (synthesis of circuit from safety properties)
 
 All other options have default values and thus are optional. The available
 options are:
@@ -197,6 +199,38 @@ solver options.
 In the 2nd line ``abc`` is the engine, there are no engine options, ``sim3`` is the
 solver, and ``-W 15`` are solver options.
 
+The following mode/engine/solver combinations are currently supported:
+
++-----------+--------------------------+
+| Mode      | Engine                   |
++===========+==========================+
+| ``bmc``   | ``smtbmc [all solvers]`` |
+|           |                          |
+|           | ``btor btormc``          |
+|           |                          |
+|           | ``btor pono``            |
+|           |                          |
+|           | ``abc bmc3``             |
+|           |                          |
+|           | ``abc sim3``             |
++-----------+--------------------------+
+| ``prove`` | ``smtbmc [all solvers]`` |
+|           |                          |
+|           | ``abc pdr``              |
+|           |                          |
+|           | ``aiger avy``            |
+|           |                          |
+|           | ``aiger suprove``        |
++-----------+--------------------------+
+| ``cover`` | ``smtbmc [all solvers]`` |
+|           |                          |
+|           | ``btor btormc``          |
++-----------+--------------------------+
+| ``live``  | ``aiger suprove``        |
+|           |                          |
+|           | ``aiger avy``            |
++-----------+--------------------------+
+
 ``smtbmc`` engine
 ~~~~~~~~~~~~~~~~~
 
@@ -240,11 +274,27 @@ The following solvers are currently supported by ``yosys-smtbmc``:
 
   * yices
   * boolector
+  * bitwuzla
   * z3
   * mathsat
   * cvc4
 
 Any additional options after ``--`` are passed to ``yosys-smtbmc`` as-is.
+
+``btor`` engine
+~~~~~~~~~~~~~~~
+
+The ``btor`` engine supports hardware modelcheckers that accept btor2 files.
+The engine supports no engine options and supports the following solvers:
+
++-------------------------------+---------------------------------+
+|   Solver                      |   Modes                         |
++===============================+=================================+
+| ``btormc``                    |   ``bmc``, ``cover``            |
++-------------------------------+---------------------------------+
+| ``pono``                      |   ``bmc``                       |
++-------------------------------+---------------------------------+
+
 
 ``aiger`` engine
 ~~~~~~~~~~~~~~~~
