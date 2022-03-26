@@ -1,0 +1,33 @@
+[tasks]
+bmc
+prove
+
+[options]
+bmc: mode bmc
+prove: mode prove
+expect fail
+wait on
+
+[engines]
+bmc: abc bmc3
+bmc: abc sim3
+prove: aiger avy
+prove: aiger suprove
+prove: abc pdr
+
+[script]
+read -sv test.sv
+prep -top test
+
+[file test.sv]
+module test (
+    input clk,
+    input [8:1] nonzero_offset
+);
+    reg [7:0] counter = 0;
+
+    always @(posedge clk) begin
+        if (counter == 3) assert(nonzero_offset[1]);
+        counter <= counter + 1;
+    end
+endmodule
