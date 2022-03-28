@@ -783,6 +783,7 @@ class SbyTask:
         print(f'<property name="expect" value="{", ".join(self.expect)}"/>', file=f)
         print(f'<property name="status" value="{self.status}"/>', file=f)
         print(f'</properties>', file=f)
+        junit_type = "assert" if self.opt_mode in ["bmc", "prove"] else self.opt_mode
         if self.precise_prop_status:
             print(f'<testcase classname="{junit_tc_name}" name="build execution" time="0">', file=f)
             if self.retcode == 16:
@@ -814,7 +815,6 @@ class SbyTask:
                     print(f'<error type="ERROR"/>', file=f) # type mandatory, message optional
                 print(f'</testcase>', file=f)
         else:
-            junit_type = "assert" if self.opt_mode in ["bmc", "prove"] else self.opt_mode
             print(f'<testcase classname="{junit_tc_name}" name="{junit_tc_name}" time="{self.total_time}">', file=f)
             if junit_errors:
                 print(f'<error type="ERROR"/>', file=f) # type mandatory, message optional
