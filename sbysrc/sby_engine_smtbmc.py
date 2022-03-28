@@ -160,6 +160,7 @@ def run(mode, task, engine_idx, engine):
     def output_callback(line):
         nonlocal proc_status
         nonlocal last_prop
+        smt2_trans = {'\\':'/', '|':'/'}
 
         match = re.match(r"^## [0-9: ]+ Status: FAILED", line)
         if match:
@@ -184,7 +185,7 @@ def run(mode, task, engine_idx, engine):
         match = re.match(r"^## [0-9: ]+ Assert failed in (\S+): (\S+) \((\S+)\)", line)
         if match:
             cell_name = match[3]
-            prop = task.design_hierarchy.find_property_by_cellname(cell_name)
+            prop = task.design_hierarchy.find_property_by_cellname(cell_name, trans_dict=smt2_trans)
             prop.status = "FAIL"
             last_prop = prop
             return line
@@ -192,7 +193,7 @@ def run(mode, task, engine_idx, engine):
         match = re.match(r"^## [0-9: ]+ Reached cover statement at (\S+) \((\S+)\) in step \d+.", line)
         if match:
             cell_name = match[2]
-            prop = task.design_hierarchy.find_property_by_cellname(cell_name)
+            prop = task.design_hierarchy.find_property_by_cellname(cell_name, trans_dict=smt2_trans)
             prop.status = "PASS"
             last_prop = prop
             return line
@@ -206,7 +207,7 @@ def run(mode, task, engine_idx, engine):
         match = re.match(r"^## [0-9: ]+ Unreached cover statement at (\S+) \((\S+)\).", line)
         if match:
             cell_name = match[2]
-            prop = task.design_hierarchy.find_property_by_cellname(cell_name)
+            prop = task.design_hierarchy.find_property_by_cellname(cell_name, trans_dict=smt2_trans)
             prop.status = "FAIL"
 
         return line

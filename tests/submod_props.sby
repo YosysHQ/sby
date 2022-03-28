@@ -1,10 +1,12 @@
 [tasks]
 bmc
 cover
+flatten
 
 [options]
 bmc: mode bmc
 cover: mode cover
+flatten: mode bmc
 
 expect fail
 
@@ -14,6 +16,7 @@ smtbmc boolector
 [script]
 read -sv test.sv
 prep -top top
+flatten: flatten
 
 [file test.sv]
 module test(input foo);
