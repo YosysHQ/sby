@@ -788,7 +788,11 @@ class SbyTask:
             if self.retcode == 16:
                 print(f'<error type="ERROR"/>', file=f) # type mandatory, message optional
             elif self.retcode != 0:
-                print(f'<failure type="{junit_type}" message="{self.status}" />', file=f)
+                if len(self.expect) > 1 or "PASS" not in self.expect:
+                    expected = " ".join(self.expect)
+                    print(f'<failure type="EXPECT" message="Task returned status {self.status}. Expected values were: {expected}" />', file=f)
+                else:
+                    print(f'<failure type="{self.status}" message="Task returned status {self.status}." />', file=f)
             print(f'</testcase>', file=f)
 
             for check in checks:
@@ -814,11 +818,11 @@ class SbyTask:
                     print(f'<error type="ERROR"/>', file=f) # type mandatory, message optional
                 print(f'</testcase>', file=f)
         else:
-            junit_type = "assert" if self.opt_mode in ["bmc", "prove"] else self.opt_mode
             print(f'<testcase classname="{junit_tc_name}" name="{junit_tc_name}" time="{self.total_time}">', file=f)
             if junit_errors:
                 print(f'<error type="ERROR"/>', file=f) # type mandatory, message optional
             elif junit_failures:
+                junit_type = "assert" if self.opt_mode in ["bmc", "prove"] else self.opt_mode
                 print(f'<failure type="{junit_type}" message="{self.status}" />', file=f)
             print(f'</testcase>', file=f)
         print('<system-out>', end="", file=f)
