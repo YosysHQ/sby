@@ -31,11 +31,12 @@ def run(mode, task, engine_idx, engine):
     progress = False
     basecase_only = False
     induction_only = False
+    keep_going = False
     random_seed = None
     task.precise_prop_status = True
 
     opts, args = getopt.getopt(engine[1:], "", ["nomem", "syn", "stbv", "stdt", "presat",
-            "nopresat", "unroll", "nounroll", "dumpsmt2", "progress", "basecase", "induction", "seed="])
+            "nopresat", "unroll", "nounroll", "dumpsmt2", "progress", "basecase", "induction", "keep-going", "seed="])
 
     for o, a in opts:
         if o == "--nomem":
@@ -66,6 +67,10 @@ def run(mode, task, engine_idx, engine):
             if basecase_only:
                 task.error("smtbmc options --basecase and --induction are exclusive.")
             induction_only = True
+        elif o == "--keep-going":
+            if mode not in ("bmc", "prove", "prove_basecase", "prove_induction"):
+                task.error("smtbmc option --keep-going is only supported in bmc and prove mode.")
+            keep_going = True
         elif o == "--seed":
             random_seed = a
         else:
@@ -124,6 +129,10 @@ def run(mode, task, engine_idx, engine):
 
     if mode == "cover":
         smtbmc_opts.append("-c")
+        trace_prefix += "%"
+
+    if keep_going:
+        smtbmc_opts.append("--keep-going")
         trace_prefix += "%"
 
     if dumpsmt2:

@@ -1,0 +1,18 @@
+[tasks]
+bmc
+prove
+
+[options]
+bmc: mode bmc
+prove: mode prove
+expect fail
+
+[engines]
+smtbmc --keep-going boolector
+
+[script]
+read -sv keepgoing_multi_step.sv
+prep -top test
+
+[files]
+keepgoing_multi_step.sv

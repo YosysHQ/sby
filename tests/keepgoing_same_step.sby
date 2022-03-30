@@ -1,0 +1,13 @@
+[options]
+mode bmc
+expect fail
+
+[engines]
+smtbmc --keep-going boolector
+
+[script]
+read -sv keepgoing_same_step.sv
+prep -top test
+
+[files]
+keepgoing_same_step.sv
