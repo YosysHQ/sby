@@ -210,7 +210,8 @@ def run(mode, task, engine_idx, engine):
         match = re.match(r"^## [0-9: ]+ Writing trace to VCD file: (\S+)", line)
         if match and last_prop:
             for p in last_prop:
-                p.tracefile = match[1]
+                if not p.tracefile:
+                    p.tracefile = match[1]
             last_prop = []
             return line
 
