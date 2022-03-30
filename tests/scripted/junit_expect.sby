@@ -1,0 +1,16 @@
+[options]
+mode bmc
+depth 1
+expect fail,timeout
+
+[engines]
+smtbmc
+
+[script]
+read -formal foo.v
+prep -top foo
+
+[file foo.v]
+module foo;
+always_comb assert(1);
+endmodule
