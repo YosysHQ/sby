@@ -25,3 +25,5 @@ for task in ["keepgoing_multi_step_bmc", "keepgoing_multi_step_prove"]:
     assert re.search(r"Assert failed in test: %s \(.*\) \[failed before\]$" % step_3_7, log_per_trace[3], re.M)
     assert re.search(r"Assert failed in test: %s \(.*\)$" % step_7, log_per_trace[3], re.M)
 
+    pattern = f"Property ASSERT in test at {assert_0} failed. Trace file: engine_0/trace0.vcd"
+    assert re.search(pattern, open(f"{task}/{task}.xml").read())
