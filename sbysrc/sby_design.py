@@ -108,7 +108,7 @@ def design_hierarchy(filename):
         cells = design_json["modules"][module_name]["cells"]
         for cell_name, cell in cells.items():
             sub_hierarchy=f"{hierarchy}/{instance_name}" if hierarchy else instance_name
-            if cell["type"][0] != '$':
+            if cell["type"][0] != '$' or cell["type"].startswith("$paramod"):
                 mod.submodules[cell_name] = make_mod_hier(cell_name, cell["type"], hierarchy=sub_hierarchy)
             if cell["type"] in ["$assume", "$assert", "$cover", "$live"]:
                 try:
