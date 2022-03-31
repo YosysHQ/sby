@@ -97,7 +97,7 @@ class SbyModule:
         for prop in self:
             if cell_name == prop.name.translate(str.maketrans(trans_dict)):
                 return prop
-        raise KeyError(f"No such property: {smt2_name}")
+        raise KeyError(f"No such property: {cell_name}")
 
 def design_hierarchy(filename):
     design_json = json.load(filename)
