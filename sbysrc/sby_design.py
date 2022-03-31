@@ -97,7 +97,7 @@ class SbyModule:
         for prop in self:
             if cell_name == prop.name.translate(str.maketrans(trans_dict)):
                 return prop
-        raise KeyError(f"No such property: {smt2_name}")
+        raise KeyError(f"No such property: {cell_name}")
 
 def design_hierarchy(filename):
     design_json = json.load(filename)
@@ -108,7 +108,7 @@ def design_hierarchy(filename):
         cells = design_json["modules"][module_name]["cells"]
         for cell_name, cell in cells.items():
             sub_hierarchy=f"{hierarchy}/{instance_name}" if hierarchy else instance_name
-            if cell["type"][0] != '$':
+            if cell["type"][0] != '$' or cell["type"].startswith("$paramod"):
                 mod.submodules[cell_name] = make_mod_hier(cell_name, cell["type"], hierarchy=sub_hierarchy)
             if cell["type"] in ["$assume", "$assert", "$cover", "$live"]:
                 try:
