@@ -1,0 +1,29 @@
+[options]
+mode bmc
+depth 4
+expect fail
+
+[engines]
+smtbmc
+
+[script]
+read -formal top.sv
+prep -top top
+
+[file top.sv]
+module top(
+input clk, d
+);
+
+reg q1;
+reg q2;
+
+always @(posedge clk) begin
+    q1 <= d;
+    q2 <= d;
+end;
+
+// q1 and q2 are unconstrained in the initial state, so this should fail
+always @(*) assert(q1 == q2);
+
+endmodule
