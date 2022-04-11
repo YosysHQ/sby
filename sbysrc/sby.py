@@ -415,6 +415,10 @@ def run_task(taskname):
         my_opt_tmpdir = True
         my_workdir = tempfile.mkdtemp()
 
+    if os.getenv("SBY_WORKDIR_GITIGNORE"):
+        with open(f"{my_workdir}/.gitignore", "w") as gitignore:
+            print("*", file=gitignore)
+
     junit_ts_name = os.path.basename(sbyfile[:-4]) if sbyfile is not None else workdir if workdir is not None else "stdin"
     junit_tc_name = taskname if taskname is not None else "default"
 
