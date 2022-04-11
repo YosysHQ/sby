@@ -17,9 +17,9 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #
 
-import argparse, os, sys, shutil, tempfile, re
+import argparse, json, os, sys, shutil, tempfile, re
 ##yosys-sys-path##
-from sby_core import SbyTask, SbyAbort, process_filename
+from sby_core import SbyConfig, SbyTask, SbyAbort, process_filename
 import time, platform
 
 class DictAction(argparse.Action):
@@ -72,6 +72,8 @@ parser.add_argument("--dumptasks", action="store_true", dest="dump_tasks",
         help="print the list of tasks")
 parser.add_argument("--dumpdefaults", action="store_true", dest="dump_defaults",
         help="print the list of default tasks")
+parser.add_argument("--dumptaskinfo", action="store_true", dest="dump_taskinfo",
+        help="output a summary of tasks as JSON")
 parser.add_argument("--dumpfiles", action="store_true", dest="dump_files",
         help="print the list of source files")
 parser.add_argument("--setup", action="store_true", dest="setupmode",
@@ -102,6 +104,7 @@ dump_cfg = args.dump_cfg
 dump_tags = args.dump_tags
 dump_tasks = args.dump_tasks
 dump_defaults = args.dump_defaults
+dump_taskinfo = args.dump_taskinfo
 dump_files = args.dump_files
 reusedir = False
 setupmode = args.setupmode
@@ -365,6 +368,21 @@ if dump_tasks or dump_defaults or dump_tags:
     for name in tasks if dump_tasks else dtasks if dump_defaults else tags:
         if name is not None:
             print(name)
+    sys.exit(0)
+
+if dump_taskinfo:
+    _, _, tasknames, _ = read_sbyconfig(sbydata, None)
+    taskinfo = {}
+    for taskname in tasknames or [None]:
+        task_sbyconfig, _, _, _ = read_sbyconfig(sbydata, taskname)
+        taskinfo[taskname or ""] = info = {}
+        cfg = SbyConfig()
+        cfg.parse_config(task_sbyconfig)
+        taskinfo[taskname or ""] = {
+            "mode": cfg.options.get("mode"),
+            "engines": cfg.engines,
+        }
+    print(json.dumps(taskinfo, indent=2))
     sys.exit(0)
 
 if len(tasknames) == 0:

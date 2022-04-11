@@ -209,14 +209,110 @@ class SbyAbort(BaseException):
     pass
 
 
-class SbyTask:
-    def __init__(self, sbyconfig, workdir, early_logs, reusedir):
+class SbyConfig:
+    def __init__(self):
         self.options = dict()
-        self.used_options = set()
         self.engines = list()
         self.script = list()
         self.files = dict()
         self.verbatim_files = dict()
+        pass
+
+    def parse_config(self, f):
+        mode = None
+
+        for line in f:
+            raw_line = line
+            if mode in ["options", "engines", "files"]:
+                line = re.sub(r"\s*(\s#.*)?$", "", line)
+                if line == "" or line[0] == "#":
+                    continue
+            else:
+                line = line.rstrip()
+            # print(line)
+            if mode is None and (len(line) == 0 or line[0] == "#"):
+                continue
+            match = re.match(r"^\s*\[(.*)\]\s*$", line)
+            if match:
+                entries = match.group(1).split()
+                if len(entries) == 0:
+                    self.error(f"sby file syntax error: {line}")
+
+                if entries[0] == "options":
+                    mode = "options"
+                    if len(self.options) != 0 or len(entries) != 1:
+                        self.error(f"sby file syntax error: {line}")
+                    continue
+
+                if entries[0] == "engines":
+                    mode = "engines"
+                    if len(self.engines) != 0 or len(entries) != 1:
+                        self.error(f"sby file syntax error: {line}")
+                    continue
+
+                if entries[0] == "script":
+                    mode = "script"
+                    if len(self.script) != 0 or len(entries) != 1:
+                        self.error(f"sby file syntax error: {line}")
+                    continue
+
+                if entries[0] == "file":
+                    mode = "file"
+                    if len(entries) != 2:
+                        self.error(f"sby file syntax error: {line}")
+                    current_verbatim_file = entries[1]
+                    if current_verbatim_file in self.verbatim_files:
+                        self.error(f"duplicate file: {entries[1]}")
+                    self.verbatim_files[current_verbatim_file] = list()
+                    continue
+
+                if entries[0] == "files":
+                    mode = "files"
+                    if len(entries) != 1:
+                        self.error(f"sby file syntax error: {line}")
+                    continue
+
+                self.error(f"sby file syntax error: {line}")
+
+            if mode == "options":
+                entries = line.split()
+                if len(entries) != 2:
+                    self.error(f"sby file syntax error: {line}")
+                self.options[entries[0]] = entries[1]
+                continue
+
+            if mode == "engines":
+                entries = line.split()
+                self.engines.append(entries)
+                continue
+
+            if mode == "script":
+                self.script.append(line)
+                continue
+
+            if mode == "files":
+                entries = line.split()
+                if len(entries) == 1:
+                    self.files[os.path.basename(entries[0])] = entries[0]
+                elif len(entries) == 2:
+                    self.files[entries[0]] = entries[1]
+                else:
+                    self.error(f"sby file syntax error: {line}")
+                continue
+
+            if mode == "file":
+                self.verbatim_files[current_verbatim_file].append(raw_line)
+                continue
+
+            self.error(f"sby file syntax error: {line}")
+
+    def error(self, logmessage):
+        raise SbyAbort(logmessage)
+
+class SbyTask(SbyConfig):
+    def __init__(self, sbyconfig, workdir, early_logs, reusedir):
+        super().__init__()
+        self.used_options = set()
         self.models = dict()
         self.workdir = workdir
         self.reusedir = reusedir
@@ -550,94 +646,8 @@ class SbyTask:
             assert 0
 
     def run(self, setupmode):
-        mode = None
-        key = None
-
         with open(f"{self.workdir}/config.sby", "r") as f:
-            for line in f:
-                raw_line = line
-                if mode in ["options", "engines", "files"]:
-                    line = re.sub(r"\s*(\s#.*)?$", "", line)
-                    if line == "" or line[0] == "#":
-                        continue
-                else:
-                    line = line.rstrip()
-                # print(line)
-                if mode is None and (len(line) == 0 or line[0] == "#"):
-                    continue
-                match = re.match(r"^\s*\[(.*)\]\s*$", line)
-                if match:
-                    entries = match.group(1).split()
-                    if len(entries) == 0:
-                        self.error(f"sby file syntax error: {line}")
-
-                    if entries[0] == "options":
-                        mode = "options"
-                        if len(self.options) != 0 or len(entries) != 1:
-                            self.error(f"sby file syntax error: {line}")
-                        continue
-
-                    if entries[0] == "engines":
-                        mode = "engines"
-                        if len(self.engines) != 0 or len(entries) != 1:
-                            self.error(f"sby file syntax error: {line}")
-                        continue
-
-                    if entries[0] == "script":
-                        mode = "script"
-                        if len(self.script) != 0 or len(entries) != 1:
-                            self.error(f"sby file syntax error: {line}")
-                        continue
-
-                    if entries[0] == "file":
-                        mode = "file"
-                        if len(entries) != 2:
-                            self.error(f"sby file syntax error: {line}")
-                        current_verbatim_file = entries[1]
-                        if current_verbatim_file in self.verbatim_files:
-                            self.error(f"duplicate file: {entries[1]}")
-                        self.verbatim_files[current_verbatim_file] = list()
-                        continue
-
-                    if entries[0] == "files":
-                        mode = "files"
-                        if len(entries) != 1:
-                            self.error(f"sby file syntax error: {line}")
-                        continue
-
-                    self.error(f"sby file syntax error: {line}")
-
-                if mode == "options":
-                    entries = line.split()
-                    if len(entries) != 2:
-                        self.error(f"sby file syntax error: {line}")
-                    self.options[entries[0]] = entries[1]
-                    continue
-
-                if mode == "engines":
-                    entries = line.split()
-                    self.engines.append(entries)
-                    continue
-
-                if mode == "script":
-                    self.script.append(line)
-                    continue
-
-                if mode == "files":
-                    entries = line.split()
-                    if len(entries) == 1:
-                        self.files[os.path.basename(entries[0])] = entries[0]
-                    elif len(entries) == 2:
-                        self.files[entries[0]] = entries[1]
-                    else:
-                        self.error(f"sby file syntax error: {line}")
-                    continue
-
-                if mode == "file":
-                    self.verbatim_files[current_verbatim_file].append(raw_line)
-                    continue
-
-                self.error(f"sby file syntax error: {line}")
+            self.parse_config(f)
 
         self.handle_str_option("mode", None)
 
