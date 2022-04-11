@@ -1,0 +1,20 @@
+make test:
+    run all tests (default)
+
+make clean:
+    remove all sby workdirs
+
+make test[_m_<mode>][_e_<engine>][_s_<solver>]:
+    run all tests that use a specific mode, engine and solver
+
+make <name>:
+    run the test for <name>.sby
+
+make refresh:
+    do nothing apart from refreshing generated make rules
+
+make help:
+    show this help
+
+running make in a subdirectory or prefixing the target with the subdirectory
+limits the test selection to that directory

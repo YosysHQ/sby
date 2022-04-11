@@ -1,6 +1,9 @@
 [tasks]
-bmc
-prove
+abc_bmc3 bmc
+abc_sim3 bmc
+aiger_avy prove
+aiger_suprove prove
+abc_pdr prove
 
 [options]
 bmc: mode bmc
@@ -9,11 +12,11 @@ expect fail
 wait on
 
 [engines]
-bmc: abc bmc3
-bmc: abc sim3
-prove: aiger avy
-prove: aiger suprove
-prove: abc pdr
+abc_bmc3: abc bmc3
+abc_sim3: abc sim3
+aiger_avy: aiger avy
+aiger_suprove: aiger suprove
+abc_pdr: abc pdr
 
 [script]
 read -sv test.sv

@@ -1,25 +1,19 @@
-SBY_FILES=$(wildcard *.sby)
-SBY_TESTS=$(addprefix test_,$(SBY_FILES:.sby=))
-CHECK_PY_FILES=$(wildcard *.check.py)
-CHECK_PY_TASKS=$(addprefix check_,$(CHECK_PY_FILES:.check.py=))
-JUNIT_TESTS=junit_assert_pass junit_assert_fail junit_assert_preunsat \
-junit_cover_pass junit_cover_uncovered junit_cover_assert junit_cover_preunsat \
-junit_timeout_error_timeout junit_timeout_error_syntax junit_timeout_error_solver
+test:
 
-.PHONY: test validate_junit scripted
+.PHONY: test clean refresh help
 
-test: $(JUNIT_TESTS) $(CHECK_PY_TASKS)
+help:
+	@cat make/help.txt
 
-test_%: %.sby FORCE
-	python3 ../sbysrc/sby.py -f $<
+export SBY_WORKDIR_GITIGNORE=1
+export SBY_MAIN=$(realpath $(dir $(firstword $(MAKEFILE_LIST)))/../sbysrc/sby.py)
 
-$(CHECK_PY_TASKS): check_%: %.check.py test_%
-	python3 $<
+make/rules/collect.mk: make/collect_tests.py
+	python3 make/collect_tests.py
 
-$(JUNIT_TESTS): $(SBY_TESTS)
-	python3 validate_junit.py $@/$@.xml
+make/rules/test/%.mk:
+	python3 make/test_rules.py $<
 
-scripted:
-	make -C scripted
-
-FORCE:
+ifneq (help,$(MAKECMDGOALS))
+include make/rules/collect.mk
+endif
