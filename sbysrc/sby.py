@@ -458,13 +458,11 @@ def run_task(taskname):
     for k, v in exe_paths.items():
         task.exe_paths[k] = v
 
-    if throw_err:
+    try:
         task.run(setupmode)
-    else:
-        try:
-            task.run(setupmode)
-        except SbyAbort:
-            pass
+    except SbyAbort:
+        if throw_err:
+            raise
 
     if my_opt_tmpdir:
         task.log(f"Removing directory '{my_workdir}'.")
