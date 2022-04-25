@@ -233,6 +233,7 @@ class SbyConfig:
         self.options = dict()
         self.engines = list()
         self.script = list()
+        self.autotune_config = None
         self.files = dict()
         self.verbatim_files = dict()
         pass
@@ -242,7 +243,7 @@ class SbyConfig:
 
         for line in f:
             raw_line = line
-            if mode in ["options", "engines", "files"]:
+            if mode in ["options", "engines", "files", "autotune"]:
                 line = re.sub(r"\s*(\s#.*)?$", "", line)
                 if line == "" or line[0] == "#":
                     continue
@@ -275,6 +276,15 @@ class SbyConfig:
                         self.error(f"sby file syntax error: {line}")
                     continue
 
+                if entries[0] == "autotune":
+                    mode = "autotune"
+                    if self.autotune_config:
+                        self.error(f"sby file syntax error: {line}")
+
+                    import sby_autotune
+                    self.autotune_config = sby_autotune.SbyAutotuneConfig()
+                    continue
+
                 if entries[0] == "file":
                     mode = "file"
                     if len(entries) != 2:
@@ -298,6 +308,10 @@ class SbyConfig:
                 if len(entries) != 2:
                     self.error(f"sby file syntax error: {line}")
                 self.options[entries[0]] = entries[1]
+                continue
+
+            if mode == "autotune":
+                self.autotune_config.config_line(self, line)
                 continue
 
             if mode == "engines":
@@ -376,7 +390,7 @@ class SbyTaskloop:
 
 
 class SbyTask(SbyConfig):
-    def __init__(self, sbyconfig, workdir, early_logs, reusedir, taskloop=None):
+    def __init__(self, sbyconfig, workdir, early_logs, reusedir, taskloop=None, logfile=None):
         super().__init__()
         self.used_options = set()
         self.models = dict()
@@ -416,7 +430,8 @@ class SbyTask(SbyConfig):
 
         self.summary = list()
 
-        self.logfile = open(f"{workdir}/logfile.txt", "a")
+        self.logfile = logfile or open(f"{workdir}/logfile.txt", "a")
+        self.log_targets = [sys.stdout, self.logfile]
 
         for line in early_logs:
             print(line, file=self.logfile, flush=True)
@@ -425,6 +440,9 @@ class SbyTask(SbyConfig):
             with open(f"{workdir}/config.sby", "w") as f:
                 for line in sbyconfig:
                     print(line, file=f)
+
+    def engine_list(self):
+        return list(enumerate(self.engines))
 
     def check_timeout(self):
         if self.opt_timeout is not None:
@@ -457,13 +475,13 @@ class SbyTask(SbyConfig):
 
     def log(self, logmessage):
         tm = localtime()
-        print("SBY {:2d}:{:02d}:{:02d} [{}] {}".format(tm.tm_hour, tm.tm_min, tm.tm_sec, self.workdir, logmessage), flush=True)
-        print("SBY {:2d}:{:02d}:{:02d} [{}] {}".format(tm.tm_hour, tm.tm_min, tm.tm_sec, self.workdir, logmessage), file=self.logfile, flush=True)
+        line = "SBY {:2d}:{:02d}:{:02d} [{}] {}".format(tm.tm_hour, tm.tm_min, tm.tm_sec, self.workdir, logmessage)
+        for target in self.log_targets:
+            print(line, file=target, flush=True)
 
     def error(self, logmessage):
         tm = localtime()
-        print("SBY {:2d}:{:02d}:{:02d} [{}] ERROR: {}".format(tm.tm_hour, tm.tm_min, tm.tm_sec, self.workdir, logmessage), flush=True)
-        print("SBY {:2d}:{:02d}:{:02d} [{}] ERROR: {}".format(tm.tm_hour, tm.tm_min, tm.tm_sec, self.workdir, logmessage), file=self.logfile, flush=True)
+        self.log(f"ERROR: {logmessage}")
         self.status = "ERROR"
         if "ERROR" not in self.expect:
             self.retcode = 16
@@ -728,8 +746,9 @@ class SbyTask(SbyConfig):
         self.setup_procs(setupmode)
         if not setupmode:
             self.taskloop.run()
+            self.write_summary_file()
 
-    def setup_procs(self, setupmode):
+    def handle_non_engine_options(self):
         with open(f"{self.workdir}/config.sby", "r") as f:
             self.parse_config(f)
 
@@ -747,6 +766,9 @@ class SbyTask(SbyConfig):
             if s not in ["PASS", "FAIL", "UNKNOWN", "ERROR", "TIMEOUT"]:
                 self.error(f"Invalid expect value: {s}")
 
+        if self.opt_mode != "live":
+            self.handle_int_option("depth", 20)
+
         self.handle_bool_option("multiclock", False)
         self.handle_bool_option("wait", False)
         self.handle_int_option("timeout", None)
@@ -755,8 +777,10 @@ class SbyTask(SbyConfig):
         self.handle_int_option("skip", None)
         self.handle_str_option("tbtop", None)
 
+    def setup_procs(self, setupmode):
+        self.handle_non_engine_options()
         if self.opt_smtc is not None:
-            for engine in self.engines:
+            for engine_idx, engine in self.engine_list():
                 if engine[0] != "smtbmc":
                     self.error("Option smtc is only valid for smtbmc engine.")
 
@@ -764,11 +788,11 @@ class SbyTask(SbyConfig):
             if self.opt_skip == 0:
                 self.opt_skip = None
             else:
-                for engine in self.engines:
+                for engine_idx, engine in self.engine_list():
                     if engine[0] not in ["smtbmc", "btor"]:
                         self.error("Option skip is only valid for smtbmc and btor engines.")
 
-        if len(self.engines) == 0:
+        if len(self.engine_list()) == 0:
             self.error("Config file is lacking engine configuration.")
 
         if self.reusedir:
@@ -838,6 +862,7 @@ class SbyTask(SbyConfig):
             if self.status == "TIMEOUT": self.retcode = 8
             if self.status == "ERROR": self.retcode = 16
 
+    def write_summary_file(self):
         with open(f"{self.workdir}/{self.status}", "w") as f:
             for line in self.summary:
                 print(line, file=f)
