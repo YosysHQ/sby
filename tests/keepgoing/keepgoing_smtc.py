@@ -1,16 +1,17 @@
+import sys
 from check_output import *
 
-task = "keepgoing_smtc"
+workdir = sys.argv[1]
 src = "keepgoing_same_step.sv"
 
-assert_a = line_ref(task, src, "assert(a)")
-assert_not_a = line_ref(task, src, "assert(!a)")
-assert_0 = line_ref(task, src, "assert(0)")
+assert_a = line_ref(workdir, src, "assert(a)")
+assert_not_a = line_ref(workdir, src, "assert(!a)")
+assert_0 = line_ref(workdir, src, "assert(0)")
 
-assert_false = line_ref(task, "extra.smtc", "assert false")
-assert_distinct = line_ref(task, "extra.smtc", "assert (distinct")
+assert_false = line_ref(workdir, "extra.smtc", "assert false")
+assert_distinct = line_ref(workdir, "extra.smtc", "assert (distinct")
 
-log = open(task + "/logfile.txt").read()
+log = open(workdir + "/logfile.txt").read()
 log_per_trace = log.split("Writing trace to VCD file")[:-1]
 
 assert len(log_per_trace) == 4
