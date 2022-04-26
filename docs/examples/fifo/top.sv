@@ -128,9 +128,9 @@ module fifo (
 
     // assumptions
     always @(posedge clk or negedge rst_n) begin
-        // when writing the write data will change (so that we can line up reads with writes)
+        // data will change when writing (and only when writing) so we can line up reads with writes
         assume property (wen |=> wdata != $past(wdata));
-        assume (wdata);
+        assume property (!wen |=> wdata == $past(wdata));
     end
 `endif
 
