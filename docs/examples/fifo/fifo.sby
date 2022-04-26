@@ -15,8 +15,10 @@ cover: smtbmc
 prove: abc pdr
 
 [script]
-read -formal fifo.sv
+read -sv fifo.sv
+read -formal top.sv
 prep -top fifo
 
 [files]
 fifo.sv
+top.sv
