@@ -1,0 +1,22 @@
+[tasks]
+cover
+prove
+
+[options]
+cover:
+mode cover
+--
+prove:
+mode prove
+--
+
+[engines]
+cover: smtbmc
+prove: abc pdr
+
+[script]
+read -formal fifo.sv
+prep -top fifo
+
+[files]
+fifo.sv
