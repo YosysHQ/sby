@@ -45,7 +45,7 @@ Installing prerequisites (this command is for Ubuntu 16.04):
 Yosys, Yosys-SMTBMC and ABC
 ---------------------------
 
-https://yosyshq.net/yosys/
+https://www.yosyshq.com/open-source
 
 https://people.eecs.berkeley.edu/~alanmi/abc/
 
@@ -53,7 +53,7 @@ Next install Yosys, Yosys-SMTBMC and ABC (``yosys-abc``):
 
 .. code-block:: text
 
-   git clone https://github.com/YosysHQ/yosys.git yosys
+   git clone https://github.com/YosysHQ/yosys
    cd yosys
    make -j$(nproc)
    sudo make install
@@ -61,26 +61,12 @@ Next install Yosys, Yosys-SMTBMC and ABC (``yosys-abc``):
 SymbiYosys
 ----------
 
-https://github.com/YosysHQ/SymbiYosys
+https://github.com/YosysHQ/sby
 
 .. code-block:: text
 
-   git clone https://github.com/YosysHQ/SymbiYosys.git SymbiYosys
-   cd SymbiYosys
-   sudo make install
-
-Yices 2
--------
-
-http://yices.csl.sri.com/
-
-.. code-block:: text
-
-   git clone https://github.com/SRI-CSL/yices2.git yices2
-   cd yices2
-   autoconf
-   ./configure
-   make -j$(nproc)
+   git clone https://github.com/YosysHQ/sby
+   cd sby
    sudo make install
 
 Z3
@@ -90,10 +76,24 @@ https://github.com/Z3Prover/z3/wiki
 
 .. code-block:: text
 
-   git clone https://github.com/Z3Prover/z3.git z3
+   git clone https://github.com/Z3Prover/z3
    cd z3
    python scripts/mk_make.py
    cd build
+   make -j$(nproc)
+   sudo make install
+
+Yices 2
+-------
+
+http://yices.csl.sri.com/
+
+.. code-block:: text
+
+   git clone https://github.com/SRI-CSL/yices2
+   cd yices2
+   autoconf
+   ./configure
    make -j$(nproc)
    sudo make install
 
