@@ -1,5 +1,29 @@
-Installing
-==========
+CAD Suite(s)
+============
+
+SymbiYosys (sby) is part of the `Tabby CAD Suite
+<https://www.yosyshq.com/tabby-cad-datasheet>`_ and the `OSS CAD Suite
+<https://github.com/YosysHQ/oss-cad-suite-build>`_! The easiest way to use sby
+is to install the binary software suite, which contains all required
+dependencies, including all supported solvers.
+
+* `Contact YosysHQ <https://www.yosyshq.com/contact>`_ for a `Tabby CAD Suite
+  <https://www.yosyshq.com/tabby-cad-datasheet>`_ Evaluation License and
+  download link
+* OR go to https://github.com/YosysHQ/oss-cad-suite-build/releases to download
+  the free OSS CAD Suite
+* Follow the `Install Instructions on GitHub
+  <https://github.com/YosysHQ/oss-cad-suite-build#installation>`_
+
+Make sure to get a Tabby CAD Suite Evaluation License for extensive
+SystemVerilog Assertion (SVA) support, as well as industry-grade SystemVerilog
+and VHDL parsers!
+
+For more information about the difference between Tabby CAD Suite and the OSS
+CAD Suite, please visit https://www.yosyshq.com/tabby-cad-datasheet.
+
+Installing from source
+======================
 
 Follow the instructions below to install SymbiYosys and its dependencies.
 Yosys, SymbiYosys, and Z3 are non-optional. The other packages are only
