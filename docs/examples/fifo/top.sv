@@ -3,13 +3,13 @@ module fifo (
     input wen, ren, clk, rst_n,
     input [7:0] wdata,
     output [7:0] rdata,
-    output [3:0] count,
+    output [4:0] count,
     output full, empty
 );
     parameter MAX_DATA = 16;
 
     // internals
-    reg [3:0] data_count;
+    reg [4:0] data_count;
     initial begin
         data_count <= 0;
     end
@@ -45,7 +45,7 @@ module fifo (
     always @(posedge clk or negedge rst_n) begin
         if (~rst_n)
             data_count <= 0;
-        else if (wen && !ren && data_count < MAX_DATA-1)
+        else if (wen && !ren && data_count < MAX_DATA)
             data_count <= data_count + 1;
         else if (ren && !wen && data_count > 0)
             data_count <= data_count - 1;
@@ -53,12 +53,12 @@ module fifo (
             data_count <= data_count;
     end
 
-    assign full  = data_count == MAX_DATA-1;
+    assign full  = data_count == MAX_DATA;
     assign empty = (data_count == 0) && rst_n;
     assign count = data_count;
 
     // write while full => overwrite oldest data, move read pointer
-    assign rskip = wen && !ren && data_count >= MAX_DATA-1;
+    assign rskip = wen && !ren && data_count >= MAX_DATA;
     // read while empty => read invalid data, keep write pointer in sync
     assign wskip = ren && !wen && data_count == 0;
 
@@ -78,11 +78,12 @@ module fifo (
             // count never less than zero, or more than max
             a_uflow:  assert (count >= 0);
             a_uflow2: assert (raddr >= 0);
-            a_oflow:  assert (count < MAX_DATA);
+            a_oflow:  assert (count <= MAX_DATA);
             a_oflow2: assert (waddr < MAX_DATA);
 
             // count should be equal to the difference between writer and reader address
-            a_count_diff: assert (count == addr_diff);
+            a_count_diff: assert  (count == addr_diff 
+                                || count == MAX_DATA && addr_diff == 0);
 
             // count should only be able to increase or decrease by 1
             a_counts: assert (count == 0
@@ -107,8 +108,8 @@ module fifo (
             // ap_waddr3: assert property (!wen && !empty |=> waddr == $past(waddr));
 
             // full and empty work as expected
-            a_full: assert (!full || full && count == MAX_DATA-1);
-            w_full: cover  (wen && !ren && count == MAX_DATA-2);
+            a_full: assert (!full || full && count == MAX_DATA);
+            w_full: cover  (wen && !ren && count == MAX_DATA-1);
             a_empty: assert (!empty || empty && count == 0);
             w_empty: cover  property (ren && !wen && count == 1);
             
