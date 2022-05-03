@@ -45,7 +45,7 @@ Installing prerequisites (this command is for Ubuntu 16.04):
 Yosys, Yosys-SMTBMC and ABC
 ---------------------------
 
-https://www.yosyshq.com/open-source
+https://yosyshq.net/yosys/
 
 https://people.eecs.berkeley.edu/~alanmi/abc/
 
