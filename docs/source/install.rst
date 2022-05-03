@@ -42,8 +42,11 @@ Installing prerequisites (this command is for Ubuntu 16.04):
                         libboost-program-options-dev autoconf libgmp-dev \
                         cmake curl
 
+Required components
+-------------------
+
 Yosys, Yosys-SMTBMC and ABC
----------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 https://yosyshq.net/yosys/
 
@@ -59,7 +62,7 @@ Next install Yosys, Yosys-SMTBMC and ABC (``yosys-abc``):
    sudo make install
 
 SymbiYosys
-----------
+^^^^^^^^^^
 
 https://github.com/YosysHQ/sby
 
@@ -70,7 +73,7 @@ https://github.com/YosysHQ/sby
    sudo make install
 
 Z3
---
+^^
 
 https://github.com/Z3Prover/z3/wiki
 
@@ -83,8 +86,11 @@ https://github.com/Z3Prover/z3/wiki
    make -j$(nproc)
    sudo make install
 
+Optional components
+-------------------
+
 Yices 2
--------
+^^^^^^^
 
 http://yices.csl.sri.com/
 
@@ -98,7 +104,7 @@ http://yices.csl.sri.com/
    sudo make install
 
 super_prove
------------
+^^^^^^^^^^^
 
 https://github.com/sterin/super-prove-build
 
@@ -136,7 +142,7 @@ And make this wrapper script executable:
    sudo chmod +x /usr/local/bin/suprove
 
 Avy
----
+^^^
 
 https://arieg.bitbucket.io/avy/
 
@@ -151,7 +157,7 @@ https://arieg.bitbucket.io/avy/
    sudo cp avy/src/{avy,avybmc} /usr/local/bin/
 
 Boolector
----------
+^^^^^^^^^
 
 http://fmv.jku.at/boolector/
 
