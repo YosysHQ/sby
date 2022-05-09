@@ -108,10 +108,10 @@ module fifo (
             // ap_waddr3: assert property (!wen && !empty |=> waddr == $past(waddr));
 
             // full and empty work as expected
-            a_full: assert (!full || full && count == MAX_DATA);
-            w_full: cover  (wen && !ren && count == MAX_DATA-1);
+            a_full:  assert (!full || full && count == MAX_DATA);
+            w_full:  cover  (wen && !ren && count == MAX_DATA-1);
             a_empty: assert (!empty || empty && count == 0);
-            w_empty: cover  property (ren && !wen && count == 1);
+            w_empty: cover  (ren && !wen && count == 1);
             
             // can we corrupt our data?
             // ap_overfill:  assert property (wen && full |=> raddr != $past(raddr));
