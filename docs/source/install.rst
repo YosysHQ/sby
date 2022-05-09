@@ -1,5 +1,12 @@
-CAD Suite(s)
-============
+.. _install-doc:
+
+Installation guide
+==================
+
+This document will guide you through the process of installing SymbiYosys.
+
+CAD suite(s)
+************
 
 SymbiYosys (sby) is part of the `Tabby CAD Suite
 <https://www.yosyshq.com/tabby-cad-datasheet>`_ and the `OSS CAD Suite
@@ -23,7 +30,7 @@ For more information about the difference between Tabby CAD Suite and the OSS
 CAD Suite, please visit https://www.yosyshq.com/tabby-cad-datasheet.
 
 Installing from source
-======================
+**********************
 
 Follow the instructions below to install SymbiYosys and its dependencies.
 Yosys, SymbiYosys, and Z3 are non-optional. The other packages are only
