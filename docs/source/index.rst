@@ -20,7 +20,7 @@ at the moment.)
    :maxdepth: 3
 
    install.rst
-   quickstart.rst
+   newstart.rst
    reference.rst
    verilog.rst
    verific.rst
