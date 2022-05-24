@@ -142,3 +142,11 @@ http://fmv.jku.at/boolector/
    sudo cp build/bin/{boolector,btor*} /usr/local/bin/
    sudo cp deps/btor2tools/bin/btorsim /usr/local/bin/
 
+To use the ``btor`` engine you additionally need a newer version of btorsim than the boolector setup script builds:
+
+.. code-block:: text
+
+   git clone https://github.com/boolector/btor2tools
+   ./configure.sh
+   cmake .
+   make install
