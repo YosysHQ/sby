@@ -37,7 +37,7 @@ with out_file.open("w") as output:
         print(f"{out_file}: {checked_dir}", file=output)
 
     for test in tests:
-        print(f"make/rules/test/{test}.mk: {test}", file=output)
+        print(f"make/rules/test/{test}.mk: {test} make/rules/found_tools", file=output)
         for ext in [".sh", ".py"]:
             script_file = test.parent / (test.stem + ext)
             if script_file.exists():

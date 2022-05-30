@@ -26,6 +26,8 @@ def parse_engine(engine):
     return engine, default_solvers.get(engine)
 
 
+# When adding new tools, also update TOOL_LIST in Makefile to make sure we regenerate
+# the rules when the user installs or removes any of the tools
 REQUIRED_TOOLS = {
     ("smtbmc", "yices"): ["yices-smt2"],
     ("smtbmc", "z3"): ["z3"],
@@ -34,11 +36,12 @@ REQUIRED_TOOLS = {
     ("smtbmc", "boolector"): ["boolector"],
     ("smtbmc", "bitwuzla"): ["bitwuzla"],
     ("smtbmc", "abc"): ["yosys-abc"],
-    ("aiger", "suprove"): ["suprove"],
-    ("aiger", "avy"): ["avy"],
-    ("aiger", "aigbmc"): ["aigbmc"],
-    ("btor", "btormc"): ["btormc"],
-    ("btor", "pono"): ["pono"],
+    ("aiger", "suprove"): ["suprove", "yices"],
+    ("aiger", "avy"): ["avy", "yices"],
+    ("aiger", "aigbmc"): ["aigbmc", "yices"],
+    ("btor", "btormc"): ["btormc", "btorsim"],
+    ("btor", "pono"): ["pono", "btorsim"],
+    ("abc"): ["yices"],
 }
 
 rules_file = Path("make/rules/test") / sby_dir / (sby_file.name + ".mk")
@@ -63,7 +66,9 @@ with rules_file.open("w") as rules:
         for engine in info["engines"]:
             engine, solver = parse_engine(engine)
             engines.add(engine)
-            required_tools.update(REQUIRED_TOOLS.get((engine, solver), ()))
+            required_tools.update(
+                REQUIRED_TOOLS.get((engine, solver), REQUIRED_TOOLS.get(engine, ()))
+            )
             if solver:
                 solvers.add(solver)
                 engine_solvers.add((engine, solver))
