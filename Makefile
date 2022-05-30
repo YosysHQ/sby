@@ -10,6 +10,8 @@ ifeq ($(OS), Windows_NT)
 PYTHON = $(shell cygpath -w -m $(PREFIX)/bin/python3)
 endif
 
+.PHONY: help install ci test html clean
+
 help:
 	@echo ""
 	@echo "sudo make install"
@@ -19,7 +21,11 @@ help:
 	@echo "    build documentation in docs/build/html/"
 	@echo ""
 	@echo "make test"
-	@echo "    run examples"
+	@echo "    run tests"
+	@echo ""
+	@echo "make ci"
+	@echo "    run tests and check examples"
+	@echo "    note: this requires a full Tabby CAD Suite or OSS CAD Suite install"
 	@echo ""
 	@echo "make clean"
 	@echo "    cleanup"
@@ -47,7 +53,7 @@ ci: \
   test_puzzles_djb2hash test_puzzles_pour853to4 test_puzzles_wolfgoatcabbage \
   test_puzzles_primegen_primegen test_puzzles_primegen_primes_pass test_puzzles_primegen_primes_fail \
   test_quickstart_demo test_quickstart_cover test_quickstart_prove test_quickstart_memory \
-  run_tests
+  test
 	if yosys -qp 'read -verific' 2> /dev/null; then set -x; \
 		YOSYS_NOVERIFIC=1 $(MAKE) ci; \
 	fi
@@ -113,7 +119,7 @@ test_quickstart_prove:
 test_quickstart_memory:
 	cd docs/examples/quickstart && python3 ../../../sbysrc/sby.py -f memory.sby
 
-run_tests:
+test:
 	$(MAKE) -C tests test
 
 html:
