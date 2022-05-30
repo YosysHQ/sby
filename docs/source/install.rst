@@ -95,87 +95,25 @@ https://github.com/Z3Prover/z3/wiki
 
 Optional components
 -------------------
+Additional solver engines can be installed as per their instructions, links are
+provided below.
 
 Yices 2
 ^^^^^^^
+  http://yices.csl.sri.com/
 
-http://yices.csl.sri.com/
-
-.. code-block:: text
-
-   git clone https://github.com/SRI-CSL/yices2
-   cd yices2
-   autoconf
-   ./configure
-   make -j$(nproc)
-   sudo make install
+  https://github.com/SRI-CSL/yices2
 
 super_prove
 ^^^^^^^^^^^
-
-https://github.com/sterin/super-prove-build
-
-.. code-block:: text
-
-   sudo apt-get install cmake ninja-build g++ python-dev python-setuptools \
-                        python-pip git
-   git clone --recursive https://github.com/sterin/super-prove-build
-   cd super-prove-build
-   mkdir build
-   cd build
-   cmake -DCMAKE_BUILD_TYPE=Release -G Ninja ..
-   ninja
-   ninja package
-
-This creates a .tar.gz archive for the target system. Extract it to
-``/usr/local/super_prove``
-
-.. code-block:: text
-
-   sudo tar -C /usr/local -x super_prove-X-Y-Release.tar.gz
-
-Then create a wrapper script ``/usr/local/bin/suprove`` with the following contents:
-
-.. code-block:: text
-
-   #!/bin/bash
-   tool=super_prove; if [ "$1" != "${1#+}" ]; then tool="${1#+}"; shift; fi
-   exec /usr/local/super_prove/bin/${tool}.sh "$@"
-
-And make this wrapper script executable:
-
-.. code-block:: text
-
-   sudo chmod +x /usr/local/bin/suprove
+  https://github.com/sterin/super-prove-build
 
 Avy
 ^^^
-
-https://arieg.bitbucket.io/avy/
-
-.. code-block:: text
-
-   git clone https://bitbucket.org/arieg/extavy.git
-   cd extavy
-   git submodule update --init
-   mkdir build; cd build
-   cmake -DCMAKE_BUILD_TYPE=Release ..
-   make -j$(nproc)
-   sudo cp avy/src/{avy,avybmc} /usr/local/bin/
+  https://arieg.bitbucket.io/avy/
 
 Boolector
 ^^^^^^^^^
+  http://fmv.jku.at/boolector/
 
-http://fmv.jku.at/boolector/
-
-.. code-block:: text
-
-   git clone https://github.com/boolector/boolector
-   cd boolector
-   ./contrib/setup-btor2tools.sh
-   ./contrib/setup-lingeling.sh
-   ./configure.sh
-   make -C build -j$(nproc)
-   sudo cp build/bin/{boolector,btor*} /usr/local/bin/
-   sudo cp deps/btor2tools/bin/btorsim /usr/local/bin/
-
+  https://github.com/boolector/boolector
