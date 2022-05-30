@@ -11,7 +11,7 @@ mode prove
 --
 
 [engines]
-cover: smtbmc
+cover: smtbmc z3
 prove: abc pdr
 
 [script]
