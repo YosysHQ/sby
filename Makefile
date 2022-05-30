@@ -45,7 +45,12 @@ else
 	chmod +x $(DESTDIR)$(PREFIX)/bin/sby
 endif
 
-ci: \
+.PHONY: check_cad_suite run_ci
+
+ci: check_cad_suite
+	@$(MAKE) run_ci
+
+run_ci: \
   test_demo1 test_demo2 test_demo3 \
   test_abstract_abstr test_abstract_props \
   test_demos_fib_cover test_demos_fib_prove test_demos_fib_live \
@@ -55,7 +60,14 @@ ci: \
   test_quickstart_demo test_quickstart_cover test_quickstart_prove test_quickstart_memory \
   test
 	if yosys -qp 'read -verific' 2> /dev/null; then set -x; \
-		YOSYS_NOVERIFIC=1 $(MAKE) ci; \
+		YOSYS_NOVERIFIC=1 $(MAKE) run_ci; \
+	fi
+
+check_cad_suite:
+	@if ! which tabbypip >/dev/null 2>&1; then \
+		echo "'make ci' requries the Tabby CAD Suite or the OSS CAD Suite"; \
+		echo "try 'make test' instead or run 'make run_ci' to proceed anyway."; \
+		exit 1; \
 	fi
 
 test_demo1:
