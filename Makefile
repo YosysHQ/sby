@@ -64,7 +64,7 @@ run_ci: \
 	fi
 
 check_cad_suite:
-	@if ! which tabbypip >/dev/null 2>&1; then \
+	@if ! which tabbypip &>/dev/null; then \
 		echo "'make ci' requries the Tabby CAD Suite or the OSS CAD Suite"; \
 		echo "try 'make test' instead or run 'make run_ci' to proceed anyway."; \
 		exit 1; \
