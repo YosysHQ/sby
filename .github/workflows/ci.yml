@@ -9,4 +9,4 @@ jobs:
       - uses: actions/checkout@v2
       - uses: YosysHQ/setup-oss-cad-suite@v1
       - name: Run checks
-        run: tabbypip install xmlschema && bash -c 'make ci'
+        run: tabbypip install xmlschema && make ci SHELL=/bin/bash
