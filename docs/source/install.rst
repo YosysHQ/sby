@@ -147,6 +147,8 @@ To use the ``btor`` engine you additionally need a newer version of btorsim than
 .. code-block:: text
 
    git clone https://github.com/boolector/btor2tools
+   cd btor2tools
    ./configure.sh
-   cmake .
-   make install
+   cmake . -DBUILD_SHARED_LIBS=OFF
+   make -j$(nproc)
+   sudo make install
