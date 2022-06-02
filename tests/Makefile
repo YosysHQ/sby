@@ -31,6 +31,12 @@ make/rules/collect.mk: make/collect_tests.py
 make/rules/test/%.mk:
 	python3 make/test_rules.py $<
 
+ifdef NOSKIP
+SKIP_COMMAND := echo "NOSKIP was set, treating this as an error"; echo; false
+else
+SKIP_COMMAND := echo
+endif
+
 ifneq (help,$(MAKECMDGOALS))
 
 # This should run every time but only trigger anything depending on it whenever

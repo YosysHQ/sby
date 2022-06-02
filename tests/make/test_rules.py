@@ -66,7 +66,7 @@ with rules_file.open("w") as rules:
 
         if missing_tools:
             print(
-                f"\t@echo; echo 'SKIPPING {target}: {', '.join(missing_tools)} not found'; echo",
+                f"\t@echo; echo 'SKIPPING {target}: {', '.join(missing_tools)} not found'; $(SKIP_COMMAND)",
                 file=rules,
             )
 
