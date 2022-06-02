@@ -1,10 +1,10 @@
-import shutil
 import sys
 import os
 import subprocess
 import json
 from pathlib import Path
 
+from required_tools import REQUIRED_TOOLS, found_tools
 
 sby_file = Path(sys.argv[1])
 sby_dir = sby_file.parent
@@ -25,24 +25,6 @@ def parse_engine(engine):
             return engine, arg
     return engine, default_solvers.get(engine)
 
-
-# When adding new tools, also update TOOL_LIST in Makefile to make sure we regenerate
-# the rules when the user installs or removes any of the tools
-REQUIRED_TOOLS = {
-    ("smtbmc", "yices"): ["yices-smt2"],
-    ("smtbmc", "z3"): ["z3"],
-    ("smtbmc", "cvc4"): ["cvc4"],
-    ("smtbmc", "mathsat"): ["mathsat"],
-    ("smtbmc", "boolector"): ["boolector"],
-    ("smtbmc", "bitwuzla"): ["bitwuzla"],
-    ("smtbmc", "abc"): ["yosys-abc"],
-    ("aiger", "suprove"): ["suprove", "yices"],
-    ("aiger", "avy"): ["avy", "yices"],
-    ("aiger", "aigbmc"): ["aigbmc", "yices"],
-    ("btor", "btormc"): ["btormc", "btorsim"],
-    ("btor", "pono"): ["pono", "btorsim"],
-    ("abc"): ["yices"],
-}
 
 rules_file = Path("make/rules/test") / sby_dir / (sby_file.name + ".mk")
 rules_file.parent.mkdir(exist_ok=True, parents=True)
@@ -79,7 +61,7 @@ with rules_file.open("w") as rules:
         shell_script = sby_dir / f"{sby_file.stem}.sh"
 
         missing_tools = sorted(
-            f"`{tool}`" for tool in required_tools if shutil.which(tool) is None
+            f"`{tool}`" for tool in required_tools if tool not in found_tools
         )
 
         if missing_tools:

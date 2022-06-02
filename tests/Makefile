@@ -33,10 +33,19 @@ make/rules/test/%.mk:
 
 ifneq (help,$(MAKECMDGOALS))
 
-FIND_TOOLS := $(shell \
-	TOOLS=$$(which $(TOOL_LIST) 2>/dev/null || true); \
-	echo $$TOOLS | cmp -s make/rules/found_tools || echo $$TOOLS > make/rules/found_tools \
-)
+# This should run every time but only trigger anything depending on it whenever
+# the script overwrites make/rules/found_tools. This doesn't really match how
+# make targets usually work, so we manually shell out here.
+
+FIND_TOOLS := $(shell python3 make/required_tools.py || echo error)
+
+ifneq (,$(findstring error,$(FIND_TOOLS)))
+$(error could not run 'python3 make/required_tools.py')
+endif
+
+ifneq (,$(FIND_TOOLS))
+$(warning $(FIND_TOOLS))
+endif
 
 include make/rules/collect.mk
 
