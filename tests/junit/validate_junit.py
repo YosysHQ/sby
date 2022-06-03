@@ -1,4 +1,13 @@
-from xmlschema import XMLSchema, XMLSchemaValidationError
+try:
+    from xmlschema import XMLSchema, XMLSchemaValidationError
+except ImportError:
+    import os
+    if "NOSKIP" not in os.environ.get("MAKEFLAGS", ""):
+        print()
+        print("SKIPPING python library xmlschema not found, skipping JUnit output validation")
+        print()
+        exit(0)
+
 import argparse
 
 def main():
