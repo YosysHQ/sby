@@ -69,6 +69,15 @@ module fifo (
                      ? waddr - raddr 
                      : waddr + MAX_DATA - raddr;
 
+    reg init = 0;
+    always @(posedge clk) begin
+        if (rst_n)
+            init <= 1;
+        // if init is low we don't care about the value of rst_n
+        // if init is high (rst_n has ben high), then rst_n must remain high
+        assume (!init || init && rst_n);
+    end
+
     // tests
     always @(posedge clk) begin
         if (rst_n) begin
