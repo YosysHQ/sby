@@ -1,6 +1,9 @@
 [tasks]
-cover
-prove
+prove_oss prove oss
+prove_tabby prove tabby
+cover_oss cover oss
+cover_tabby cover tabby
+prove_oss cover_oss : default
 
 [options]
 cover:
@@ -16,6 +19,7 @@ prove: abc pdr
 
 [script]
 read -sv fifo.sv
+tabby: read -define USE_VERIFIC=1
 read -formal top.sv
 prep -top fifo
 

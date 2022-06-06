@@ -108,14 +108,6 @@ module fifo (
                             || waddr == $past(waddr)
                             || waddr == $past(waddr + 1));
 
-            // read/write enables enable
-            // ap_raddr2: assert property (ren |=> raddr != $past(raddr));
-            // ap_waddr2: assert property (wen |=> waddr != $past(waddr));
-
-            // read/write needs enable UNLESS full/empty
-            // ap_raddr3: assert property (!ren && !full  |=> raddr == $past(raddr));
-            // ap_waddr3: assert property (!wen && !empty |=> waddr == $past(waddr));
-
             // full and empty work as expected
             a_full:  assert (!full || full && count == MAX_DATA);
             w_full:  cover  (wen && !ren && count == MAX_DATA-1);
@@ -123,9 +115,7 @@ module fifo (
             w_empty: cover  (ren && !wen && count == 1);
             
             // can we corrupt our data?
-            // ap_overfill:  assert property (wen && full |=> raddr != $past(raddr));
             w_overfill:  cover ($past(rskip) && raddr);
-            // ap_underfill: assert property (ren && empty |=> waddr != $past(waddr));
             w_underfill: cover ($past(wskip) && waddr);
         end else begin
             // waddr and raddr are zero while reset is low
@@ -137,13 +127,36 @@ module fifo (
         end
     end
 
-    // assumptions
+`ifdef USE_VERIFIC
+    // if we have verific we can also do the following additional tests
     always @(posedge clk) begin
-        // data will change when writing (and only when writing) so we can line up reads with writes
-        assume ((wen && wdata != $past(wdata)) || (!wen && wdata == $past(wdata)));
-        // assume property (wen |=> wdata != $past(wdata));
-        // assume property (!wen |=> wdata == $past(wdata));
+        if (rst_n) begin
+            // read/write enables enable
+            ap_raddr2: assert property (ren |=> $changed(raddr));
+            ap_waddr2: assert property (wen |=> $changed(waddr));
+
+            // read/write needs enable UNLESS full/empty
+            ap_raddr3: assert property (!ren && !full  |=> $stable(raddr));
+            ap_waddr3: assert property (!wen && !empty |=> $stable(waddr));
+                    
+            // can we corrupt our data?
+            ap_overfill:  assert property (wen && full  |=> $changed(raddr));
+            ap_underfill: assert property (ren && empty |=> $changed(waddr));
+            
+            // change data when writing (and only when writing) so we can line
+            // up reads with writes
+            assume property (wen |=> $changed(wdata));
+            assume property (!wen |=> $stable(wdata));
+        end
     end
-`endif
+`else // !USE_VERIFIC
+    // without verific we are more limited in describing the above assumption
+    always @(posedge clk) begin
+        assume ((wen && wdata != $past(wdata)) 
+            || (!wen && wdata == $past(wdata)));
+    end
+`endif // USE_VERIFIC
+
+`endif // FORMAL
 
 endmodule
