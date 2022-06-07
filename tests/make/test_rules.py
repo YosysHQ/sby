@@ -1,10 +1,11 @@
-import shutil
 import sys
 import os
 import subprocess
 import json
+import shlex
 from pathlib import Path
 
+from required_tools import REQUIRED_TOOLS
 
 sby_file = Path(sys.argv[1])
 sby_dir = sby_file.parent
@@ -25,21 +26,6 @@ def parse_engine(engine):
             return engine, arg
     return engine, default_solvers.get(engine)
 
-
-REQUIRED_TOOLS = {
-    ("smtbmc", "yices"): ["yices-smt2"],
-    ("smtbmc", "z3"): ["z3"],
-    ("smtbmc", "cvc4"): ["cvc4"],
-    ("smtbmc", "mathsat"): ["mathsat"],
-    ("smtbmc", "boolector"): ["boolector"],
-    ("smtbmc", "bitwuzla"): ["bitwuzla"],
-    ("smtbmc", "abc"): ["yosys-abc"],
-    ("aiger", "suprove"): ["suprove"],
-    ("aiger", "avy"): ["avy"],
-    ("aiger", "aigbmc"): ["aigbmc"],
-    ("btor", "btormc"): ["btormc"],
-    ("btor", "pono"): ["pono"],
-}
 
 rules_file = Path("make/rules/test") / sby_dir / (sby_file.name + ".mk")
 rules_file.parent.mkdir(exist_ok=True, parents=True)
@@ -63,36 +49,26 @@ with rules_file.open("w") as rules:
         for engine in info["engines"]:
             engine, solver = parse_engine(engine)
             engines.add(engine)
-            required_tools.update(REQUIRED_TOOLS.get((engine, solver), ()))
+            required_tools.update(
+                REQUIRED_TOOLS.get((engine, solver), REQUIRED_TOOLS.get(engine, ()))
+            )
             if solver:
                 solvers.add(solver)
                 engine_solvers.add((engine, solver))
+
+        required_tools = sorted(required_tools)
 
         print(f".PHONY: {target}", file=rules)
         print(f"{target}:", file=rules)
 
         shell_script = sby_dir / f"{sby_file.stem}.sh"
 
-        missing_tools = sorted(
-            f"`{tool}`" for tool in required_tools if shutil.which(tool) is None
-        )
-
-        if missing_tools:
-            print(
-                f"\t@echo; echo 'SKIPPING {target}: {', '.join(missing_tools)} not found'; echo",
-                file=rules,
-            )
-
-        elif shell_script.exists():
-            print(
-                f"\tcd {sby_dir} && SBY_FILE={sby_file.name} WORKDIR={workdirname} TASK={task} bash {shell_script.name}",
-                file=rules,
-            )
+        if shell_script.exists():
+            command = f"cd {sby_dir} && SBY_FILE={sby_file.name} WORKDIR={workdirname} TASK={task} bash {shell_script.name}"
         else:
-            print(
-                f"\tcd {sby_dir} && python3 $(SBY_MAIN) -f {sby_file.name} {task}",
-                file=rules,
-            )
+            command = f"cd {sby_dir} && python3 $(SBY_MAIN) -f {sby_file.name} {task}"
+
+        print(f"\t@python3 make/required_tools.py run {target} {shlex.quote(command)} {shlex.join(required_tools)}", file=rules)
 
         print(f".PHONY: clean-{target}", file=rules)
         print(f"clean-{target}:", file=rules)
