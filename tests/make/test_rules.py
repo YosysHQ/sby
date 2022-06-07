@@ -2,9 +2,10 @@ import sys
 import os
 import subprocess
 import json
+import shlex
 from pathlib import Path
 
-from required_tools import REQUIRED_TOOLS, found_tools
+from required_tools import REQUIRED_TOOLS
 
 sby_file = Path(sys.argv[1])
 sby_dir = sby_file.parent
@@ -55,31 +56,19 @@ with rules_file.open("w") as rules:
                 solvers.add(solver)
                 engine_solvers.add((engine, solver))
 
+        required_tools = sorted(required_tools)
+
         print(f".PHONY: {target}", file=rules)
         print(f"{target}:", file=rules)
 
         shell_script = sby_dir / f"{sby_file.stem}.sh"
 
-        missing_tools = sorted(
-            f"`{tool}`" for tool in required_tools if tool not in found_tools
-        )
-
-        if missing_tools:
-            print(
-                f"\t@echo; echo 'SKIPPING {target}: {', '.join(missing_tools)} not found'; $(SKIP_COMMAND)",
-                file=rules,
-            )
-
-        elif shell_script.exists():
-            print(
-                f"\tcd {sby_dir} && SBY_FILE={sby_file.name} WORKDIR={workdirname} TASK={task} bash {shell_script.name}",
-                file=rules,
-            )
+        if shell_script.exists():
+            command = f"cd {sby_dir} && SBY_FILE={sby_file.name} WORKDIR={workdirname} TASK={task} bash {shell_script.name}"
         else:
-            print(
-                f"\tcd {sby_dir} && python3 $(SBY_MAIN) -f {sby_file.name} {task}",
-                file=rules,
-            )
+            command = f"cd {sby_dir} && python3 $(SBY_MAIN) -f {sby_file.name} {task}"
+
+        print(f"\t@python3 make/required_tools.py run {target} {shlex.quote(command)} {shlex.join(required_tools)}", file=rules)
 
         print(f".PHONY: clean-{target}", file=rules)
         print(f"clean-{target}:", file=rules)

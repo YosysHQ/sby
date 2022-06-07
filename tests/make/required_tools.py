@@ -17,10 +17,39 @@ REQUIRED_TOOLS = {
 }
 
 
+def found_tools():
+    with open("make/rules/found_tools") as found_tools_file:
+        return [tool.strip() for tool in found_tools_file.readlines()]
+
+
 if __name__ == "__main__":
     import subprocess
     import sys
+    import os
     from pathlib import Path
+
+    args = sys.argv[1:]
+
+    if args and args[0] == "run":
+        target, command, *required_tools = args[1:]
+
+        with open("make/rules/found_tools") as found_tools_file:
+            found_tools = set(tool.strip() for tool in found_tools_file.readlines())
+
+        missing_tools = sorted(
+            f"`{tool}`" for tool in required_tools if tool not in found_tools
+        )
+        if missing_tools:
+            noskip = "NOSKIP" in os.environ.get("MAKEFLAGS", "")
+            print()
+            print(f"SKIPPING {target}: {', '.join(missing_tools)} not found")
+            if noskip:
+                print("NOSKIP was set, treating this as an error")
+            print()
+            exit(noskip)
+
+        print(command, flush=True)
+        exit(subprocess.call(command, shell=True))
 
     found_tools = []
     check_tools = set()
@@ -59,6 +88,3 @@ if __name__ == "__main__":
 
     with open("make/rules/found_tools", "w") as found_tools_file:
         found_tools_file.write(found_tools)
-else:
-    with open("make/rules/found_tools") as found_tools_file:
-        found_tools = [tool.strip() for tool in found_tools_file.readlines()]
