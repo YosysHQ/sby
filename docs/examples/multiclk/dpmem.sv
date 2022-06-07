@@ -47,9 +47,9 @@ module top (
 	(* gclk *) reg gclk;
 
 	always @(posedge gclk) begin
-		assume ($stable(rc) || $stable(wc));
-
 		if (!init) begin
+			assume ($stable(rc) || $stable(wc));
+
 			if ($rose(rc) && shadow_valid && shadow_addr == $past(ra)) begin
 				assert (shadow_data == rd);
 			end

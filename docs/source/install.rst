@@ -117,3 +117,6 @@ Boolector
   http://fmv.jku.at/boolector/
 
   https://github.com/boolector/boolector
+
+  To use the ``btor`` engine you additionally need a newer version of btorsim
+  than the boolector setup script builds: https://github.com/boolector/btor2tools
