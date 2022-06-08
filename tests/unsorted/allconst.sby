@@ -1,0 +1,30 @@
+[tasks]
+yices
+z3
+
+[options]
+mode cover
+depth 1
+
+[engines]
+yices: smtbmc --stbv yices
+z3: smtbmc --stdt z3
+
+[script]
+read -noverific
+read -formal primegen.sv
+prep -top primegen
+
+[file primegen.sv]
+
+module primegen;
+	(* anyconst *) reg [9:0] prime;
+	(* allconst *) reg [4:0] factor;
+
+	always @* begin
+		if (1 < factor && factor < prime)
+			assume ((prime % factor) != 0);
+		assume (prime > 800);
+		cover (1);
+	end
+endmodule
