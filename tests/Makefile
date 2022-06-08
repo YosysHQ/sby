@@ -2,23 +2,6 @@ test:
 
 .PHONY: test clean refresh help
 
-TOOL_LIST := \
-	btorsim \
-	yices \
-	aigbmc \
-	avy \
-	bitwuzla \
-	boolector \
-	btormc \
-	cvc4 \
-	mathsat \
-	pono \
-	suprove \
-	yices-smt2 \
-	yices \
-	yosys-abc \
-	z3
-
 help:
 	@cat make/help.txt
 
