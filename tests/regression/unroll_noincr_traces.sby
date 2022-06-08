@@ -1,0 +1,29 @@
+[tasks]
+boolector
+yices
+z3
+
+[options]
+mode bmc
+expect fail
+
+[engines]
+boolector: smtbmc boolector -- --noincr
+yices: smtbmc --unroll yices -- --noincr
+z3: smtbmc --unroll z3 -- --noincr
+
+
+[script]
+read -formal top.sv
+prep -top top
+
+[file top.sv]
+module top(input clk);
+    reg [7:0] counter = 0;
+    wire derived = counter * 7;
+
+    always @(posedge clk) begin
+        counter <= counter + 1;
+        assert (counter < 4);
+    end
+endmodule
