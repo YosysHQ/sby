@@ -80,6 +80,117 @@ difference in addresses, and then compare with the count signal.
     a_count_diff: assert  (count == addr_diff 
                         || count == MAX_DATA && addr_diff == 0);
 
+SymbiYosys
+**********
+
+SymbiYosys (sby) uses a .sby file to define a set of tasks used for
+verification.  
+
+**prove_oss**
+    Prove mode (unbounded model check), for use with OSS CAD Suite.
+
+**noskip**
+    Demonstration of failing model check with OSS CAD Suite.
+
+**cover_oss**
+    Cover mode (testing cover statements), for use with OSS CAD Suite.
+
+**prove_tabby**
+    Prove mode, for use with Tabby CAD Suite.
+
+**cover_tabby**
+    Cover mode, for use with Tabby CAD Suite.
+
+The use of the ``:default`` tag indicates that by default, prove_oss and
+cover_oss should be run if no tasks are specified, such as when running the
+command below.
+
+    sby fifo.sby
+
+.. note:: The default set of tests should all pass.  If this is not the case 
+    there may be a problem with the installation of sby or one of its solvers. 
+
+To see what happens when a test fails, the below command can be used.  Note the
+use of the ``-f`` flag to automatically overwrite existing task output.  While
+this may not be necessary on the first run, it is quite useful when making
+adjustments to code and rerunning tests to validate.
+    
+    sby -f fifo.sby noskip
+
+The noskip task disables the code shown below.  Because the count signal has
+been written such that it cannot exceed MAX_DATA, removing this code will lead
+to the ``a_count_diff`` assertion failing.  Without this assertion, there is no
+guarantee that data will be read in the same order it was written should an
+overflow occur and the oldest data be written.
+
+.. code-block:: systemverilog
+
+    `ifndef NOSKIP
+        // write while full => overwrite oldest data, move read pointer
+        assign rskip = wen && !ren && data_count >= MAX_DATA;
+        // read while empty => read invalid data, keep write pointer in sync
+        assign wskip = ren && !wen && data_count == 0;
+    `endif // NOSKIP
+
+The last few lines of output for the noskip task should be similar to the
+following:
+
+.. code-block:: text
+
+    SBY [fifo_noskip] engine_0: ##   0:00:00  BMC failed!
+    SBY [fifo_noskip] engine_0: ##   0:00:00  Assert failed in fifo: a_count_diff
+    SBY [fifo_noskip] engine_0: ##   0:00:00  Writing trace to VCD file: engine_0/trace.vcd
+    SBY [fifo_noskip] engine_0: ##   0:00:00  Writing trace to Verilog testbench: engine_0/trace_tb.v
+    SBY [fifo_noskip] engine_0: ##   0:00:00  Writing trace to constraints file: engine_0/trace.smtc
+    SBY [fifo_noskip] engine_0: ##   0:00:00  Status: FAILED
+    SBY [fifo_noskip] engine_0: finished (returncode=1)
+    SBY [fifo_noskip] summary: Elapsed clock time [H:MM:SS (secs)]: 0:00:01 (1)
+    SBY [fifo_noskip] summary: Elapsed process time unvailable on Windows
+    SBY [fifo_noskip] summary: engine_0 (abc pdr) returned FAIL
+    SBY [fifo_noskip] summary: counterexample trace: fifo_noskip/engine_0/trace.vcd
+    SBY [fifo_noskip] DONE (FAIL, rc=2)
+    SBY The following tasks failed: ['noskip']
+
+Using the ``noskip.gtkw`` file provided, use the below command to examine the
+error trace.
+
+    gtkwave fifo_noskip/engine_0/trace.vcd noskip.gtkw
+
+This should result in something similar to the below image.  We can immediately
+see that ``data_count`` and ``addr_diff`` are different.  Looking a bit deeper
+we can see that in order to reach this state the read enable signal was high in
+the first clock cycle while write enable is low.  This leads to an underfill
+where a value is read while the buffer is empty and the read address increments
+to a higher value than the write address.
+
+.. image:: media/gtkwave_noskip.png
+
+During correct operation, the ``w_underfill`` witness will cover the underflow
+case.  Examining ``fifo_cover_oss/logfile.txt`` will reveal which trace file
+includes the witness we are looking for.  If this file doesn't exist, run the
+code below.
+
+    sby fifo.sby fifo_cover_oss
+
+Searching the file for ``w_underfill`` will reveal the below.
+
+.. code-block:: text
+
+    $ grep "w_underfill" fifo_cover_oss/logfile.txt -A 1
+    SBY [fifo_cover_oss] engine_0: ##   0:00:00  Reached cover statement at w_underfill in step 2.
+    SBY [fifo_cover_oss] engine_0: ##   0:00:00  Writing trace to VCD file: engine_0/trace2.vcd
+
+We can then run gtkwave with the trace file indicated to see the correct
+operation as in the image below.  When the buffer is empty, a read with no write
+will result in the ``wksip`` signal going high, incrementing *both* read and
+write addresses and avoiding underflow.
+    
+    gtkwave fifo_cover_oss/engine_0/trace2.vcd noskip.gtkw
+
+.. image:: media/gtkwave_coverskip.png
+
+For more on using the .sby file, see the :ref:`.sby reference page <Reference for .sby file format>`.
+
 Concurrent assertions
 *********************
 
