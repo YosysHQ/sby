@@ -57,10 +57,15 @@ module fifo (
     assign empty = (data_count == 0) && rst_n;
     assign count = data_count;
 
+`ifndef NOSKIP
     // write while full => overwrite oldest data, move read pointer
     assign rskip = wen && !ren && data_count >= MAX_DATA;
     // read while empty => read invalid data, keep write pointer in sync
     assign wskip = ren && !wen && data_count == 0;
+`else
+    assign rskip = 0;
+    assign wskip = 0;
+`endif // NOSKIP
 
 `ifdef FORMAL
     // observers
