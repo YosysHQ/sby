@@ -424,7 +424,7 @@ def run_task(taskname):
         if reusedir:
             pass
         elif os.path.isdir(my_workdir):
-            print(f"ERROR: Directory '{my_workdir}' already exists.")
+            print(f"ERROR: Directory '{my_workdir}' already exists, use -f to overwrite the existing directory.")
             sys.exit(1)
         else:
             os.makedirs(my_workdir)
