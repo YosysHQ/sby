@@ -56,6 +56,9 @@ with rules_file.open("w") as rules:
                 solvers.add(solver)
                 engine_solvers.add((engine, solver))
 
+        if any(line.startswith("read -verific") or line.startswith("verific") for line in info["script"]):
+            required_tools.add("verific")
+
         required_tools = sorted(required_tools)
 
         print(f".PHONY: {target}", file=rules)

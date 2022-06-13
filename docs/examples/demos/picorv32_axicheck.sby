@@ -1,0 +1,25 @@
+[tasks]
+yices
+boolector
+z3
+abc
+
+[options]
+mode bmc
+depth 10
+
+[engines]
+yices: smtbmc yices
+boolector: smtbmc boolector -ack
+z3: smtbmc --nomem z3
+abc: abc bmc3
+
+[script]
+read_verilog -formal -norestrict -assume-asserts picorv32.v
+read_verilog -formal axicheck.v
+prep -top testbench
+
+[files]
+picorv32.v ../../../extern/picorv32.v
+axicheck.v ../../../extern/axicheck.v
+

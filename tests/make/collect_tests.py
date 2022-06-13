@@ -26,6 +26,7 @@ def collect(path):
 
 
 collect(Path("."))
+collect(Path("../docs/examples"))
 
 out_file = Path("make/rules/collect.mk")
 out_file.parent.mkdir(exist_ok=True)
