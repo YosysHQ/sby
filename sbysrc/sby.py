@@ -381,6 +381,7 @@ if dump_taskinfo:
         taskinfo[taskname or ""] = {
             "mode": cfg.options.get("mode"),
             "engines": cfg.engines,
+            "script": cfg.script,
         }
     print(json.dumps(taskinfo, indent=2))
     sys.exit(0)

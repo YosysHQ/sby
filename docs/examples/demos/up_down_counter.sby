@@ -1,10 +1,13 @@
+[tasks]
+suprove
+avy
+
 [options]
 mode prove
-wait on
 
 [engines]
-aiger suprove
-aiger avy
+suprove: aiger suprove
+avy: aiger avy
 
 [script]
 read_verilog -formal demo.v

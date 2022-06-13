@@ -36,6 +36,15 @@ if __name__ == "__main__":
         with open("make/rules/found_tools") as found_tools_file:
             found_tools = set(tool.strip() for tool in found_tools_file.readlines())
 
+        if 'verific' in required_tools:
+            result = subprocess.run(["yosys", "-qp", "read -verific"], capture_output=True)
+            if result.returncode:
+                print()
+                print(f"SKIPPING {target}: requires yosys with verific support")
+                print()
+                exit()
+            required_tools.remove('verific')
+
         missing_tools = sorted(
             f"`{tool}`" for tool in required_tools if tool not in found_tools
         )
