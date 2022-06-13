@@ -3,6 +3,7 @@ pass
 fail
 
 [options]
+fail: expect fail
 mode prove
 depth 5
 
