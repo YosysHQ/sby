@@ -39,6 +39,10 @@ def run(task):
             import sby_engine_abc
             sby_engine_abc.run("bmc", task, engine_idx, engine)
 
+        elif engine[0] == "aiger":
+            import sby_engine_aiger
+            sby_engine_aiger.run("bmc", task, engine_idx, engine)
+
         elif engine[0] == "btor":
             import sby_engine_btor
             sby_engine_btor.run("bmc", task, engine_idx, engine)
