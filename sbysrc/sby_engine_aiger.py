@@ -28,16 +28,25 @@ def run(mode, task, engine_idx, engine):
     for o, a in opts:
         task.error("Unexpected AIGER engine options.")
 
+    status_2 = "UNKNOWN"
+
     if solver_args[0] == "suprove":
+        if mode not in ["live", "prove"]:
+            task.error("The aiger solver 'suprove' is only supported in live and prove modes.")
         if mode == "live" and (len(solver_args) == 1 or solver_args[1][0] != "+"):
             solver_args.insert(1, "+simple_liveness")
         solver_cmd = " ".join([task.exe_paths["suprove"]] + solver_args[1:])
 
     elif solver_args[0] == "avy":
+        if mode != "prove":
+            task.error("The aiger solver 'avy' is only supported in prove mode.")
         solver_cmd = " ".join([task.exe_paths["avy"], "--cex", "-"] + solver_args[1:])
 
     elif solver_args[0] == "aigbmc":
-        solver_cmd = " ".join([task.exe_paths["aigbmc"]] + solver_args[1:])
+        if mode != "bmc":
+            task.error("The aiger solver 'aigbmc' is only supported in bmc mode.")
+        solver_cmd = " ".join([task.exe_paths["aigbmc"], str(task.opt_depth - 1)] + solver_args[1:])
+        status_2 = "PASS"  # aigbmc outputs status 2 when BMC passes
 
     else:
         task.error(f"Invalid solver command {solver_args[0]}.")
@@ -76,7 +85,7 @@ def run(mode, task, engine_idx, engine):
             print(line, file=aiw_file)
             if line == "0": proc_status = "PASS"
             if line == "1": proc_status = "FAIL"
-            if line == "2": proc_status = "UNKNOWN"
+            if line == "2": proc_status = status_2
 
         return None
 
