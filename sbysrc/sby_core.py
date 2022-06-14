@@ -52,6 +52,7 @@ class SbyProc:
         self.finished = False
         self.terminated = False
         self.checkretcode = False
+        self.retcodes = [0]
         self.task = task
         self.info = info
         self.deps = deps
@@ -199,7 +200,7 @@ class SbyProc:
                 self.task.terminate()
                 return
 
-            if self.checkretcode and self.p.returncode != 0:
+            if self.checkretcode and self.p.returncode not in self.retcodes:
                 self.task.status = "ERROR"
                 if not self.silent:
                     self.task.log(f"{self.info}: task failed. ERROR.")

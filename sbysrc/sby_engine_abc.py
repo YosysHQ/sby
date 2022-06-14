@@ -52,6 +52,7 @@ def run(mode, task, engine_idx, engine):
         f"""cd {task.workdir}; {task.exe_paths["abc"]} -c 'read_aiger model/design_aiger.aig; fold; strash; {" ".join(abc_command)}; write_cex -a engine_{engine_idx}/trace.aiw'""",
         logfile=open(f"{task.workdir}/engine_{engine_idx}/logfile.txt", "w")
     )
+    proc.checkretcode = True
 
     proc.noprintregex = re.compile(r"^\.+$")
     proc_status = None
@@ -77,8 +78,8 @@ def run(mode, task, engine_idx, engine):
         return line
 
     def exit_callback(retcode):
-        assert retcode == 0
-        assert proc_status is not None
+        if proc_status is None:
+            task.error(f"engine_{engine_idx}: Could not determine engine status.")
 
         task.update_status(proc_status)
         task.log(f"engine_{engine_idx}: Status returned by engine: {proc_status}")
@@ -112,9 +113,11 @@ def run(mode, task, engine_idx, engine):
 
                 return line
 
-            def exit_callback2(line):
-                assert proc2_status is not None
-                assert proc2_status == "FAIL"
+            def exit_callback2(retcode):
+                if proc2_status is None:
+                    task.error(f"engine_{engine_idx}: Could not determine aigsmt status.")
+                if proc2_status != "FAIL":
+                    task.error(f"engine_{engine_idx}: Unexpected aigsmt status.")
 
                 if os.path.exists(f"{task.workdir}/engine_{engine_idx}/trace.vcd"):
                     task.summary.append(f"counterexample trace: {task.workdir}/engine_{engine_idx}/trace.vcd")

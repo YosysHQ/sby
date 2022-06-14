@@ -58,6 +58,8 @@ def run(mode, task, engine_idx, engine):
         f"cd {task.workdir}; {solver_cmd} model/design_aiger.aig",
         logfile=open(f"{task.workdir}/engine_{engine_idx}/logfile.txt", "w")
     )
+    if solver_args[0] not in ["avy"]:
+        proc.checkretcode = True
 
     proc_status = None
     produced_cex = False
@@ -90,9 +92,8 @@ def run(mode, task, engine_idx, engine):
         return None
 
     def exit_callback(retcode):
-        if solver_args[0] not in ["avy"]:
-            assert retcode == 0
-        assert proc_status is not None
+        if proc_status is None:
+            task.error(f"engine_{engine_idx}: Could not determine engine status.")
 
         aiw_file.close()
 
@@ -143,11 +144,10 @@ def run(mode, task, engine_idx, engine):
                     return line
 
                 def exit_callback2(line):
-                    assert proc2_status is not None
-                    if mode == "live":
-                        assert proc2_status == "PASS"
-                    else:
-                        assert proc2_status == "FAIL"
+                    if proc2_status is None:
+                        task.error(f"engine_{engine_idx}: Could not determine aigsmt status.")
+                    if proc2_status != ("PASS" if mode == "live" else "FAIL"):
+                        task.error(f"engine_{engine_idx}: Unexpected aigsmt status.")
 
                     if os.path.exists(f"{task.workdir}/engine_{engine_idx}/trace.vcd"):
                         task.summary.append(f"counterexample trace: {task.workdir}/engine_{engine_idx}/trace.vcd")
