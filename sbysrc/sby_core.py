@@ -87,6 +87,7 @@ class SbyProc:
 
         self.output_callback = None
         self.exit_callback = None
+        self.error_callback = None
 
     def register_dep(self, next_proc):
         if self.finished:
@@ -114,6 +115,14 @@ class SbyProc:
             self.logfile.close()
         if self.exit_callback is not None:
             self.exit_callback(retcode)
+
+    def handle_error(self, retcode):
+        if self.terminated:
+            return
+        if self.logfile is not None:
+            self.logfile.close()
+        if self.error_callback is not None:
+            self.error_callback(retcode)
 
     def terminate(self, timeout=False):
         if self.task.opt_wait and not timeout:
@@ -185,19 +194,21 @@ class SbyProc:
                 self.task.status = "ERROR"
                 if not self.silent:
                     self.task.log(f"{self.info}: COMMAND NOT FOUND. ERROR.")
+                self.handle_error(self.p.returncode)
                 self.terminated = True
                 self.task.terminate()
                 return
-
-            self.handle_exit(self.p.returncode)
 
             if self.checkretcode and self.p.returncode != 0:
                 self.task.status = "ERROR"
                 if not self.silent:
                     self.task.log(f"{self.info}: task failed. ERROR.")
+                self.handle_error(self.p.returncode)
                 self.terminated = True
                 self.task.terminate()
                 return
+
+            self.handle_exit(self.p.returncode)
 
             self.finished = True
             for next_proc in self.notify:
@@ -503,14 +514,15 @@ class SbyTask(SbyConfig):
             proc.checkretcode = True
 
             def instance_hierarchy_callback(retcode):
-                if retcode != 0:
-                    self.precise_prop_status = False
-                    return
                 if self.design_hierarchy == None:
                     with open(f"{self.workdir}/model/design.json") as f:
                         self.design_hierarchy = design_hierarchy(f)
 
+            def instance_hierarchy_error_callback(retcode):
+                self.precise_prop_status = False
+
             proc.exit_callback = instance_hierarchy_callback
+            proc.error_callback = instance_hierarchy_error_callback
 
             return [proc]
 
