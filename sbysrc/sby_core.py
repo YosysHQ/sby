@@ -465,7 +465,7 @@ class SbyTask(SbyConfig):
         if not os.path.isdir(f"{self.workdir}/model"):
             os.makedirs(f"{self.workdir}/model")
 
-        def print_common_prep():
+        def print_common_prep(check):
             if self.opt_multiclock:
                 print("clk2fflogic", file=f)
             else:
@@ -482,7 +482,7 @@ class SbyTask(SbyConfig):
             print("setundef -anyseq", file=f)
             print("opt -keepdc -fast", file=f)
             print("check", file=f)
-            print("hierarchy -simcheck", file=f)
+            print(f"hierarchy {check}", file=f)
 
         if model_name == "base":
             with open(f"""{self.workdir}/model/design.ys""", "w") as f:
@@ -490,7 +490,7 @@ class SbyTask(SbyConfig):
                 for cmd in self.script:
                     print(cmd, file=f)
                 # the user must designate a top module in [script]
-                print("hierarchy -simcheck", file=f)
+                print("hierarchy -smtcheck", file=f)
                 print(f"""write_jny -no-connections ../model/design.json""", file=f)
                 print(f"""write_rtlil ../model/design.il""", file=f)
 
@@ -522,7 +522,7 @@ class SbyTask(SbyConfig):
                     print("memory_map", file=f)
                 else:
                     print("memory_nordff", file=f)
-                print_common_prep()
+                print_common_prep("-smtcheck")
                 if "_syn" in model_name:
                     print("techmap", file=f)
                     print("opt -fast", file=f)
@@ -555,7 +555,7 @@ class SbyTask(SbyConfig):
                     print("memory_map", file=f)
                 else:
                     print("memory_nordff", file=f)
-                print_common_prep()
+                print_common_prep("-simcheck")
                 print("flatten", file=f)
                 print("setundef -undriven -anyseq", file=f)
                 if "_syn" in model_name:
@@ -587,7 +587,7 @@ class SbyTask(SbyConfig):
                 print(f"# running in {self.workdir}/model/", file=f)
                 print("read_ilang design.il", file=f)
                 print("memory_map", file=f)
-                print_common_prep()
+                print_common_prep("-simcheck")
                 print("flatten", file=f)
                 print("setundef -undriven -anyseq", file=f)
                 print("setattr -unset keep", file=f)
