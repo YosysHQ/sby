@@ -1,0 +1,50 @@
+[tasks]
+a
+b
+c
+d
+
+[options]
+mode bmc
+expect fail
+
+[engines]
+smtbmc boolector
+
+[script]
+read -sv autotune_div.sv
+prep -top top
+
+[autotune]
+a: timeout 60
+a: wait 10%+20
+a: parallel 1
+a: presat on
+a: incr on
+a: mem on
+a: forall on
+
+b: timeout none
+b: parallel auto
+b: presat off
+b: incr off
+b: mem auto
+b: mem_threshold 20
+b: forall any
+
+c: presat any
+c: incr any
+c: mem any
+c: forall auto
+
+d: incr auto
+d: incr_threshold 10
+
+[file autotune_div.sv]
+module top (input clk);
+    reg [7:0] counter = 0;
+    always @(posedge clk) begin
+        counter <= counter + 1;
+        assert (counter != 4);
+    end
+endmodule
