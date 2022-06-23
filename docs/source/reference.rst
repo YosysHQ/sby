@@ -213,6 +213,8 @@ The following mode/engine/solver combinations are currently supported:
 |           | ``abc bmc3``             |
 |           |                          |
 |           | ``abc sim3``             |
+|           |                          |
+|           | ``aiger smtbmc``         |
 +-----------+--------------------------+
 | ``prove`` | ``smtbmc [all solvers]`` |
 |           |                          |
@@ -227,8 +229,6 @@ The following mode/engine/solver combinations are currently supported:
 |           | ``btor btormc``          |
 +-----------+--------------------------+
 | ``live``  | ``aiger suprove``        |
-|           |                          |
-|           | ``aiger avy``            |
 +-----------+--------------------------+
 
 ``smtbmc`` engine
@@ -237,34 +237,37 @@ The following mode/engine/solver combinations are currently supported:
 The ``smtbmc`` engine supports the ``bmc``, ``prove``, and ``cover`` modes and supports
 the following options:
 
-+-----------------+---------------------------------------------------------+
-|   Option        | Description                                             |
-+=================+=========================================================+
-| ``--nomem``     | Don't use the SMT theory of arrays to model memories.   |
-|                 | Instead synthesize memories to registers and address    |
-|                 | logic.                                                  |
-+-----------------+---------------------------------------------------------+
-| ``--syn``       | Synthesize the circuit to a gate-level representation   |
-|                 | instead of using word-level SMT operators. This also    |
-|                 | runs some low-level logic optimization on the circuit.  |
-+-----------------+---------------------------------------------------------+
-| ``--stbv``      | Use large bit vectors (instead of uninterpreted         |
-|                 | functions) to represent the circuit state.              |
-+-----------------+---------------------------------------------------------+
-| ``--stdt``      | Use SMT-LIB 2.6 datatypes to represent states.          |
-+-----------------+---------------------------------------------------------+
-| ``--nopresat``  | Do not run "presat" SMT queries that make sure that     |
-|                 | assumptions are non-conflicting (and potentially        |
-|                 | warmup the SMT solver).                                 |
-+-----------------+---------------------------------------------------------+
-| ``--unroll``,   | Disable/enable unrolling of the SMT problem. The        |
-| ``--nounroll``  | default value depends on the solver being used.         |
-+-----------------+---------------------------------------------------------+
-| ``--dumpsmt2``  | Write the SMT2 trace to an additional output file.      |
-|                 | (Useful for benchmarking and troubleshooting.)          |
-+-----------------+---------------------------------------------------------+
-| ``--progress``  | Enable Yosys-SMTBMC timer display.                      |
-+-----------------+---------------------------------------------------------+
++------------------+---------------------------------------------------------+
+|   Option         | Description                                             |
++==================+=========================================================+
+| ``--nomem``      | Don't use the SMT theory of arrays to model memories.   |
+|                  | Instead synthesize memories to registers and address    |
+|                  | logic.                                                  |
++------------------+---------------------------------------------------------+
+| ``--syn``        | Synthesize the circuit to a gate-level representation   |
+|                  | instead of using word-level SMT operators. This also    |
+|                  | runs some low-level logic optimization on the circuit.  |
++------------------+---------------------------------------------------------+
+| ``--stbv``       | Use large bit vectors (instead of uninterpreted         |
+|                  | functions) to represent the circuit state.              |
++------------------+---------------------------------------------------------+
+| ``--stdt``       | Use SMT-LIB 2.6 datatypes to represent states.          |
++------------------+---------------------------------------------------------+
+| ``--nopresat``   | Do not run "presat" SMT queries that make sure that     |
+|                  | assumptions are non-conflicting (and potentially        |
+|                  | warmup the SMT solver).                                 |
++------------------+---------------------------------------------------------+
+| ``--keep-going`` | In BMC mode, continue after the first failed assertion  |
+|                  | and report further failed assertions.                   |
++------------------+---------------------------------------------------------+
+| ``--unroll``,    | Disable/enable unrolling of the SMT problem. The        |
+| ``--nounroll``   | default value depends on the solver being used.         |
++------------------+---------------------------------------------------------+
+| ``--dumpsmt2``   | Write the SMT2 trace to an additional output file.      |
+|                  | (Useful for benchmarking and troubleshooting.)          |
++------------------+---------------------------------------------------------+
+| ``--progress``   | Enable Yosys-SMTBMC timer display.                      |
++------------------+---------------------------------------------------------+
 
 Any SMT2 solver that is compatible with ``yosys-smtbmc`` can be passed as
 argument to the ``smtbmc`` engine. The solver options are passed to the solver
@@ -272,12 +275,13 @@ as additional command line options.
 
 The following solvers are currently supported by ``yosys-smtbmc``:
 
-  * yices
-  * boolector
-  * bitwuzla
-  * z3
-  * mathsat
-  * cvc4
+* yices
+* boolector
+* bitwuzla
+* z3
+* mathsat
+* cvc4
+* cvc5
 
 Any additional options after ``--`` are passed to ``yosys-smtbmc`` as-is.
 
@@ -295,6 +299,7 @@ The engine supports no engine options and supports the following solvers:
 | ``pono``                      |   ``bmc``                       |
 +-------------------------------+---------------------------------+
 
+Solver options are passed to the solver as additional command line options.
 
 ``aiger`` engine
 ~~~~~~~~~~~~~~~~
@@ -310,7 +315,7 @@ solvers:
 +-------------------------------+---------------------------------+
 | ``avy``                       |   ``prove``                     |
 +-------------------------------+---------------------------------+
-| ``aigbmc``                    |   ``prove``, ``live``           |
+| ``aigbmc``                    |   ``bmc``                       |
 +-------------------------------+---------------------------------+
 
 Solver options are passed to the solver as additional command line options.
