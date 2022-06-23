@@ -131,7 +131,7 @@ def run(mode, task, engine_idx, engine):
         smtbmc_opts.append("-c")
         trace_prefix += "%"
 
-    if keep_going:
+    if keep_going and mode != "prove_induction":
         smtbmc_opts.append("--keep-going")
         trace_prefix += "%"
 
