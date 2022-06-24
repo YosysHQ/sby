@@ -402,7 +402,10 @@ def run_task(taskname):
     if workdir is not None:
         my_workdir = workdir
     elif workdir_prefix is not None:
-        my_workdir = workdir_prefix + "_" + taskname
+        if taskname is None:
+            my_workdir = workdir_prefix
+        else:
+            my_workdir = workdir_prefix + "_" + taskname
 
     if my_workdir is None and sbyfile is not None and not my_opt_tmpdir:
         my_workdir = sbyfile[:-4]
