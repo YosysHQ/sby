@@ -1,0 +1,39 @@
+[options]
+mode bmc
+
+[engines]
+smtbmc boolector
+
+[script]
+read_verilog -formal ff_xinit_opt.sv
+prep -flatten -top top
+
+opt -fast -keepdc
+
+[file ff_xinit_opt.sv]
+module top(
+    input clk,
+    input [7:0] d
+);
+
+    (* keep *)
+    wire [7:0] some_const = $anyconst;
+
+    wire [7:0] q1;
+    wire [7:0] q2;
+
+    ff ff1(.clk(clk), .d(q1), .q(q1));
+    ff ff2(.clk(1'b0), .d(d), .q(q2));
+
+    initial assume (some_const == q1);
+    initial assume (some_const == q2);
+    initial assume (q1 != 0);
+    initial assume (q2 != 0);
+
+    always @(posedge clk) assert(some_const == q1);
+    always @(posedge clk) assert(some_const == q2);
+endmodule
+
+module ff(input clk, input [7:0] d, (* keep *) output reg [7:0] q);
+    always @(posedge clk) q <= d;
+endmodule
