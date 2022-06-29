@@ -399,37 +399,37 @@ class SbyConfig:
                             name = kvp[1][1:]
                             self.setup['define'][name] = kvp[2:]
                     else:
-                        self.setup[key] = kvp[1:]
+                        self.setup[stmt] = kvp[1:]
                 continue
 
-                if mode == "stage":
+            if mode == "stage":
                     self.error("[stage] section not yet supported")
-                    kvp = line.split()
-                    if key is None or key == '':
-                        self.error(f"sby file syntax error: in stage mode but unknown key")
+                kvp = line.split()
+                if key is None or key == '':
+                    self.error(f"sby file syntax error: in stage mode but unknown key")
 
-                    if len(kvp) == 0:
-                        continue
-
-                    if kvp[0] not in ("mode", "depth", "timeout", "expect", "engine",
-                                      "cutpoint", "enable", "disable", "assume", "skip",
-                                      "check", "prove", "abstract", "setsel") or len(kvp) < 2:
-                        self.error(f"sby file syntax error: {line}")
-                    else:
-                        stmt = kvp[0]
-                        if stmt == 'setsel':
-                            if len(kvp[1:]) < 2:
-                                self.error(f"sby file syntax error: {line}")
-                            elif kvp[1][0] != '@':
-                                self.error(f"sby file syntax error: {line}")
-                            else:
-                                name = kvp[1][1:]
-                                self.stage[key][stmt] = {
-                                    'name': name, 'pattern': kvp[2:]
-                                }
-                        else:
-                            self.stage[key][stmt] = kvp[1:]
+                if len(kvp) == 0:
                     continue
+
+                if kvp[0] not in ("mode", "depth", "timeout", "expect", "engine",
+                                  "cutpoint", "enable", "disable", "assume", "skip",
+                                  "check", "prove", "abstract", "setsel") or len(kvp) < 2:
+                    self.error(f"sby file syntax error: {line}")
+                else:
+                    stmt = kvp[0]
+                    if stmt == 'setsel':
+                        if len(kvp[1:]) < 2:
+                            self.error(f"sby file syntax error: {line}")
+                        elif kvp[1][0] != '@':
+                            self.error(f"sby file syntax error: {line}")
+                        else:
+                            name = kvp[1][1:]
+                            self.stage[key][stmt] = {
+                                'name': name, 'pattern': kvp[2:]
+                            }
+                    else:
+                        self.stage[key][stmt] = kvp[1:]
+                continue
 
             if mode == "script":
                 self.script.append(line)
