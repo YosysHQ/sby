@@ -31,8 +31,7 @@ def run(task):
     task.basecase_procs = list()
     task.induction_procs = list()
 
-    for engine_idx in range(len(task.engines)):
-        engine = task.engines[engine_idx]
+    for engine_idx, engine in task.engine_list():
         assert len(engine) > 0
 
         task.log(f"""engine_{engine_idx}: {" ".join(engine)}""")

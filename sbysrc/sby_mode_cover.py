@@ -23,8 +23,7 @@ def run(task):
     task.handle_int_option("depth", 20)
     task.handle_int_option("append", 0)
 
-    for engine_idx in range(len(task.engines)):
-        engine = task.engines[engine_idx]
+    for engine_idx, engine in task.engine_list():
         assert len(engine) > 0
 
         task.log(f"""engine_{engine_idx}: {" ".join(engine)}""")

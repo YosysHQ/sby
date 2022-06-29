@@ -22,6 +22,7 @@ at the moment.)
    install.rst
    quickstart.rst
    reference.rst
+   autotune.rst
    verilog.rst
    verific.rst
    license.rst

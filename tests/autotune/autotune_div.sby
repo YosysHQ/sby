@@ -1,0 +1,85 @@
+[tasks]
+bmc
+cover
+prove
+
+[options]
+bmc: mode bmc
+cover: mode cover
+prove: mode prove
+expect pass
+
+[engines]
+smtbmc boolector
+
+[script]
+read -sv autotune_div.sv
+prep -top top
+
+[file autotune_div.sv]
+module top #(
+    parameter WIDTH = 4 // Reduce this if it takes too long on CI
+) (
+    input clk,
+    input load,
+    input [WIDTH-1:0] a,
+    input [WIDTH-1:0] b,
+    output reg [WIDTH-1:0] q,
+    output reg [WIDTH-1:0] r,
+    output reg done
+);
+
+    reg [WIDTH-1:0] a_reg = 0;
+    reg [WIDTH-1:0] b_reg = 1;
+
+    initial begin
+        q <= 0;
+        r <= 0;
+        done <= 1;
+    end
+
+    reg [WIDTH-1:0] q_step = 1;
+    reg [WIDTH-1:0] r_step = 1;
+
+    // This is not how you design a good divider circuit!
+    always @(posedge clk) begin
+        if (load) begin
+            a_reg <= a;
+            b_reg <= b;
+            q <= 0;
+            r <= a;
+            q_step <= 1;
+            r_step <= b;
+            done <= b == 0;
+        end else begin
+            if (r_step <= r) begin
+                q <= q + q_step;
+                r <= r - r_step;
+
+                if (!r_step[WIDTH-1]) begin
+                    r_step <= r_step << 1;
+                    q_step <= q_step << 1;
+                end
+            end else begin
+                if (!q_step[0]) begin
+                    r_step <= r_step >> 1;
+                    q_step <= q_step >> 1;
+                end else begin
+                    done <= 1;
+                end
+            end
+        end
+    end
+
+    always @(posedge clk) begin
+        assert (r_step == b_reg * q_step); // Helper invariant
+
+        assert (q * b_reg + r == a_reg); // Main invariant & correct output relationship
+        if (done) assert (r <= b_reg - 1); // Output range
+
+        cover (done);
+        cover (done && b_reg == 0);
+        cover (r != a_reg);
+        cover (r == a_reg);
+    end
+endmodule

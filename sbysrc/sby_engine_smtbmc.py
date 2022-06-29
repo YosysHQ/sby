@@ -194,7 +194,7 @@ def run(mode, task, engine_idx, engine):
         match = re.match(r"^## [0-9: ]+ Assert failed in (\S+): (\S+) \((\S+)\)", line)
         if match:
             cell_name = match[3]
-            prop = task.design_hierarchy.find_property_by_cellname(cell_name, trans_dict=smt2_trans)
+            prop = task.design.hierarchy.find_property_by_cellname(cell_name, trans_dict=smt2_trans)
             prop.status = "FAIL"
             last_prop.append(prop)
             return line
@@ -202,7 +202,7 @@ def run(mode, task, engine_idx, engine):
         match = re.match(r"^## [0-9: ]+ Reached cover statement at (\S+) \((\S+)\) in step \d+.", line)
         if match:
             cell_name = match[2]
-            prop = task.design_hierarchy.find_property_by_cellname(cell_name, trans_dict=smt2_trans)
+            prop = task.design.hierarchy.find_property_by_cellname(cell_name, trans_dict=smt2_trans)
             prop.status = "PASS"
             last_prop.append(prop)
             return line
@@ -218,7 +218,7 @@ def run(mode, task, engine_idx, engine):
         match = re.match(r"^## [0-9: ]+ Unreached cover statement at (\S+) \((\S+)\).", line)
         if match:
             cell_name = match[2]
-            prop = task.design_hierarchy.find_property_by_cellname(cell_name, trans_dict=smt2_trans)
+            prop = task.design.hierarchy.find_property_by_cellname(cell_name, trans_dict=smt2_trans)
             prop.status = "FAIL"
 
         return line
@@ -250,7 +250,7 @@ def run(mode, task, engine_idx, engine):
                     if excess_traces > 0:
                         task.summary.append(f"""and {excess_traces} further trace{"s" if excess_traces > 1 else ""}""")
             elif proc_status == "PASS" and mode == "bmc":
-                for prop in task.design_hierarchy:
+                for prop in task.design.hierarchy:
                     if prop.type == prop.Type.ASSERT and prop.status == "UNKNOWN":
                         prop.status = "PASS"
 
@@ -285,7 +285,7 @@ def run(mode, task, engine_idx, engine):
                 assert False
 
             if task.basecase_pass and task.induction_pass:
-                for prop in task.design_hierarchy:
+                for prop in task.design.hierarchy:
                     if prop.type == prop.Type.ASSERT and prop.status == "UNKNOWN":
                         prop.status = "PASS"
                 task.update_status("PASS")

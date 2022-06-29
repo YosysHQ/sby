@@ -99,7 +99,16 @@ class SbyModule:
                 return prop
         raise KeyError(f"No such property: {cell_name}")
 
+
+@dataclass
+class SbyDesign:
+    hierarchy: SbyModule = None
+    memory_bits: int = 0
+    forall: bool = False
+
+
 def design_hierarchy(filename):
+    design = SbyDesign(hierarchy=None)
     design_json = json.load(filename)
     def make_mod_hier(instance_name, module_name, hierarchy=""):
         # print(instance_name,":", module_name)
@@ -125,13 +134,19 @@ def design_hierarchy(filename):
             if sort["type"][0] != '$' or sort["type"].startswith("$paramod"):
                 for cell in sort["cells"]:
                     mod.submodules[cell["name"]] = make_mod_hier(cell["name"], sort["type"], hierarchy=sub_hierarchy)
+            if sort["type"] in ["$mem", "$mem_v2"]:
+                for cell in sort["cells"]:
+                    design.memory_bits += int(cell["parameters"]["WIDTH"], 2) * int(cell["parameters"]["SIZE"], 2)
+            if sort["type"] in ["$allconst", "$allseq"]:
+                design.forall = True
+
         return mod
 
     for m in design_json["modules"]:
         attrs = m["attributes"]
         if "top" in attrs and int(attrs["top"]) == 1:
-            hierarchy = make_mod_hier(m["name"], m["name"])
-            return hierarchy
+            design.hierarchy = make_mod_hier(m["name"], m["name"])
+            return design
     else:
         raise ValueError("Cannot find top module")
 
@@ -140,10 +155,11 @@ def main():
     if len(sys.argv) != 2:
         print(f"""Usage: {sys.argv[0]} design.json""")
     with open(sys.argv[1]) as f:
-        d = design_hierarchy(f)
-        print("Design Hierarchy:", d)
-        for p in d.get_property_list():
+        design = design_hierarchy(f)
+        print("Design Hierarchy:", design.hierarchy)
+        for p in design.hierarchy.get_property_list():
             print("Property:", p)
+        print("Memory Bits:", design.memory_bits)
 
 if __name__ == '__main__':
     main()
