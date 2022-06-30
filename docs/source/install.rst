@@ -3,12 +3,12 @@
 Installation guide
 ==================
 
-This document will guide you through the process of installing SymbiYosys.
+This document will guide you through the process of installing sby.
 
 CAD suite(s)
 ************
 
-SymbiYosys (sby) is part of the `Tabby CAD Suite
+Sby (SymbiYosys) is part of the `Tabby CAD Suite
 <https://www.yosyshq.com/tabby-cad-datasheet>`_ and the `OSS CAD Suite
 <https://github.com/YosysHQ/oss-cad-suite-build>`_! The easiest way to use sby
 is to install the binary software suite, which contains all required
@@ -32,9 +32,9 @@ CAD Suite, please visit https://www.yosyshq.com/tabby-cad-datasheet.
 Installing from source
 **********************
 
-Follow the instructions below to install SymbiYosys and its dependencies.
-Yosys, SymbiYosys, and Z3 are non-optional. The other packages are only
-required for some engine configurations.
+Follow the instructions below to install sby and its dependencies. Yosys and sby
+are non-optional.  Boolector is recommended to install but not required.  The
+other packages are only required for some engine configurations.
 
 Prerequisites
 -------------
@@ -59,7 +59,7 @@ https://yosyshq.net/yosys/
 
 https://people.eecs.berkeley.edu/~alanmi/abc/
 
-Next install Yosys, Yosys-SMTBMC and ABC (``yosys-abc``):
+Note that this will install Yosys, Yosys-SMTBMC and ABC (as ``yosys-abc``):
 
 .. code-block:: text
 
@@ -68,8 +68,8 @@ Next install Yosys, Yosys-SMTBMC and ABC (``yosys-abc``):
    make -j$(nproc)
    sudo make install
 
-SymbiYosys
-^^^^^^^^^^
+sby
+^^^
 
 https://github.com/YosysHQ/sby
 
@@ -79,24 +79,37 @@ https://github.com/YosysHQ/sby
    cd sby
    sudo make install
 
-Z3
-^^
+Recommended components
+----------------------
 
-https://github.com/Z3Prover/z3/wiki
+Boolector
+^^^^^^^^^
+
+https://boolector.github.io
 
 .. code-block:: text
+    git clone https://github.com/boolector/boolector
+    cd boolector
+    ./contrib/setup-btor2tools.sh
+    ./contrib/setup-lingeling.sh
+    ./configure.sh
+    make -C build -j$(nproc)
+    sudo cp build/bin/{boolector,btor*} /usr/local/bin/
+    sudo cp deps/btor2tools/bin/btorsim /usr/local/bin/
 
-   git clone https://github.com/Z3Prover/z3
-   cd z3
-   python scripts/mk_make.py
-   cd build
-   make -j$(nproc)
-   sudo make install
+To use the ``btor`` engine you will need to install btor2tools from 
+`commit c35cf1c <https://github.com/Boolector/btor2tools/commit/c35cf1c>`_ or
+newer. 
 
 Optional components
 -------------------
 Additional solver engines can be installed as per their instructions, links are
 provided below.
+
+Z3
+^^^
+
+  https://github.com/Z3Prover/z3
 
 Yices 2
 ^^^^^^^
@@ -111,12 +124,3 @@ super_prove
 Avy
 ^^^
   https://arieg.bitbucket.io/avy/
-
-Boolector
-^^^^^^^^^
-  http://fmv.jku.at/boolector/
-
-  https://github.com/boolector/boolector
-
-  To use the ``btor`` engine you additionally need a newer version of btorsim
-  than the boolector setup script builds: https://github.com/boolector/btor2tools

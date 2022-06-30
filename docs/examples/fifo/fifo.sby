@@ -1,10 +1,8 @@
 [tasks]
-prove_oss prove oss
-noskip prove oss
-cover_oss cover oss
-prove_tabby prove tabby
-cover_tabby cover tabby
-prove_oss cover_oss : default
+basic bmc
+nofullskip prove
+cover
+basic cover : default
 
 [options]
 cover:
@@ -13,18 +11,17 @@ mode cover
 prove:
 mode prove
 --
+bmc: 
+mode bmc
+--
 
 [engines]
-cover: smtbmc z3
-prove: abc pdr
+smtbmc boolector
 
 [script]
-read -sv fifo.sv
-tabby: read -define USE_VERIFIC=1
-noskip: read -define NOSKIP=1
-read -formal top.sv
+nofullskip: read -define NO_FULL_SKIP=1
+read -formal fifo.sv
 prep -top fifo
 
 [files]
 fifo.sv
-top.sv
