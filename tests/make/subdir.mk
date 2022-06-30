@@ -1,15 +1,17 @@
+TESTDIR ?= ..
+
 test:
-	@$(MAKE) -C .. $(SUBDIR)/$@
+	@$(MAKE) -C $(TESTDIR) $(SUBDIR)/$@
 
 .PHONY: test refresh IMPLICIT_PHONY
 
 IMPLICIT_PHONY:
 
 refresh:
-	@$(MAKE) -C .. refresh
+	@$(MAKE) -C $(TESTDIR) refresh
 
 help:
-	@$(MAKE) -C .. help
+	@$(MAKE) -C $(TESTDIR) help
 
 %: IMPLICIT_PHONY
-	@$(MAKE) -C .. $(SUBDIR)/$@
+	@$(MAKE) -C $(TESTDIR) $(SUBDIR)/$@

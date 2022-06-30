@@ -1,6 +1,8 @@
 [tasks]
 btormc
 pono
+cvc4
+cvc5
 
 [options]
 mode bmc
@@ -10,6 +12,8 @@ expect fail
 [engines]
 btormc: btor btormc
 pono: btor pono
+cvc4: smtbmc cvc4
+cvc5: smtbmc cvc5
 
 [script]
 read -formal demo.sv

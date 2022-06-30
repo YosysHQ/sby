@@ -46,6 +46,10 @@ parser.add_argument("-T", metavar="<taskname>", action="append", dest="tasknames
         help="add taskname (useful when sby file is read from stdin)")
 parser.add_argument("-E", action="store_true", dest="throw_err",
         help="throw an exception (incl stack trace) for most errors")
+parser.add_argument("--autotune", action="store_true", dest="autotune",
+        help="automatically find a well performing engine and engine configuration for each task")
+parser.add_argument("--autotune-config", dest="autotune_config",
+        help="read an autotune configuration file (overrides the sby file's autotune options)")
 
 parser.add_argument("--yosys", metavar="<path_to_executable>",
         action=DictAction, dest="exe_paths")
@@ -108,6 +112,8 @@ dump_taskinfo = args.dump_taskinfo
 dump_files = args.dump_files
 reusedir = False
 setupmode = args.setupmode
+autotune = args.autotune
+autotune_config = args.autotune_config
 init_config_file = args.init_config_file
 
 if sbyfile is not None:
@@ -381,6 +387,7 @@ if dump_taskinfo:
         taskinfo[taskname or ""] = {
             "mode": cfg.options.get("mode"),
             "engines": cfg.engines,
+            "script": cfg.script,
         }
     print(json.dumps(taskinfo, indent=2))
     sys.exit(0)
@@ -401,7 +408,10 @@ def run_task(taskname):
     if workdir is not None:
         my_workdir = workdir
     elif workdir_prefix is not None:
-        my_workdir = workdir_prefix + "_" + taskname
+        if taskname is None:
+            my_workdir = workdir_prefix
+        else:
+            my_workdir = workdir_prefix + "_" + taskname
 
     if my_workdir is None and sbyfile is not None and not my_opt_tmpdir:
         my_workdir = sbyfile[:-4]
@@ -424,7 +434,7 @@ def run_task(taskname):
         if reusedir:
             pass
         elif os.path.isdir(my_workdir):
-            print(f"ERROR: Directory '{my_workdir}' already exists.")
+            print(f"ERROR: Directory '{my_workdir}' already exists, use -f to overwrite the existing directory.")
             sys.exit(1)
         else:
             os.makedirs(my_workdir)
@@ -457,13 +467,15 @@ def run_task(taskname):
     for k, v in exe_paths.items():
         task.exe_paths[k] = v
 
-    if throw_err:
-        task.run(setupmode)
-    else:
-        try:
+    try:
+        if autotune:
+            import sby_autotune
+            sby_autotune.SbyAutotune(task, autotune_config).run()
+        else:
             task.run(setupmode)
-        except SbyAbort:
-            pass
+    except SbyAbort:
+        if throw_err:
+            raise
 
     if my_opt_tmpdir:
         task.log(f"Removing directory '{my_workdir}'.")
@@ -475,7 +487,7 @@ def run_task(taskname):
         task.log(f"DONE ({task.status}, rc={task.retcode})")
     task.logfile.close()
 
-    if not my_opt_tmpdir and not setupmode:
+    if not my_opt_tmpdir and not setupmode and not autotune:
         with open("{}/{}.xml".format(task.workdir, junit_filename), "w") as f:
             task.print_junit_result(f, junit_ts_name, junit_tc_name, junit_format_strict=False)
 

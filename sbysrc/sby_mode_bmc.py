@@ -24,8 +24,7 @@ def run(task):
     task.handle_int_option("append", 0)
     task.handle_str_option("aigsmt", "yices")
 
-    for engine_idx in range(len(task.engines)):
-        engine = task.engines[engine_idx]
+    for engine_idx, engine in task.engine_list():
         assert len(engine) > 0
 
         task.log(f"""engine_{engine_idx}: {" ".join(engine)}""")
@@ -38,6 +37,10 @@ def run(task):
         elif engine[0] == "abc":
             import sby_engine_abc
             sby_engine_abc.run("bmc", task, engine_idx, engine)
+
+        elif engine[0] == "aiger":
+            import sby_engine_aiger
+            sby_engine_aiger.run("bmc", task, engine_idx, engine)
 
         elif engine[0] == "btor":
             import sby_engine_btor

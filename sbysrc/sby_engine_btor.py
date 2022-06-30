@@ -46,7 +46,10 @@ def run(mode, task, engine_idx, engine):
     elif solver_args[0] == "pono":
         if random_seed:
             task.error("Setting the random seed is not available for the pono solver.")
+        if task.opt_skip is not None:
+            task.error("The btor engine supports the option skip only for the btormc solver.")
         solver_cmd = task.exe_paths["pono"] + f" --witness -v 1 -e bmc -k {task.opt_depth - 1}"
+        solver_cmd += " ".join([""] + solver_args[1:])
 
     else:
         task.error(f"Invalid solver command {solver_args[0]}.")
@@ -110,8 +113,6 @@ def run(mode, task, engine_idx, engine):
 
     def make_exit_callback(suffix):
         def exit_callback2(retcode):
-            assert retcode == 0
-
             vcdpath = f"{task.workdir}/engine_{engine_idx}/trace{suffix}.vcd"
             if os.path.exists(vcdpath):
                 common_state.produced_traces.append(f"""{"" if mode == "cover" else "counterexample "}trace: {vcdpath}""")
@@ -128,13 +129,15 @@ def run(mode, task, engine_idx, engine):
                 match = re.search(r"calling BMC on ([0-9]+) properties", line)
                 if match:
                     common_state.expected_cex = int(match[1])
-                    assert common_state.produced_cex == 0
+                    if common_state.produced_cex != 0:
+                        task.error(f"engine_{engine_idx}: Unexpected engine output (property count).")
 
             else:
                 task.error(f"engine_{engine_idx}: BTOR solver '{solver_args[0]}' is currently not supported in cover mode.")
 
         if (common_state.produced_cex < common_state.expected_cex) and line == "sat":
-            assert common_state.wit_file == None
+            if common_state.wit_file != None:
+                task.error(f"engine_{engine_idx}: Unexpected engine output (sat).")
             if common_state.expected_cex == 1:
                 common_state.wit_file = open(f"{task.workdir}/engine_{engine_idx}/trace.wit", "w")
             else:
@@ -193,12 +196,9 @@ def run(mode, task, engine_idx, engine):
         return None
 
     def exit_callback(retcode):
-        if solver_args[0] == "pono":
-            assert retcode in [0, 1, 255] # UNKNOWN = -1, FALSE = 0, TRUE = 1, ERROR = 2
-        else:
-            assert retcode == 0
         if common_state.expected_cex != 0:
-            assert common_state.solver_status is not None
+            if common_state.solver_status is None:
+                task.error(f"engine_{engine_idx}: Could not determine engine status.")
 
         if common_state.solver_status == "unsat":
             if common_state.expected_cex == 1:
@@ -219,7 +219,9 @@ def run(mode, task, engine_idx, engine):
         f"cd {task.workdir}; {solver_cmd} model/design_btor{'_single' if solver_args[0]=='pono' else ''}.btor",
         logfile=open(f"{task.workdir}/engine_{engine_idx}/logfile.txt", "w")
     )
-
+    proc.checkretcode = True
+    if solver_args[0] == "pono":
+        proc.retcodes = [0, 1, 255] # UNKNOWN = -1, FALSE = 0, TRUE = 1, ERROR = 2
     proc.output_callback = output_callback
     proc.exit_callback = exit_callback
     common_state.running_procs += 1

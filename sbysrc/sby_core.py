@@ -22,7 +22,7 @@ if os.name == "posix":
 import subprocess
 from shutil import copyfile, copytree, rmtree
 from select import select
-from time import time, localtime, sleep, strftime
+from time import monotonic, localtime, sleep, strftime
 from sby_design import SbyProperty, SbyModule, design_hierarchy
 
 all_procs_running = []
@@ -51,7 +51,9 @@ class SbyProc:
         self.running = False
         self.finished = False
         self.terminated = False
+        self.exited = False
         self.checkretcode = False
+        self.retcodes = [0]
         self.task = task
         self.info = info
         self.deps = deps
@@ -80,13 +82,17 @@ class SbyProc:
         self.logstderr = logstderr
         self.silent = silent
 
-        self.task.procs_pending.append(self)
+        self.task.update_proc_pending(self)
 
         for dep in self.deps:
             dep.register_dep(self)
 
         self.output_callback = None
         self.exit_callback = None
+        self.error_callback = None
+
+        if self.task.timeout_reached:
+            self.terminate(True)
 
     def register_dep(self, next_proc):
         if self.finished:
@@ -115,6 +121,14 @@ class SbyProc:
         if self.exit_callback is not None:
             self.exit_callback(retcode)
 
+    def handle_error(self, retcode):
+        if self.terminated:
+            return
+        if self.logfile is not None:
+            self.logfile.close()
+        if self.error_callback is not None:
+            self.error_callback(retcode)
+
     def terminate(self, timeout=False):
         if self.task.opt_wait and not timeout:
             return
@@ -127,12 +141,19 @@ class SbyProc:
                 except PermissionError:
                     pass
             self.p.terminate()
-            self.task.procs_running.remove(self)
-            all_procs_running.remove(self)
+            self.task.update_proc_stopped(self)
+        elif not self.finished and not self.terminated and not self.exited:
+            self.task.update_proc_canceled(self)
         self.terminated = True
 
-    def poll(self):
-        if self.finished or self.terminated:
+    def poll(self, force_unchecked=False):
+        if self.task.task_local_abort and not force_unchecked:
+            try:
+                self.poll(True)
+            except SbyAbort:
+                self.task.terminate(True)
+            return
+        if self.finished or self.terminated or self.exited:
             return
 
         if not self.running:
@@ -158,9 +179,7 @@ class SbyProc:
                 self.p = subprocess.Popen(self.cmdline, shell=True, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
                         stderr=(subprocess.STDOUT if self.logstderr else None))
 
-            self.task.procs_pending.remove(self)
-            self.task.procs_running.append(self)
-            all_procs_running.append(self)
+            self.task.update_proc_running(self)
             self.running = True
             return
 
@@ -177,27 +196,27 @@ class SbyProc:
         if self.p.poll() is not None:
             if not self.silent:
                 self.task.log(f"{self.info}: finished (returncode={self.p.returncode})")
-            self.task.procs_running.remove(self)
-            all_procs_running.remove(self)
+            self.task.update_proc_stopped(self)
             self.running = False
+            self.exited = True
 
             if self.p.returncode == 127:
-                self.task.status = "ERROR"
                 if not self.silent:
                     self.task.log(f"{self.info}: COMMAND NOT FOUND. ERROR.")
+                self.handle_error(self.p.returncode)
                 self.terminated = True
-                self.task.terminate()
+                self.task.proc_failed(self)
+                return
+
+            if self.checkretcode and self.p.returncode not in self.retcodes:
+                if not self.silent:
+                    self.task.log(f"{self.info}: task failed. ERROR.")
+                self.handle_error(self.p.returncode)
+                self.terminated = True
+                self.task.proc_failed(self)
                 return
 
             self.handle_exit(self.p.returncode)
-
-            if self.checkretcode and self.p.returncode != 0:
-                self.task.status = "ERROR"
-                if not self.silent:
-                    self.task.log(f"{self.info}: task failed. ERROR.")
-                self.terminated = True
-                self.task.terminate()
-                return
 
             self.finished = True
             for next_proc in self.notify:
@@ -214,6 +233,7 @@ class SbyConfig:
         self.options = dict()
         self.engines = list()
         self.script = list()
+        self.autotune_config = None
         self.files = dict()
         self.verbatim_files = dict()
         pass
@@ -223,7 +243,7 @@ class SbyConfig:
 
         for line in f:
             raw_line = line
-            if mode in ["options", "engines", "files"]:
+            if mode in ["options", "engines", "files", "autotune"]:
                 line = re.sub(r"\s*(\s#.*)?$", "", line)
                 if line == "" or line[0] == "#":
                     continue
@@ -256,6 +276,15 @@ class SbyConfig:
                         self.error(f"sby file syntax error: {line}")
                     continue
 
+                if entries[0] == "autotune":
+                    mode = "autotune"
+                    if self.autotune_config:
+                        self.error(f"sby file syntax error: {line}")
+
+                    import sby_autotune
+                    self.autotune_config = sby_autotune.SbyAutotuneConfig()
+                    continue
+
                 if entries[0] == "file":
                     mode = "file"
                     if len(entries) != 2:
@@ -279,6 +308,10 @@ class SbyConfig:
                 if len(entries) != 2:
                     self.error(f"sby file syntax error: {line}")
                 self.options[entries[0]] = entries[1]
+                continue
+
+            if mode == "autotune":
+                self.autotune_config.config_line(self, line)
                 continue
 
             if mode == "engines":
@@ -309,8 +342,55 @@ class SbyConfig:
     def error(self, logmessage):
         raise SbyAbort(logmessage)
 
+
+class SbyTaskloop:
+    def __init__(self):
+        self.procs_pending = []
+        self.procs_running = []
+        self.tasks = []
+        self.poll_now = False
+
+    def run(self):
+        for proc in self.procs_pending:
+            proc.poll()
+
+        while len(self.procs_running) or self.poll_now:
+            fds = []
+            for proc in self.procs_running:
+                if proc.running:
+                    fds.append(proc.p.stdout)
+
+            if not self.poll_now:
+                if os.name == "posix":
+                    try:
+                        select(fds, [], [], 1.0) == ([], [], [])
+                    except InterruptedError:
+                        pass
+                else:
+                    sleep(0.1)
+            self.poll_now = False
+
+            for proc in self.procs_running:
+                proc.poll()
+
+            for proc in self.procs_pending:
+                proc.poll()
+
+            tasks = self.tasks
+            self.tasks = []
+            for task in tasks:
+                task.check_timeout()
+                if task.procs_pending or task.procs_running:
+                    self.tasks.append(task)
+                else:
+                    task.exit_callback()
+
+        for task in self.tasks:
+            task.exit_callback()
+
+
 class SbyTask(SbyConfig):
-    def __init__(self, sbyconfig, workdir, early_logs, reusedir):
+    def __init__(self, sbyconfig, workdir, early_logs, reusedir, taskloop=None, logfile=None):
         super().__init__()
         self.used_options = set()
         self.models = dict()
@@ -319,8 +399,10 @@ class SbyTask(SbyConfig):
         self.status = "UNKNOWN"
         self.total_time = 0
         self.expect = list()
-        self.design_hierarchy = None
+        self.design = None
         self.precise_prop_status = False
+        self.timeout_reached = False
+        self.task_local_abort = False
 
         yosys_program_prefix = "" ##yosys-program-prefix##
         self.exe_paths = {
@@ -334,10 +416,13 @@ class SbyTask(SbyConfig):
             "pono": os.getenv("PONO", "pono"),
         }
 
+        self.taskloop = taskloop or SbyTaskloop()
+        self.taskloop.tasks.append(self)
+
         self.procs_running = []
         self.procs_pending = []
 
-        self.start_clock_time = time()
+        self.start_clock_time = monotonic()
 
         if os.name == "posix":
             ru = resource.getrusage(resource.RUSAGE_CHILDREN)
@@ -345,7 +430,8 @@ class SbyTask(SbyConfig):
 
         self.summary = list()
 
-        self.logfile = open(f"{workdir}/logfile.txt", "a")
+        self.logfile = logfile or open(f"{workdir}/logfile.txt", "a")
+        self.log_targets = [sys.stdout, self.logfile]
 
         for line in early_logs:
             print(line, file=self.logfile, flush=True)
@@ -355,46 +441,47 @@ class SbyTask(SbyConfig):
                 for line in sbyconfig:
                     print(line, file=f)
 
-    def taskloop(self):
-        for proc in self.procs_pending:
-            proc.poll()
+    def engine_list(self):
+        return list(enumerate(self.engines))
 
-        while len(self.procs_running):
-            fds = []
-            for proc in self.procs_running:
-                if proc.running:
-                    fds.append(proc.p.stdout)
+    def check_timeout(self):
+        if self.opt_timeout is not None:
+            total_clock_time = int(monotonic() - self.start_clock_time)
+            if total_clock_time > self.opt_timeout:
+                self.log(f"Reached TIMEOUT ({self.opt_timeout} seconds). Terminating all subprocesses.")
+                self.status = "TIMEOUT"
+                self.terminate(timeout=True)
 
-            if os.name == "posix":
-                try:
-                    select(fds, [], [], 1.0) == ([], [], [])
-                except InterruptedError:
-                    pass
-            else:
-                sleep(0.1)
+    def update_proc_pending(self, proc):
+        self.procs_pending.append(proc)
+        self.taskloop.procs_pending.append(proc)
 
-            for proc in self.procs_running:
-                proc.poll()
+    def update_proc_running(self, proc):
+        self.procs_pending.remove(proc)
+        self.taskloop.procs_pending.remove(proc)
 
-            for proc in self.procs_pending:
-                proc.poll()
+        self.procs_running.append(proc)
+        self.taskloop.procs_running.append(proc)
+        all_procs_running.append(proc)
 
-            if self.opt_timeout is not None:
-                total_clock_time = int(time() - self.start_clock_time)
-                if total_clock_time > self.opt_timeout:
-                    self.log(f"Reached TIMEOUT ({self.opt_timeout} seconds). Terminating all subprocesses.")
-                    self.status = "TIMEOUT"
-                    self.terminate(timeout=True)
+    def update_proc_stopped(self, proc):
+        self.procs_running.remove(proc)
+        self.taskloop.procs_running.remove(proc)
+        all_procs_running.remove(proc)
+
+    def update_proc_canceled(self, proc):
+        self.procs_pending.remove(proc)
+        self.taskloop.procs_pending.remove(proc)
 
     def log(self, logmessage):
         tm = localtime()
-        print("SBY {:2d}:{:02d}:{:02d} [{}] {}".format(tm.tm_hour, tm.tm_min, tm.tm_sec, self.workdir, logmessage), flush=True)
-        print("SBY {:2d}:{:02d}:{:02d} [{}] {}".format(tm.tm_hour, tm.tm_min, tm.tm_sec, self.workdir, logmessage), file=self.logfile, flush=True)
+        line = "SBY {:2d}:{:02d}:{:02d} [{}] {}".format(tm.tm_hour, tm.tm_min, tm.tm_sec, self.workdir, logmessage)
+        for target in self.log_targets:
+            print(line, file=target, flush=True)
 
     def error(self, logmessage):
         tm = localtime()
-        print("SBY {:2d}:{:02d}:{:02d} [{}] ERROR: {}".format(tm.tm_hour, tm.tm_min, tm.tm_sec, self.workdir, logmessage), flush=True)
-        print("SBY {:2d}:{:02d}:{:02d} [{}] ERROR: {}".format(tm.tm_hour, tm.tm_min, tm.tm_sec, self.workdir, logmessage), file=self.logfile, flush=True)
+        self.log(f"ERROR: {logmessage}")
         self.status = "ERROR"
         if "ERROR" not in self.expect:
             self.retcode = 16
@@ -503,14 +590,15 @@ class SbyTask(SbyConfig):
             proc.checkretcode = True
 
             def instance_hierarchy_callback(retcode):
-                if retcode != 0:
-                    self.precise_prop_status = False
-                    return
-                if self.design_hierarchy == None:
+                if self.design == None:
                     with open(f"{self.workdir}/model/design.json") as f:
-                        self.design_hierarchy = design_hierarchy(f)
+                        self.design = design_hierarchy(f)
+
+            def instance_hierarchy_error_callback(retcode):
+                self.precise_prop_status = False
 
             proc.exit_callback = instance_hierarchy_callback
+            proc.error_callback = instance_hierarchy_error_callback
 
             return [proc]
 
@@ -619,8 +707,17 @@ class SbyTask(SbyConfig):
         return self.models[model_name]
 
     def terminate(self, timeout=False):
+        if timeout:
+            self.timeout_reached = True
         for proc in list(self.procs_running):
             proc.terminate(timeout=timeout)
+        for proc in list(self.procs_pending):
+            proc.terminate(timeout=timeout)
+
+    def proc_failed(self, proc):
+        # proc parameter used by autotune override
+        self.status = "ERROR"
+        self.terminate()
 
     def update_status(self, new_status):
         assert new_status in ["PASS", "FAIL", "UNKNOWN", "ERROR"]
@@ -646,6 +743,12 @@ class SbyTask(SbyConfig):
             assert 0
 
     def run(self, setupmode):
+        self.setup_procs(setupmode)
+        if not setupmode:
+            self.taskloop.run()
+            self.write_summary_file()
+
+    def handle_non_engine_options(self):
         with open(f"{self.workdir}/config.sby", "r") as f:
             self.parse_config(f)
 
@@ -663,6 +766,9 @@ class SbyTask(SbyConfig):
             if s not in ["PASS", "FAIL", "UNKNOWN", "ERROR", "TIMEOUT"]:
                 self.error(f"Invalid expect value: {s}")
 
+        if self.opt_mode != "live":
+            self.handle_int_option("depth", 20)
+
         self.handle_bool_option("multiclock", False)
         self.handle_bool_option("wait", False)
         self.handle_int_option("timeout", None)
@@ -671,8 +777,10 @@ class SbyTask(SbyConfig):
         self.handle_int_option("skip", None)
         self.handle_str_option("tbtop", None)
 
+    def setup_procs(self, setupmode):
+        self.handle_non_engine_options()
         if self.opt_smtc is not None:
-            for engine in self.engines:
+            for engine_idx, engine in self.engine_list():
                 if engine[0] != "smtbmc":
                     self.error("Option smtc is only valid for smtbmc engine.")
 
@@ -680,11 +788,11 @@ class SbyTask(SbyConfig):
             if self.opt_skip == 0:
                 self.opt_skip = None
             else:
-                for engine in self.engines:
+                for engine_idx, engine in self.engine_list():
                     if engine[0] not in ["smtbmc", "btor"]:
                         self.error("Option skip is only valid for smtbmc and btor engines.")
 
-        if len(self.engines) == 0:
+        if len(self.engine_list()) == 0:
             self.error("Config file is lacking engine configuration.")
 
         if self.reusedir:
@@ -719,9 +827,8 @@ class SbyTask(SbyConfig):
             if opt not in self.used_options:
                 self.error(f"Unused option: {opt}")
 
-        self.taskloop()
-
-        total_clock_time = int(time() - self.start_clock_time)
+    def summarize(self):
+        total_clock_time = int(monotonic() - self.start_clock_time)
 
         if os.name == "posix":
             ru = resource.getrusage(resource.RUSAGE_CHILDREN)
@@ -755,14 +862,18 @@ class SbyTask(SbyConfig):
             if self.status == "TIMEOUT": self.retcode = 8
             if self.status == "ERROR": self.retcode = 16
 
+    def write_summary_file(self):
         with open(f"{self.workdir}/{self.status}", "w") as f:
             for line in self.summary:
                 print(line, file=f)
 
+    def exit_callback(self):
+        self.summarize()
+
     def print_junit_result(self, f, junit_ts_name, junit_tc_name, junit_format_strict=False):
         junit_time = strftime('%Y-%m-%dT%H:%M:%S')
         if self.precise_prop_status:
-            checks = self.design_hierarchy.get_property_list()
+            checks = self.design.hierarchy.get_property_list()
             junit_tests = len(checks)
             junit_failures = 0
             junit_errors = 0

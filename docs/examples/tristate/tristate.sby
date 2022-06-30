@@ -1,0 +1,20 @@
+[tasks]
+pass
+fail
+
+[options]
+fail: expect fail
+mode prove
+depth 5
+
+[engines]
+smtbmc
+
+[script]
+read -sv tristates.v
+pass: prep -top top_pass
+fail: prep -top top_fail
+flatten; tribuf -formal
+
+[files]
+tristates.v

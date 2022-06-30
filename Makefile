@@ -10,6 +10,8 @@ ifeq ($(OS), Windows_NT)
 PYTHON = $(shell cygpath -w -m $(PREFIX)/bin/python3)
 endif
 
+.PHONY: help install ci test html clean
+
 help:
 	@echo ""
 	@echo "sudo make install"
@@ -19,7 +21,11 @@ help:
 	@echo "    build documentation in docs/build/html/"
 	@echo ""
 	@echo "make test"
-	@echo "    run examples"
+	@echo "    run tests, skipping tests with missing dependencies"
+	@echo ""
+	@echo "make ci"
+	@echo "    run all tests, failing tests with missing dependencies"
+	@echo "    note: this requires a full Tabby CAD Suite or OSS CAD Suite install"
 	@echo ""
 	@echo "make clean"
 	@echo "    cleanup"
@@ -39,17 +45,22 @@ else
 	chmod +x $(DESTDIR)$(PREFIX)/bin/sby
 endif
 
-ci: \
-  test_demo1 test_demo2 test_demo3 \
-  test_abstract_abstr test_abstract_props \
-  test_demos_fib_cover test_demos_fib_prove test_demos_fib_live \
-  test_multiclk_dpmem \
-  test_puzzles_djb2hash test_puzzles_pour853to4 test_puzzles_wolfgoatcabbage \
-  test_puzzles_primegen_primegen test_puzzles_primegen_primes_pass test_puzzles_primegen_primes_fail \
-  test_quickstart_demo test_quickstart_cover test_quickstart_prove test_quickstart_memory \
-  run_tests
+.PHONY: check_cad_suite run_ci
+
+ci: check_cad_suite
+	@$(MAKE) run_ci
+
+run_ci:
+	$(MAKE) test NOSKIP=1
 	if yosys -qp 'read -verific' 2> /dev/null; then set -x; \
-		YOSYS_NOVERIFIC=1 $(MAKE) ci; \
+		YOSYS_NOVERIFIC=1 $(MAKE) run_ci; \
+	fi
+
+check_cad_suite:
+	@if ! which tabbypip >/dev/null 2>&1; then \
+		echo "'make ci' requries the Tabby CAD Suite or the OSS CAD Suite"; \
+		echo "try 'make test' instead or run 'make run_ci' to proceed anyway."; \
+		exit 1; \
 	fi
 
 test_demo1:
@@ -61,59 +72,7 @@ test_demo2:
 test_demo3:
 	cd sbysrc && python3 sby.py -f demo3.sby
 
-test_abstract_abstr:
-	@if yosys -qp 'read -verific' 2> /dev/null; then set -x; \
-		cd docs/examples/abstract && python3 ../../../sbysrc/sby.py -f abstr.sby; \
-	else echo "skipping $@"; fi
-
-test_abstract_props:
-	if yosys -qp 'read -verific' 2> /dev/null; then set -x; \
-		cd docs/examples/abstract && python3 ../../../sbysrc/sby.py -f props.sby; \
-	else echo "skipping $@"; fi
-
-test_demos_fib_cover:
-	cd docs/examples/demos && python3 ../../../sbysrc/sby.py -f fib.sby cover
-
-test_demos_fib_prove:
-	cd docs/examples/demos && python3 ../../../sbysrc/sby.py -f fib.sby prove
-
-test_demos_fib_live:
-	cd docs/examples/demos && python3 ../../../sbysrc/sby.py -f fib.sby live
-
-test_multiclk_dpmem:
-	cd docs/examples/multiclk && python3 ../../../sbysrc/sby.py -f dpmem.sby
-
-test_puzzles_djb2hash:
-	cd docs/examples/puzzles && python3 ../../../sbysrc/sby.py -f djb2hash.sby
-
-test_puzzles_pour853to4:
-	cd docs/examples/puzzles && python3 ../../../sbysrc/sby.py -f pour_853_to_4.sby
-
-test_puzzles_wolfgoatcabbage:
-	cd docs/examples/puzzles && python3 ../../../sbysrc/sby.py -f wolf_goat_cabbage.sby
-
-test_puzzles_primegen_primegen:
-	cd docs/examples/puzzles && python3 ../../../sbysrc/sby.py -f primegen.sby primegen
-
-test_puzzles_primegen_primes_pass:
-	cd docs/examples/puzzles && python3 ../../../sbysrc/sby.py -f primegen.sby primes_pass
-
-test_puzzles_primegen_primes_fail:
-	cd docs/examples/puzzles && python3 ../../../sbysrc/sby.py -f primegen.sby primes_fail
-
-test_quickstart_demo:
-	cd docs/examples/quickstart && python3 ../../../sbysrc/sby.py -f demo.sby
-
-test_quickstart_cover:
-	cd docs/examples/quickstart && python3 ../../../sbysrc/sby.py -f cover.sby
-
-test_quickstart_prove:
-	cd docs/examples/quickstart && python3 ../../../sbysrc/sby.py -f prove.sby
-
-test_quickstart_memory:
-	cd docs/examples/quickstart && python3 ../../../sbysrc/sby.py -f memory.sby
-
-run_tests:
+test:
 	$(MAKE) -C tests test
 
 html:
