@@ -174,10 +174,10 @@ to a higher value than the write address.
 
 .. image:: media/gtkwave_noskip.png
 
-During correct operation, the ``w_underfill`` witness will cover the underflow
+During correct operation, the ``w_underfill`` statement will cover the underflow
 case.  Examining ``fifo_cover/logfile.txt`` will reveal which trace file
-includes the witness we are looking for.  If this file doesn't exist, run the
-code below.
+includes the cover statment we are looking for.  If this file doesn't exist, run
+the code below.
 
     sby fifo.sby cover
 
