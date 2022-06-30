@@ -3,9 +3,13 @@ Getting started
 ===============
 
 .. note:: 
+
     This tutorial assumes sby and boolector installation as per the 
     :ref:`install-doc`.  For this tutorial, it is also recommended to install 
     `GTKWave <http://gtkwave.sourceforge.net/>`_, an open source VCD viewer.
+    `Source files used in this tutorial
+    <https://github.com/YosysHQ/sby/tree/master/docs/examples/fifo>`_ can be 
+    found on the sby git, under ``docs/examples/fifo``.
 
 First In, First Out (FIFO) buffer
 *********************************
@@ -109,6 +113,7 @@ should be run if no tasks are specified, such as when running the command below.
     sby fifo.sby
 
 .. note:: 
+
     The default set of tests should all pass.  If this is not the case there may
     be a problem with the installation of sby or one of its solvers. 
 
@@ -139,12 +144,12 @@ following:
 
 .. code-block:: text
 
-    SBY [fifo_nofullskip] engine_0.basecase: ##   0:00:00  Assert failed in fifo: a_count_diff
-    SBY [fifo_nofullskip] engine_0.basecase: ##   0:00:00  Assert failed in fifo: ap_underfill
-    SBY [fifo_nofullskip] engine_0.basecase: ##   0:00:00  Writing trace to VCD file: engine_0/trace.vcd
-    SBY [fifo_nofullskip] engine_0.basecase: ##   0:00:00  Writing trace to Verilog testbench: engine_0/trace_tb.v
-    SBY [fifo_nofullskip] engine_0.basecase: ##   0:00:00  Writing trace to constraints file: engine_0/trace.smtc
-    SBY [fifo_nofullskip] engine_0.basecase: ##   0:00:00  Status: failed
+    SBY [fifo_nofullskip] engine_0.basecase: ##  Assert failed in fifo: a_count_diff
+    SBY [fifo_nofullskip] engine_0.basecase: ##  Assert failed in fifo: ap_underfill
+    SBY [fifo_nofullskip] engine_0.basecase: ##  Writing trace to VCD file: engine_0/trace.vcd
+    SBY [fifo_nofullskip] engine_0.basecase: ##  Writing trace to Verilog testbench: engine_0/trace_tb.v
+    SBY [fifo_nofullskip] engine_0.basecase: ##  Writing trace to constraints file: engine_0/trace.smtc
+    SBY [fifo_nofullskip] engine_0.basecase: ##  Status: failed
     SBY [fifo_nofullskip] engine_0.basecase: finished (returncode=1)
     SBY [fifo_nofullskip] engine_0: Status returned by engine for basecase: FAIL
     SBY [fifo_nofullskip] engine_0.induction: terminating process
@@ -181,8 +186,8 @@ Searching the file for ``w_underfill`` will reveal the below.
 .. code-block:: text
 
     $ grep "w_underfill" fifo_cover/logfile.txt -A 1
-    SBY [fifo_cover] engine_0: ##   0:00:00  Reached cover statement at w_underfill in step 2.
-    SBY [fifo_cover] engine_0: ##   0:00:00  Writing trace to VCD file: engine_0/trace2.vcd
+    SBY [fifo_cover] engine_0: ##  Reached cover statement at w_underfill in step 2.
+    SBY [fifo_cover] engine_0: ##  Writing trace to VCD file: engine_0/trace2.vcd
 
 We can then run gtkwave with the trace file indicated to see the correct
 operation as in the image below.  When the buffer is empty, a read with no write
@@ -193,7 +198,45 @@ write addresses and avoiding underflow.
 
 .. image:: media/gtkwave_coverskip.png
 
-For more on using the .sby file, see the :ref:`.sby reference page <Reference for .sby file format>`.
+Exercise
+********
+
+Adjust the ``[script]`` section of ``fifo.sby`` so that it looks like the below.
+
+.. code-block:: text
+
+    [script]
+    nofullskip: read -define NO_FULL_SKIP=1
+    read -formal fifo.sv
+    hierarchy -check -top fifo -chparam MAX_DATA 17
+    prep -top fifo
+
+The ``hierarchy`` command we added changes the ``MAX_DATA`` parameter of the top
+module to be 17.  Now run the ``basic`` task and see what happens.  It should
+fail and give an error like ``Assert failed in fifo: a_count_diff``. Can you
+modify the verilog code so that it works with larger values of ``MAX_DATA``
+while still passing all of the tests?
+
+.. note::
+
+    If you need a **hint**, try increasing the width of the address wires.  4 bits
+    supports up to :math:`2^4=16` addresses.  Are there other signals that 
+    need to be wider?  Can you make the width parameterisable to support 
+    arbitrarily large buffers?  
+
+Once the tests are passing with ``MAX_DATA=17``, try something bigger, like 64,
+or 100.  Does the ``basic`` task still pass?  What about ``cover``?  By default,
+``bmc & cover`` modes will run to a depth of 20 cycles.  If a maximum of one
+value can be loaded in each cycle, how many cycles will it take to load 100
+values?  Using the :ref:`.sby reference page <Reference for .sby file format>`,
+try to increase the cover mode depth to be at least a few cycles larger than the
+``MAX_DATA``.
+
+.. note::
+    
+    Reference files are provided in the ``fifo/golden`` directory, showing how
+    the verilog could have been modified and how a ``bigtest`` task could be
+    added.
 
 Concurrent assertions
 *********************
@@ -223,5 +266,6 @@ requires a skip in the read address, then the read address will *not* change.
 Further information
 *******************
 For more information on the uses of assertions and the difference between
-immediate and concurrent assertions, refer to appnote 109: Property Checking
-with SystemVerilog Assertions.
+immediate and concurrent assertions, refer to appnote 109: `Property Checking
+with SystemVerilog Assertions 
+<https://yosyshq.readthedocs.io/projects/ap109/en/latest/>`_.
