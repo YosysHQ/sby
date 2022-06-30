@@ -111,9 +111,7 @@ module fifo (
             // waddr and raddr can only be non zero if reset is high
             w_nreset: cover (waddr || raddr);
 
-            // count never less than zero, or more than max
-            a_uflow:  assert (count >= 0);
-            a_uflow2: assert (raddr >= 0);
+            // count never more than max
             a_oflow:  assert (count <= MAX_DATA);
             a_oflow2: assert (waddr < MAX_DATA);
 
