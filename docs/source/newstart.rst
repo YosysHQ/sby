@@ -33,7 +33,8 @@ First, the address generator module:
 
 .. literalinclude:: ../examples/fifo/fifo.sv
    :language: systemverilog
-   :lines: 1-23
+   :start-at: address generator
+   :end-at: endmodule
 
 This module is instantiated twice; once for the write address and once for the
 read address.  In both cases, the address will start at and reset to 0, and will
@@ -45,7 +46,9 @@ Next, the register file:
 
 .. literalinclude:: ../examples/fifo/fifo.sv
    :language: systemverilog
-   :lines: 39-47
+   :start-at: fifo storage
+   :end-before: end storage
+   :dedent:
 
 Notice that this register design includes a synchronous write and asynchronous
 read.  Each word is 8 bits, and up to 16 words can be stored in the buffer.
@@ -58,9 +61,11 @@ satisfy.  For example, there must never be more than there is memory available.
 By assigning a signal to count the number of values in the buffer, we can make
 the following assertion in the code:
 
-.. code-block:: systemverilog
-
-    a_oflow:  assert (count <= MAX_DATA);
+.. literalinclude:: ../examples/fifo/fifo.sv
+   :language: systemverilog
+   :start-at: a_oflow
+   :end-at: ;
+   :dedent:
 
 It is also possible to use the prior value of a signal for comparison.  This can
 be used, for example, to ensure that the count is only able to increase or
@@ -69,12 +74,11 @@ decrease by 1.  A case must be added to handle resetting the count directly to
 code; at least one of these conditions must be true at all times if our design
 is to be correct.
 
-.. code-block:: systemverilog
-
-    a_counts: assert (count == 0
-                   || count == $past(count)
-                   || count == $past(count) + 1
-                   || count == $past(count) - 1);
+.. literalinclude:: ../examples/fifo/fifo.sv
+   :language: systemverilog
+   :start-at: a_counts
+   :end-at: ;
+   :dedent:
 
 As our count signal is used independently of the read and write pointers, we
 must verify that the count is always correct.  While the write pointer will
@@ -83,14 +87,17 @@ means that the write *address* could wrap around and appear *less than* the read
 address.  So we must first perform some simple arithmetic to find the absolute
 difference in addresses, and then compare with the count signal.
 
-.. code-block:: systemverilog
+.. literalinclude:: ../examples/fifo/fifo.sv
+   :language: systemverilog
+   :start-at: assign addr_diff
+   :end-at: ;
+   :dedent:
 
-    assign addr_diff = waddr >= raddr 
-                     ? waddr - raddr 
-                     : waddr + MAX_DATA - raddr;
-                     
-    a_count_diff: assert  (count == addr_diff 
-                        || count == MAX_DATA && addr_diff == 0);
+.. literalinclude:: ../examples/fifo/fifo.sv
+   :language: systemverilog
+   :start-at: a_count_diff
+   :end-at: ;
+   :dedent:
 
 SymbiYosys
 **********
@@ -130,14 +137,11 @@ to the ``a_count_diff`` assertion failing.  Without this assertion, there is no
 guarantee that data will be read in the same order it was written should an
 overflow occur and the oldest data be written.
 
-.. code-block:: systemverilog
-
-    `ifndef NO_FULL_SKIP
-        // write while full => overwrite oldest data, move read pointer
-        assign rskip = wen && !ren && data_count >= MAX_DATA;
-        // read while empty => read invalid data, keep write pointer in sync
-        assign wskip = ren && !wen && data_count == 0;
-    `endif // NO_FULL_SKIP
+.. literalinclude:: ../examples/fifo/fifo.sv
+   :language: systemverilog
+   :start-at: NO_FULL_SKIP
+   :end-at: endif
+   :lines: 1-5,9
 
 The last few lines of output for the noskip task should be similar to the
 following:
@@ -257,11 +261,12 @@ increment or remain the same we do not need to specify that here.  We can also
 assert that if the enable is low, and the buffer is not full and potentially
 requires a skip in the read address, then the read address will *not* change.
 
-.. code-block:: systemverilog
-
-    ap_raddr2: assert property (ren |=> $changed(raddr));
-    ap_raddr3: assert property (!ren && !full  |=> $stable(raddr));
-
+.. literalinclude:: ../examples/fifo/fifo.sv
+   :language: systemverilog
+   :start-at: ap_raddr2
+   :end-at: ap_raddr3
+   :dedent:
+   :lines: 1,5
 
 Further information
 *******************

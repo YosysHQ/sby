@@ -1,18 +1,15 @@
 // address generator/counter
-module addr_gen (
-    input en, clk, rst_n,
+module addr_gen 
+#(  parameter MAX_DATA=16,
+    parameter ADDR_BITS=5
+) ( input en, clk, rst_n,
     output reg [ADDR_BITS-1:0] addr
 );
-    parameter MAX_DATA = 16;
-    parameter ADDR_BITS = 5;
-
-    initial begin
-        addr <= 0;
-    end
+    initial addr <= 0;
 
     // async reset
     // increment address when enabled
-    always @(posedge clk or negedge rst_n) begin
+    always @(posedge clk or negedge rst_n)
         if (~rst_n)
             addr <= 0;
         else if (en)
@@ -20,35 +17,29 @@ module addr_gen (
                 addr <= 0;
             else
                 addr <= addr + 1;
-    end
 endmodule
 
 // Define our top level fifo entity
-module fifo (
-    input wen, ren, clk, rst_n,
+module fifo 
+#(  parameter MAX_DATA=16,
+    parameter ADDR_BITS=5
+) ( input wen, ren, clk, rst_n,
     input [7:0] wdata,
     output [7:0] rdata,
     output [ADDR_BITS:0] count,
     output full, empty
 );
-    parameter MAX_DATA = 16;
-    parameter ADDR_BITS = 5;
-
-    // wire up our sub modules
-    // ADDR_BITS=5 gives 5 bits of address, [4:0]
-    // supporting MAX_DATA up to 2**5=32
-    wire [ADDR_BITS-1:0] waddr, raddr;
-    wire wskip, rskip;
-
     // fifo storage
-    // reset not defined
+    // async read, sync write
+    wire [3:0] waddr, raddr;
     reg [7:0] data [MAX_DATA-1:0];
-    always @(posedge clk) begin
+    always @(posedge clk)
         if (wen) 
             data[waddr] <= wdata;
-    end
     assign rdata = data[raddr];
+    // end storage
 
+    // addr_gen for both write and read addresses
     addr_gen #(.MAX_DATA(MAX_DATA), .ADDR_BITS(ADDR_BITS)) 
     fifo_writer (
         .en     (wen || wskip),
@@ -65,11 +56,9 @@ module fifo (
         .addr   (raddr)
     );
 
-    // internals
+    // status signals
     reg [ADDR_BITS:0] data_count;
-    initial begin
-        data_count <= 0;
-    end
+    initial data_count <= 0;
 
     always @(posedge clk or negedge rst_n) begin
         if (~rst_n)
@@ -84,6 +73,8 @@ module fifo (
     assign empty = (data_count == 0) && rst_n;
     assign count = data_count;
 
+    // overflow protection
+    wire wskip, rskip;
 `ifndef NO_FULL_SKIP
     // write while full => overwrite oldest data, move read pointer
     assign rskip = wen && !ren && data_count >= MAX_DATA;
@@ -121,22 +112,22 @@ module fifo (
             a_oflow2: assert (waddr < MAX_DATA);
 
             // count should be equal to the difference between writer and reader address
-            a_count_diff: assert  (count == addr_diff 
-                                || count == MAX_DATA && addr_diff == 0);
+            a_count_diff: assert (count == addr_diff 
+                               || count == MAX_DATA && addr_diff == 0);
 
             // count should only be able to increase or decrease by 1
             a_counts: assert (count == 0
-                            || count == $past(count)
-                            || count == $past(count) + 1
-                            || count == $past(count) - 1);
+                           || count == $past(count)
+                           || count == $past(count) + 1
+                           || count == $past(count) - 1);
 
             // read/write addresses can only increase (or stay the same)
-            a_raddr:  assert (raddr == 0
-                            || raddr == $past(raddr)
-                            || raddr == $past(raddr + 1));
-            a_waddr:  assert (waddr == 0
-                            || waddr == $past(waddr)
-                            || waddr == $past(waddr + 1));
+            a_raddr: assert (raddr == 0
+                          || raddr == $past(raddr)
+                          || raddr == $past(raddr + 1));
+            a_waddr: assert (waddr == 0
+                          || waddr == $past(waddr)
+                          || waddr == $past(waddr + 1));
 
             // full and empty work as expected
             a_full:  assert (!full || full && count == MAX_DATA);
