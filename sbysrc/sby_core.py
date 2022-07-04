@@ -653,7 +653,7 @@ class SbyTask(SbyConfig):
                     print("abc", file=f)
                     print("opt_clean", file=f)
                 else:
-                    print("opt -fast", file=f)
+                    print("opt -fast -keepdc", file=f)
                 print("delete -output", file=f)
                 print("dffunmap", file=f)
                 print("stat", file=f)

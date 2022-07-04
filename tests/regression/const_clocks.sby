@@ -1,0 +1,43 @@
+[tasks]
+btor
+smt
+btor_m btor multiclock
+smt_m smt multiclock
+
+[options]
+mode bmc
+
+multiclock: multiclock on
+
+[engines]
+#smtbmc
+btor: btor btormc
+smt: smtbmc boolector
+
+[script]
+read_verilog -formal const_clocks.sv
+prep -flatten -top top
+
+[file const_clocks.sv]
+module top(
+    input clk,
+    input [7:0] d
+);
+
+    (* keep *)
+    wire [7:0] some_const = $anyconst;
+
+    wire [7:0] q;
+
+    ff ff1(.clk(1'b0), .d(d), .q(q));
+
+    initial assume (some_const == q);
+    initial assume (q != 0);
+
+
+    always @(posedge clk) assert(some_const == q);
+endmodule
+
+module ff(input clk, input [7:0] d, (* keep *) output reg [7:0] q);
+    always @(posedge clk) q <= d;
+endmodule
