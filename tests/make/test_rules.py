@@ -7,6 +7,11 @@ from pathlib import Path
 
 from required_tools import REQUIRED_TOOLS
 
+
+def unix_path(path):
+    return "/".join(path.parts)
+
+
 sby_file = Path(sys.argv[1])
 sby_dir = sby_file.parent
 
@@ -56,7 +61,10 @@ with rules_file.open("w") as rules:
                 solvers.add(solver)
                 engine_solvers.add((engine, solver))
 
-        if any(line.startswith("read -verific") or line.startswith("verific") for line in info["script"]):
+        if any(
+            line.startswith("read -verific") or line.startswith("verific")
+            for line in info["script"]
+        ):
             required_tools.add("verific")
 
         required_tools = sorted(required_tools)
@@ -66,12 +74,17 @@ with rules_file.open("w") as rules:
 
         shell_script = sby_dir / f"{sby_file.stem}.sh"
 
-        if shell_script.exists():
-            command = f"cd {sby_dir} && SBY_FILE={sby_file.name} WORKDIR={workdirname} TASK={task} bash {shell_script.name}"
-        else:
-            command = f"cd {sby_dir} && python3 $(SBY_MAIN) -f {sby_file.name} {task}"
+        sby_dir_unix = unix_path(sby_dir)
 
-        print(f"\t@python3 make/required_tools.py run {target} {shlex.quote(command)} {shlex.join(required_tools)}", file=rules)
+        if shell_script.exists():
+            command = f"cd {sby_dir_unix} && env SBY_FILE={sby_file.name} WORKDIR={workdirname} TASK={task} bash {shell_script.name}"
+        else:
+            command = f"cd {sby_dir_unix} && python3 $(SBY_MAIN) -f {sby_file.name} {task}"
+
+        print(
+            f"\t@python3 make/required_tools.py run {target} {shlex.quote(command)} {shlex.join(required_tools)}",
+            file=rules,
+        )
 
         print(f".PHONY: clean-{target}", file=rules)
         print(f"clean-{target}:", file=rules)

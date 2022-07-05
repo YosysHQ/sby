@@ -2,11 +2,27 @@ test:
 
 .PHONY: test clean refresh help
 
+OS_NAME := $(shell python3 -c "import os;print(os.name)")
+ifeq (nt,$(OS_NAME))
+ifeq (quoted,$(shell echo "quoted"))
+OS_NAME := nt-unix-like
+endif
+endif
+
+ifeq (nt,$(OS_NAME))
+$(error This Makefile requires unix-like tools and shell, e.g. MSYS2.)
+endif
+
 help:
 	@cat make/help.txt
 
-export SBY_WORKDIR_GITIGNORE=1
-export SBY_MAIN=$(realpath $(dir $(firstword $(MAKEFILE_LIST)))/../sbysrc/sby.py)
+export SBY_WORKDIR_GITIGNORE := 1
+
+SBY_MAIN := $(realpath $(dir $(firstword $(MAKEFILE_LIST)))/../sbysrc/sby.py)
+ifeq (nt-unix-like,$(OS_NAME))
+SBY_MAIN := $(shell cygpath -w $(SBY_MAIN))
+endif
+export SBY_MAIN
 
 make/rules/collect.mk: make/collect_tests.py
 	python3 make/collect_tests.py
