@@ -402,6 +402,8 @@ if (workdir is not None) and (len(tasknames) != 1):
     sys.exit(1)
 
 def run_task(taskname):
+    sbyconfig, _, _, _ = read_sbyconfig(sbydata, taskname)
+
     my_opt_tmpdir = opt_tmpdir
     my_workdir = None
 
@@ -461,7 +463,6 @@ def run_task(taskname):
     else:
         junit_filename = "junit"
 
-    sbyconfig, _, _, _ = read_sbyconfig(sbydata, taskname)
     task = SbyTask(sbyconfig, my_workdir, early_logmsgs, reusedir)
 
     for k, v in exe_paths.items():
