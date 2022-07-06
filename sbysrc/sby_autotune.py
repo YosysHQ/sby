@@ -168,6 +168,7 @@ class SbyAutotune:
     """Performs automatic engine selection for a given task.
     """
     def __init__(self, task, config_file=None):
+        self.task_exit_callback = task.exit_callback
         task.exit_callback = lambda: None
         task.check_timeout = lambda: None
         task.status = "TIMEOUT"
@@ -432,6 +433,8 @@ class SbyAutotune:
             self.task.status = "FAIL"
             self.task.retcode = 2
 
+        self.task_exit_callback()
+
     def next_candidate(self, peek=False):
         # peek=True is used to check whether we need to timeout running candidates to
         # give other candidates a chance.
@@ -635,6 +638,8 @@ class SbyAutotuneTask(SbyTask):
         self.model_time = 0
         self.model_requests = []
 
+        self.exit_callback = self.autotune_exit_callback
+
 
     def parse_config(self, f):
         super().parse_config(f)
@@ -650,8 +655,8 @@ class SbyAutotuneTask(SbyTask):
         self.log(f"using model '{model_name}'")
         return self.autotune.model(self, model_name)
 
-    def exit_callback(self):
-        super().exit_callback()
+    def autotune_exit_callback(self):
+        self.summarize()
 
         self.candidate.total_adjusted_time = int(monotonic() - self.start_clock_time + self.model_time)
         self.candidate.engine_retcode = self.retcode

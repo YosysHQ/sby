@@ -437,6 +437,7 @@ class SbyTask(SbyConfig):
         self.precise_prop_status = False
         self.timeout_reached = False
         self.task_local_abort = False
+        self.exit_callback = self.summarize
 
         yosys_program_prefix = "" ##yosys-program-prefix##
         self.exe_paths = {
@@ -795,12 +796,6 @@ class SbyTask(SbyConfig):
         else:
             assert 0
 
-    def run(self, setupmode):
-        self.setup_procs(setupmode)
-        if not setupmode:
-            self.taskloop.run()
-            self.write_summary_file()
-
     def handle_non_engine_options(self):
         with open(f"{self.workdir}/config.sby", "r") as f:
             self.parse_config(f)
@@ -897,6 +892,8 @@ class SbyTask(SbyConfig):
             total_process_time = int((ru.ru_utime + ru.ru_stime) - self.start_process_time)
             self.total_time = total_process_time
 
+            # TODO process time is incorrect when running in parallel
+
             self.summary = [
                 "Elapsed clock time [H:MM:SS (secs)]: {}:{:02d}:{:02d} ({})".format
                         (total_clock_time // (60*60), (total_clock_time // 60) % 60, total_clock_time % 60, total_clock_time),
@@ -928,9 +925,6 @@ class SbyTask(SbyConfig):
         with open(f"{self.workdir}/{self.status}", "w") as f:
             for line in self.summary:
                 print(line, file=f)
-
-    def exit_callback(self):
-        self.summarize()
 
     def print_junit_result(self, f, junit_ts_name, junit_tc_name, junit_format_strict=False):
         junit_time = strftime('%Y-%m-%dT%H:%M:%S')

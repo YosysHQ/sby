@@ -19,7 +19,7 @@
 
 import argparse, json, os, sys, shutil, tempfile, re
 ##yosys-sys-path##
-from sby_core import SbyConfig, SbyTask, SbyAbort, process_filename
+from sby_core import SbyConfig, SbyTask, SbyAbort, SbyTaskloop, process_filename
 import time, platform
 
 class DictAction(argparse.Action):
@@ -401,7 +401,7 @@ if (workdir is not None) and (len(tasknames) != 1):
     print("ERROR: Exactly one task is required when workdir is specified. Specify the task or use --prefix instead of -d.", file=sys.stderr)
     sys.exit(1)
 
-def run_task(taskname):
+def start_task(taskloop, taskname):
     sbyconfig, _, _, _ = read_sbyconfig(sbydata, taskname)
 
     my_opt_tmpdir = opt_tmpdir
@@ -463,48 +463,85 @@ def run_task(taskname):
     else:
         junit_filename = "junit"
 
-    task = SbyTask(sbyconfig, my_workdir, early_logmsgs, reusedir)
+    task = SbyTask(sbyconfig, my_workdir, early_logmsgs, reusedir, taskloop)
 
     for k, v in exe_paths.items():
         task.exe_paths[k] = v
 
-    try:
-        if autotune:
-            import sby_autotune
-            sby_autotune.SbyAutotune(task, autotune_config).run()
+    def exit_callback():
+        if not autotune and not setupmode:
+            task.summarize()
+            task.write_summary_file()
+
+        if my_opt_tmpdir:
+            task.log(f"Removing directory '{my_workdir}'.")
+            shutil.rmtree(my_workdir, ignore_errors=True)
+
+        if setupmode:
+            task.log(f"SETUP COMPLETE (rc={task.retcode})")
         else:
-            task.run(setupmode)
-    except SbyAbort:
-        if throw_err:
-            raise
+            task.log(f"DONE ({task.status}, rc={task.retcode})")
+        task.logfile.close()
 
-    if my_opt_tmpdir:
-        task.log(f"Removing directory '{my_workdir}'.")
-        shutil.rmtree(my_workdir, ignore_errors=True)
+        if not my_opt_tmpdir and not setupmode and not autotune:
+            with open("{}/{}.xml".format(task.workdir, junit_filename), "w") as f:
+                task.print_junit_result(f, junit_ts_name, junit_tc_name, junit_format_strict=False)
 
-    if setupmode:
-        task.log(f"SETUP COMPLETE (rc={task.retcode})")
-    else:
-        task.log(f"DONE ({task.status}, rc={task.retcode})")
-    task.logfile.close()
+            with open(f"{task.workdir}/status", "w") as f:
+                print(f"{task.status} {task.retcode} {task.total_time}", file=f)
 
-    if not my_opt_tmpdir and not setupmode and not autotune:
-        with open("{}/{}.xml".format(task.workdir, junit_filename), "w") as f:
-            task.print_junit_result(f, junit_ts_name, junit_tc_name, junit_format_strict=False)
+    task.exit_callback = exit_callback
 
-        with open(f"{task.workdir}/status", "w") as f:
-            print(f"{task.status} {task.retcode} {task.total_time}", file=f)
+    if not autotune:
+        task.setup_procs(setupmode)
+        task.task_local_abort = not throw_err
 
-    return task.retcode
-
+    return task
 
 failed = []
 retcode = 0
-for task in tasknames:
-    task_retcode = run_task(task)
-    retcode |= task_retcode
-    if task_retcode:
-        failed.append(task)
+
+# Autotune is already parallel, parallelizing it across tasks needs some more work
+sequential = autotune  # TODO selection between parallel/sequential
+
+if sequential:
+    for taskname in tasknames:
+        taskloop = SbyTaskloop()
+        try:
+            task = start_task(taskloop, taskname)
+        except SbyAbort:
+            if throw_err:
+                raise
+            sys.exit(1)
+
+        if autotune:
+            from sby_autotune import SbyAutotune
+            SbyAutotune(task, autotune_config).run()
+        elif setupmode:
+            task.exit_callback()
+        else:
+            taskloop.run()
+        retcode |= task.retcode
+        if task.retcode:
+            failed.append(taskname)
+else:
+    taskloop = SbyTaskloop()
+
+    tasks = {}
+    for taskname in tasknames:
+        try:
+            tasks[taskname] = start_task(taskloop, taskname)
+        except SbyAbort:
+            if throw_err:
+                raise
+            sys.exit(1)
+
+    taskloop.run()
+
+    for taskname, task in tasks.items():
+        retcode |= task.retcode
+        if task.retcode:
+            failed.append(taskname)
 
 if failed and (len(tasknames) > 1 or tasknames[0] is not None):
     tm = time.localtime()
