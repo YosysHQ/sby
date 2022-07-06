@@ -176,7 +176,7 @@ class SbyProc:
                 fcntl.fcntl(self.p.stdout, fcntl.F_SETFL, fl | os.O_NONBLOCK)
 
             else:
-                self.p = subprocess.Popen(self.cmdline, shell=True, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+                self.p = subprocess.Popen(self.cmdline + " & exit !errorlevel!", shell=True, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
                         stderr=(subprocess.STDOUT if self.logstderr else None))
 
             self.task.update_proc_running(self)
@@ -200,23 +200,31 @@ class SbyProc:
             self.running = False
             self.exited = True
 
-            if self.p.returncode == 127:
+            if os.name == "nt":
+                if self.p.returncode == 9009:
+                    returncode = 127
+                else:
+                    returncode = self.p.returncode & 0xff
+            else:
+                returncode = self.p.returncode
+
+            if returncode == 127:
                 if not self.silent:
                     self.task.log(f"{self.info}: COMMAND NOT FOUND. ERROR.")
-                self.handle_error(self.p.returncode)
+                self.handle_error(returncode)
                 self.terminated = True
                 self.task.proc_failed(self)
                 return
 
-            if self.checkretcode and self.p.returncode not in self.retcodes:
+            if self.checkretcode and returncode not in self.retcodes:
                 if not self.silent:
                     self.task.log(f"{self.info}: task failed. ERROR.")
-                self.handle_error(self.p.returncode)
+                self.handle_error(returncode)
                 self.terminated = True
                 self.task.proc_failed(self)
                 return
 
-            self.handle_exit(self.p.returncode)
+            self.handle_exit(returncode)
 
             self.finished = True
             for next_proc in self.notify:
