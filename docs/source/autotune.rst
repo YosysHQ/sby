@@ -11,15 +11,15 @@ Using Autotune
 --------------
 
 To run autotune, you can add the ``--autotune`` option to your usual sby
-invokation. For example if you usually run ``sby demo.sby`` you would run ``sby
---autotune demo.sby`` instead. When the ``.sby`` file contains multiple tasks,
-autotune is run for each task independently. As without ``--autotune``, it is
-possible to specify which tasks to run on the command line.
+invokation. For example if you usually run ``sby demo.sby`` you would run
+``sby --autotune demo.sby`` instead. When the ``.sby`` file contains multiple
+tasks, autotune is run for each task independently. As without ``--autotune``,
+it is possible to specify which tasks to run on the command line.
 
 Autotune runs without requiring further interaction and will eventually print a
 list of engine configurations and their respective solving times. To
-permanently use an engine configuration you can copy if from the ``sby
---autotune`` output into the ``[engines]`` section of your ``.sby`` file.
+permanently use an engine configuration you can copy if from the
+``sby --autotune`` output into the ``[engines]`` section of your ``.sby`` file.
 
 Autotune Log Output
 -------------------
@@ -112,8 +112,8 @@ their solving time:
 
 If any tried engine encounters an error or produces an unexpected result,
 autotune will also output a list of failed engines. Note that when the sby file
-does not contain the ``expect`` option, autotune defaults to ``expect
-pass,fail`` to simplify running autotune on a verification task with a
+does not contain the ``expect`` option, autotune defaults to
+``expect pass,fail`` to simplify running autotune on a verification task with a
 currently unknown outcome.
 
 Configuring Autotune
