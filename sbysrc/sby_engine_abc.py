@@ -41,6 +41,7 @@ def run(mode, task, engine_idx, engine):
     elif abc_command[0] == "pdr":
         if mode != "prove":
             task.error("ABC command 'pdr' is only valid in prove mode.")
+        abc_command[0] += f" -v"
 
     else:
         task.error(f"Invalid ABC command {abc_command[0]}.")
