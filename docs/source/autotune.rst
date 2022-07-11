@@ -11,7 +11,7 @@ Using Autotune
 --------------
 
 To run autotune, you can add the ``--autotune`` option to your usual sby
-invokation. For example if you usually run ``sby demo.sby`` you would run
+invocation. For example if you usually run ``sby demo.sby`` you would run
 ``sby --autotune demo.sby`` instead. When the ``.sby`` file contains multiple
 tasks, autotune is run for each task independently. As without ``--autotune``,
 it is possible to specify which tasks to run on the command line.
