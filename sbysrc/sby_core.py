@@ -183,17 +183,12 @@ class SbyProc:
             self.running = True
             return
 
-        while True:
-            outs = self.p.stdout.readline().decode("utf-8")
-            if len(outs) == 0: break
-            if outs[-1] != '\n':
-                self.linebuffer += outs
-                break
-            outs = (self.linebuffer + outs).strip()
-            self.linebuffer = ""
-            self.handle_output(outs)
+        self.read_output()
 
         if self.p.poll() is not None:
+            # The process might have written something since the last time we checked
+            self.read_output()
+
             if not self.silent:
                 self.task.log(f"{self.info}: finished (returncode={self.p.returncode})")
             self.task.update_proc_stopped(self)
@@ -230,6 +225,17 @@ class SbyProc:
             for next_proc in self.notify:
                 next_proc.poll()
             return
+
+    def read_output(self):
+        while True:
+            outs = self.p.stdout.readline().decode("utf-8")
+            if len(outs) == 0: break
+            if outs[-1] != '\n':
+                self.linebuffer += outs
+                break
+            outs = (self.linebuffer + outs).strip()
+            self.linebuffer = ""
+            self.handle_output(outs)
 
 
 class SbyAbort(BaseException):
