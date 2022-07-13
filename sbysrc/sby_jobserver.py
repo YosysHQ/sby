@@ -17,7 +17,6 @@
 #
 
 import atexit
-import fcntl
 import os
 import select
 import shlex
@@ -26,6 +25,8 @@ import sys
 import weakref
 import signal
 
+if os.name == "posix":
+    import fcntl
 
 inherited_jobcount = None
 inherited_jobserver_auth = None
@@ -56,15 +57,16 @@ def process_jobserver_environment():
                     pass
         elif flag.startswith("--jobserver-auth=") or flag.startswith("--jobserver-fds="):
             inherited_jobserver_auth_present = True
-            arg = flag.split("=", 1)[1].split(",")
-            try:
-                jobserver_fds = int(arg[0]), int(arg[1])
-                for fd in jobserver_fds:
-                    fcntl.fcntl(fd, fcntl.F_GETFD)
-            except (ValueError, OSError):
-                pass
-            else:
-                inherited_jobserver_auth = jobserver_fds
+            if os.name == "posix":
+                arg = flag.split("=", 1)[1].split(",")
+                try:
+                    jobserver_fds = int(arg[0]), int(arg[1])
+                    for fd in jobserver_fds:
+                        fcntl.fcntl(fd, fcntl.F_GETFD)
+                except (ValueError, OSError):
+                    pass
+                else:
+                    inherited_jobserver_auth = jobserver_fds
 
 
 def jobserver_helper(jobserver_read_fd, jobserver_write_fd, request_fd, response_fd):
@@ -159,6 +161,12 @@ class SbyJobClient:
 
         have_jobserver = inherited_jobserver_auth_present
 
+        if os.name == "nt" and inherited_jobserver_auth_present:
+            # There are even more incompatible variants of the make jobserver on
+            # windows, none of them are supported for now.
+            print("WARNING: Found jobserver in MAKEFLAGS, this is not supported on windows.")
+            have_jobserver = False
+
         if have_jobserver and inherited_jobserver_auth is None:
             print("WARNING: Could not connect to jobserver specified in MAKEFLAGS, disabling parallel execution.")
             have_jobserver = False
@@ -178,6 +186,9 @@ class SbyJobClient:
 
         if have_jobserver:
             self.read_fd, self.write_fd = inherited_jobserver_auth
+        elif os.name == "nt":
+            # On Windows, without a jobserver, use only local slots
+            self.local_slots = jobcount
         else:
             self.sby_jobserver = SbyJobServer(jobcount)
             self.read_fd = self.sby_jobserver.read_fd
