@@ -59,7 +59,7 @@ if __name__ == "__main__":
             exit(noskip)
 
         print(command, flush=True)
-        exit(subprocess.call(command, shell=True))
+        exit(subprocess.call(command, shell=True, close_fds=False))
 
     found_tools = []
     check_tools = set()

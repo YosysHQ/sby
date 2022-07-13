@@ -20,7 +20,10 @@
 import argparse, json, os, sys, shutil, tempfile, re
 ##yosys-sys-path##
 from sby_core import SbyConfig, SbyTask, SbyAbort, SbyTaskloop, process_filename
+from sby_jobserver import SbyJobClient, process_jobserver_environment
 import time, platform
+
+process_jobserver_environment()  # needs to be called early
 
 class DictAction(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
@@ -46,6 +49,11 @@ parser.add_argument("-T", metavar="<taskname>", action="append", dest="tasknames
         help="add taskname (useful when sby file is read from stdin)")
 parser.add_argument("-E", action="store_true", dest="throw_err",
         help="throw an exception (incl stack trace) for most errors")
+parser.add_argument("-j", metavar="<N>", type=int, dest="jobcount",
+        help="maximum number of processes to run in parallel")
+parser.add_argument("--sequential", action="store_true", dest="sequential",
+        help="run tasks in sequence, not in parallel")
+
 parser.add_argument("--autotune", action="store_true", dest="autotune",
         help="automatically find a well performing engine and engine configuration for each task")
 parser.add_argument("--autotune-config", dest="autotune_config",
@@ -114,6 +122,8 @@ reusedir = False
 setupmode = args.setupmode
 autotune = args.autotune
 autotune_config = args.autotune_config
+sequential = args.sequential
+jobcount = args.jobcount
 init_config_file = args.init_config_file
 
 if sbyfile is not None:
@@ -501,12 +511,22 @@ def start_task(taskloop, taskname):
 failed = []
 retcode = 0
 
+if jobcount is not None and jobcount < 1:
+    print("ERROR: The -j option requires a positive number as argument")
+    sys.exit(1)
+
 # Autotune is already parallel, parallelizing it across tasks needs some more work
-sequential = autotune  # TODO selection between parallel/sequential
+if autotune:
+    sequential = True
 
 if sequential:
+    if autotune:
+        jobclient = None  # TODO make autotune use a jobclient
+    else:
+        jobclient = SbyJobClient(jobcount)
+
     for taskname in tasknames:
-        taskloop = SbyTaskloop()
+        taskloop = SbyTaskloop(jobclient)
         try:
             task = start_task(taskloop, taskname)
         except SbyAbort:
@@ -525,7 +545,8 @@ if sequential:
         if task.retcode:
             failed.append(taskname)
 else:
-    taskloop = SbyTaskloop()
+    jobclient = SbyJobClient(jobcount)
+    taskloop = SbyTaskloop(jobclient)
 
     tasks = {}
     for taskname in tasknames:

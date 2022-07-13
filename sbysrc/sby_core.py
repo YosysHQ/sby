@@ -82,6 +82,7 @@ class SbyProc:
         self.logstderr = logstderr
         self.silent = silent
         self.wait = False
+        self.job_lease = None
 
         self.task.update_proc_pending(self)
 
@@ -162,6 +163,13 @@ class SbyProc:
                 if not dep.finished:
                     return
 
+            if self.task.taskloop.jobclient:
+                if self.job_lease is None:
+                    self.job_lease = self.task.taskloop.jobclient.request_lease()
+
+                if not self.job_lease.is_ready:
+                    return
+
             if not self.silent:
                 self.task.log(f"{self.info}: starting process \"{self.cmdline}\"")
 
@@ -190,8 +198,12 @@ class SbyProc:
             # The process might have written something since the last time we checked
             self.read_output()
 
+            if self.job_lease:
+                self.job_lease.done()
+
             if not self.silent:
                 self.task.log(f"{self.info}: finished (returncode={self.p.returncode})")
+
             self.task.update_proc_stopped(self)
             self.running = False
             self.exited = True
@@ -378,18 +390,26 @@ class SbyConfig:
 
 
 class SbyTaskloop:
-    def __init__(self):
+    def __init__(self, jobclient=None):
         self.procs_pending = []
         self.procs_running = []
         self.tasks = []
         self.poll_now = False
+        self.jobclient = jobclient
 
     def run(self):
         for proc in self.procs_pending:
             proc.poll()
 
-        while len(self.procs_running) or self.poll_now:
+
+        waiting_for_jobslots = False
+        if self.jobclient:
+            waiting_for_jobslots = self.jobclient.has_pending_leases()
+
+        while self.procs_running or waiting_for_jobslots or self.poll_now:
             fds = []
+            if self.jobclient:
+                fds.extend(self.jobclient.poll_fds())
             for proc in self.procs_running:
                 if proc.running:
                     fds.append(proc.p.stdout)
@@ -404,11 +424,19 @@ class SbyTaskloop:
                     sleep(0.1)
             self.poll_now = False
 
+            if self.jobclient:
+                self.jobclient.poll()
+
+            self.procs_waiting = []
+
             for proc in self.procs_running:
                 proc.poll()
 
             for proc in self.procs_pending:
                 proc.poll()
+
+            if self.jobclient:
+                waiting_for_jobslots = self.jobclient.has_pending_leases()
 
             tasks = self.tasks
             self.tasks = []
