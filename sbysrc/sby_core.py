@@ -567,6 +567,7 @@ class SbyTask(SbyConfig):
             os.makedirs(f"{self.workdir}/model")
 
         def print_common_prep(check):
+            print("scc -select; simplemap; select -clear", file=f)
             if self.opt_multiclock:
                 print("clk2fflogic", file=f)
             else:
