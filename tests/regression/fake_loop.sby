@@ -1,0 +1,23 @@
+[options]
+mode cover
+
+[engines]
+smtbmc boolector
+
+[script]
+read -formal fake_loop.sv
+hierarchy -top fake_loop
+proc
+
+[file fake_loop.sv]
+module fake_loop(input clk, input a, input b, output [9:0] x);
+    wire [9:0] ripple;
+    reg [9:0] prev_ripple = 9'b0;
+
+    always @(posedge clk) prev_ripple <= ripple;
+
+    assign ripple = {ripple[8:0], a} ^ prev_ripple; // only cyclic at the coarse-grain level
+    assign x = ripple[9] + b;
+
+    always @(posedge clk) cover(ripple[9]);
+endmodule
