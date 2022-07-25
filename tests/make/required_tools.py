@@ -4,6 +4,7 @@ REQUIRED_TOOLS = {
     ("smtbmc", "yices"): ["yices-smt2"],
     ("smtbmc", "z3"): ["z3"],
     ("smtbmc", "cvc4"): ["cvc4"],
+    ("smtbmc", "cvc5"): ["cvc5"],
     ("smtbmc", "mathsat"): ["mathsat"],
     ("smtbmc", "boolector"): ["boolector"],
     ("smtbmc", "bitwuzla"): ["bitwuzla"],
