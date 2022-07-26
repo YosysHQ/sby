@@ -1,0 +1,24 @@
+[tasks]
+small default
+medium
+large
+
+[options]
+mode prove
+small: depth 11
+medium: depth 15
+large: depth 19
+
+[engines]
+smtbmc
+
+[script]
+small: read -define WIDTH=8
+medium: read -define WIDTH=12
+large: read -define WIDTH=16
+
+read -formal divider.sv
+prep -top divider
+
+[files]
+divider.sv
