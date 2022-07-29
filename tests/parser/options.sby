@@ -2,3 +2,7 @@
 mode bmc
 depth 1
 expect error
+stages foo,bar,nya
+
+[engines]
+smtbmc
