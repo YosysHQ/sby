@@ -270,30 +270,38 @@ class SbyConfig:
             if match:
                 entries = match.group(1).split()
                 if len(entries) == 0:
-                    self.error(f"sby file syntax error: {line}")
+                    self.error(f"sby file syntax error: Expected section header, got '{line}'")
 
                 if entries[0] == "options":
                     mode = "options"
-                    if len(self.options) != 0 or len(entries) != 1:
-                        self.error(f"sby file syntax error: {line}")
+                    if len(self.options) != 0:
+                        self.error(f"sby file syntax error: '[options]' section already defined")
+
+                    if len(entries) != 1:
+                        self.error(f"sby file syntax error: '[options]' section accepts no arguments, got '{line}'")
                     continue
 
                 if entries[0] == "engines":
                     mode = "engines"
-                    if len(self.engines) != 0 or len(entries) != 1:
-                        self.error(f"sby file syntax error: {line}")
+                    if len(self.engines) != 0:
+                        self.error(f"sby file syntax error: '[engines]' section already defined")
+                    if len(entries) != 1:
+                        self.error(f"sby file syntax error: '[engines]' section accepts no arguments, got '{line}'")
                     continue
 
                 if entries[0] == "script":
                     mode = "script"
-                    if len(self.script) != 0 or len(entries) != 1:
-                        self.error(f"sby file syntax error: {line}")
+                    if len(self.script) != 0:
+                        self.error(f"sby file syntax error: '[script]' section already defined")
+                    if len(entries) != 1:
+                        self.error(f"sby file syntax error: '[script]' section accepts no arguments, got '{line}'")
+
                     continue
 
                 if entries[0] == "autotune":
                     mode = "autotune"
                     if self.autotune_config:
-                        self.error(f"sby file syntax error: {line}")
+                        self.error(f"sby file syntax error: '[autotune]' section already defined")
 
                     import sby_autotune
                     self.autotune_config = sby_autotune.SbyAutotuneConfig()
@@ -302,7 +310,7 @@ class SbyConfig:
                 if entries[0] == "file":
                     mode = "file"
                     if len(entries) != 2:
-                        self.error(f"sby file syntax error: {line}")
+                        self.error(f"sby file syntax error: '[file]' section expects a file name argument")
                     current_verbatim_file = entries[1]
                     if current_verbatim_file in self.verbatim_files:
                         self.error(f"duplicate file: {entries[1]}")
@@ -312,15 +320,15 @@ class SbyConfig:
                 if entries[0] == "files":
                     mode = "files"
                     if len(entries) != 1:
-                        self.error(f"sby file syntax error: {line}")
+                        self.error(f"sby file syntax error: '[files]' section expects no arguments, got '{line}'")
                     continue
 
-                self.error(f"sby file syntax error: {line}")
+                self.error(f"sby file syntax error: unexpected section '{entries[0]}', expected one of 'options, engines, script, autotune, file, files'")
 
             if mode == "options":
                 entries = line.split()
                 if len(entries) != 2:
-                    self.error(f"sby file syntax error: {line}")
+                    self.error(f"sby file syntax error: '[options]' section entry does not have an argument '{line}'")
                 self.options[entries[0]] = entries[1]
                 continue
 
@@ -339,19 +347,21 @@ class SbyConfig:
 
             if mode == "files":
                 entries = line.split()
+                if len(entries) < 1 or len(entries) > 2:
+                    self.error(f"sby file syntax error: '[files]' section entry expects up to 2 arguments, {len(entries)} specified")
+
                 if len(entries) == 1:
                     self.files[os.path.basename(entries[0])] = entries[0]
                 elif len(entries) == 2:
                     self.files[entries[0]] = entries[1]
-                else:
-                    self.error(f"sby file syntax error: {line}")
+
                 continue
 
             if mode == "file":
                 self.verbatim_files[current_verbatim_file].append(raw_line)
                 continue
 
-            self.error(f"sby file syntax error: {line}")
+            self.error(f"sby file syntax error: In an incomprehensible mode '{mode}'")
 
     def error(self, logmessage):
         raise SbyAbort(logmessage)
