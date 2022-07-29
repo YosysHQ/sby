@@ -23,10 +23,16 @@ def run(task):
     task.handle_int_option("depth", 20)
     task.handle_int_option("append", 0)
 
-    for engine_idx, engine in task.engine_list():
+    for engine_idx, engine_section in task.engine_list():
+        engine = engine_section[1][0]
+        engine_name = engine_section[0]
+        if engine_name is None:
+            engine_name = engine_idx
+
+
         assert len(engine) > 0
 
-        task.log(f"""engine_{engine_idx}: {" ".join(engine)}""")
+        task.log(f"""engine_{engine_name}: {" ".join(engine)}""")
         task.makedirs(f"{task.workdir}/engine_{engine_idx}")
 
         if engine[0] == "smtbmc":

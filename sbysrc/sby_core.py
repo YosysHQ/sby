@@ -247,7 +247,7 @@ class SbyConfig:
     def __init__(self):
         self.options = dict()
         # Define a default case for the engine block
-        self.engines = list() # { None: list() }
+        self.engines = { None: list() }
         self.setup = dict()
         self.stage = dict()
         self.script = list()
@@ -387,8 +387,7 @@ class SbyConfig:
 
             if mode == "engines":
                 entries = line.split()
-                # self.engines[engine_mode].append(entries)
-                self.engines.append(entries)
+                self.engines[engine_mode].append(entries)
                 continue
 
             if mode == "setup":
@@ -565,7 +564,7 @@ class SbyTask(SbyConfig):
                     print(line, file=f)
 
     def engine_list(self):
-        return list(enumerate(self.engines))
+        return list(enumerate(self.engines.items()))
 
     def check_timeout(self):
         if self.opt_timeout is not None:
