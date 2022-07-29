@@ -301,6 +301,7 @@ class SbyConfig:
                         pass
                         # if entries[1] not in self.engines:
                         #     self.engines[entries[1]] = list()
+                        #     engine_mode = entries[1]
                         # else:
                         #     self.error(f"Already defined engine block for mode '{entries[1]}'")
 
