@@ -311,7 +311,7 @@ class SbyConfig:
                         self.error(f"sby file syntax error: {line}")
                     continue
 
-                # [stage <NAME> (PARENTS...)]
+                # [stage <NAME> (PARENTS,...)]
                 if entries[0] == "stage":
                     mode = "stage"
                     if len(entries) > 3 or len(entries) < 2:
@@ -320,7 +320,7 @@ class SbyConfig:
                     if len(entries) == 2:
                         parent = None
                     else:
-                        parent = entries[2]
+                        parent = entries[2].split(',')
 
                     key = entries[1]
 
