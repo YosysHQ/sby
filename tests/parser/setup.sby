@@ -3,6 +3,8 @@ mode bmc
 depth 1
 expect error
 
+[engines]
+smtbmc
 
 [setup]
 enable *
