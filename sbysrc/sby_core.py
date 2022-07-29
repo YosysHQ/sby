@@ -246,7 +246,8 @@ class SbyAbort(BaseException):
 class SbyConfig:
     def __init__(self):
         self.options = dict()
-        self.engines = list()
+        # Define a default case for the engine block
+        self.engines = list() # { None: list() }
         self.setup = dict()
         self.stage = dict()
         self.script = list()
@@ -257,6 +258,7 @@ class SbyConfig:
 
     def parse_config(self, f):
         mode = None
+        engine_mode = None
 
         for line in f:
             raw_line = line
@@ -290,18 +292,26 @@ class SbyConfig:
 
                 if section == "engines":
                     mode = "engines"
-                    if len(self.engines) != 0:
-                        self.error(f"sby file syntax error: '[engines]' section already defined")
-                    if args is not None:
-                        self.error(f"sby file syntax error: '[engines]' section does not accept any arguments. got {args}")
-                    continue
+                    if len(entries) > 2:
+                        self.error(f"sby file syntax error: [engine] sections expects at most 1 argument, got more '{line}'")
 
+                    if len(entries) == 2 and entries[1] not in ("bmc", "prove", "cover", "live"):
+                        self.error(f"sby file syntax error: Expected one of 'bmc, prove, cover, live' not '{entries[1]}'")
+                    elif len(entries) == 2:
+                        pass
+                        # if entries[1] not in self.engines:
+                        #     self.engines[entries[1]] = list()
+                        # else:
+                        #     self.error(f"Already defined engine block for mode '{entries[1]}'")
+
+                # [setup]
                 if entries[0] == "setup":
                     mode = "setup"
                     if len(self.setup) != 0 or len(entries) != 1:
                         self.error(f"sby file syntax error: {line}")
                     continue
 
+                # [stage <NAME> (PARENTS...)]
                 if entries[0] == "stage":
                     mode = "stage"
                     if len(entries) > 3 or len(entries) < 2:
@@ -377,11 +387,11 @@ class SbyConfig:
 
             if mode == "engines":
                 entries = line.split()
+                # self.engines[engine_mode].append(entries)
                 self.engines.append(entries)
                 continue
 
             if mode == "setup":
-                self.error("[setup] section not yet supported")
                 kvp = line.split()
                 if kvp[0] not in ("cutpoint", "disable", "enable", "assume", "define"):
                     self.error(f"sby file syntax error: {line}")
@@ -403,7 +413,6 @@ class SbyConfig:
                 continue
 
             if mode == "stage":
-                    self.error("[stage] section not yet supported")
                 kvp = line.split()
                 if key is None or key == '':
                     self.error(f"sby file syntax error: in stage mode but unknown key")

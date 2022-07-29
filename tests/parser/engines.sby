@@ -1,0 +1,13 @@
+[options]
+mode bmc
+depth 1
+expect error
+
+[engines]
+smtbmc
+
+[engines bmc]
+smtbmc
+
+[engines cover]
+smtbmc

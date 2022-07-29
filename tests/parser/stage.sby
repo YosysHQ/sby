@@ -1,0 +1,12 @@
+[options]
+mode bmc
+depth 1
+expect error
+
+
+[stage stage_1]
+mode prove
+depth 20
+timeout 60
+expect error
+enable *

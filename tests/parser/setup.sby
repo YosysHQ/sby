@@ -1,0 +1,8 @@
+[options]
+mode bmc
+depth 1
+expect error
+
+
+[setup]
+enable *
