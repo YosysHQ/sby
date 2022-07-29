@@ -393,7 +393,7 @@ class SbyConfig:
             if mode == "setup":
                 kvp = line.split()
                 if kvp[0] not in ("cutpoint", "disable", "enable", "assume", "define"):
-                    self.error(f"sby file syntax error: {line}")
+                    self.error(f"sby file syntax error: found '{kvp[0]}' but expected one of 'cutpoint', 'disable', 'enable', 'assume', or 'define'")
                 else:
                     stmt = kvp[0]
                     if stmt == 'define':
@@ -401,9 +401,9 @@ class SbyConfig:
                             self.setup['define'] = {}
 
                         if len(kvp[1:]) < 2:
-                            self.error(f"sby file syntax error: {line}")
+                            self.error(f"sby file syntax error: 'define' statement takes 2 arguments, got {len(kvp[1:])}")
                         elif kvp[1][0] != '@':
-                            self.error(f"sby file syntax error: {line}")
+                            self.error(f"sby file syntax error: 'define' statement expects an '@' prefixed name as the first parameter, got {line}")
                         else:
                             name = kvp[1][1:]
                             self.setup['define'][name] = kvp[2:]
@@ -427,9 +427,9 @@ class SbyConfig:
                     stmt = kvp[0]
                     if stmt == 'setsel':
                         if len(kvp[1:]) < 2:
-                            self.error(f"sby file syntax error: {line}")
+                            self.error(f"sby file syntax error: 'setsel' statement takes 2 arguments, got {len(kvp[1:])}")
                         elif kvp[1][0] != '@':
-                            self.error(f"sby file syntax error: {line}")
+                            self.error(f"sby file syntax error: 'setsel' statement expects an '@' prefixed name as the first parameter, got {line}")
                         else:
                             name = kvp[1][1:]
                             self.stage[key][stmt] = {
