@@ -96,7 +96,7 @@ module fifo
             init <= 1;
         // if init is low we don't care about the value of rst_n
         // if init is high (rst_n has ben high), then rst_n must remain high
-        assume (!init || init && rst_n);
+        assume (!init || rst_n);
     end
 
     // tests
@@ -128,9 +128,9 @@ module fifo
                           || waddr == $past(waddr + 1));
 
             // full and empty work as expected
-            a_full:  assert (!full || full && count == MAX_DATA);
+            a_full:  assert (!full || count == MAX_DATA);
             w_full:  cover  (wen && !ren && count == MAX_DATA-1);
-            a_empty: assert (!empty || empty && count == 0);
+            a_empty: assert (!empty || count == 0);
             w_empty: cover  (ren && !wen && count == 1);
             
             // can we corrupt our data?
@@ -165,8 +165,9 @@ module fifo
             
             // change data when writing (and only when writing) so we can line
             // up reads with writes
-            assume property (wen |=> $changed(wdata));
-            assume property (!wen |=> $stable(wdata));
+            //TODO: this but with a cover statement
+            // assume property (wen |=> $changed(wdata));
+            // assume property (!wen |=> $stable(wdata));
         end
     end
 `else // !VERIFIC
