@@ -21,6 +21,43 @@ list of engine configurations and their respective solving times. To
 permanently use an engine configuration you can copy it from the
 ``sby --autotune`` output into the ``[engines]`` section of your ``.sby`` file.
 
+Example
+^^^^^^^
+
+The Sby repository contains a `small example`_ in the ``docs/examples/autotune``
+directory.
+
+The ``divider.sby`` file contains the following ``[engines]`` section:
+
+.. code-block:: text
+
+   [engines]
+   smtbmc
+
+We notice that running ``sby -f divider.sby medium`` takes a long time and want
+to see if another engine would speed things up, so we run
+``sby --autotune -f divider.sby medium``. After a few minutes this prints:
+
+.. code-block:: text
+
+   SBY [divider_medium] finished engines:
+   SBY [divider_medium]   #4: engine_7: smtbmc --nopresat bitwuzla -- --noincr (32 seconds, status=PASS)
+   SBY [divider_medium]   #3: engine_2: smtbmc boolector -- --noincr (32 seconds, status=PASS)
+   SBY [divider_medium]   #2: engine_3: smtbmc --nopresat boolector -- --noincr (32 seconds, status=PASS)
+   SBY [divider_medium]   #1: engine_6: smtbmc bitwuzla -- --noincr (31 seconds, status=PASS)
+   SBY [divider_medium] DONE (AUTOTUNED, rc=0)
+
+This tells us that for the ``medium`` task, the best engine choice (#1) is
+``smtbmc bitwuzla -- --noincr``. To use this engine by default we can change
+the ``[engines]`` section of ``divider.sby`` to:
+
+.. code-block:: text
+
+   [engines]
+   smtbmc bitwuzla -- --noincr
+
+.. _`small example`: https://github.com/YosysHQ/sby/tree/master/docs/examples/autotune
+
 Autotune Log Output
 -------------------
 
