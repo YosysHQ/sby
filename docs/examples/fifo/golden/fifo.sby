@@ -3,7 +3,6 @@ basic bmc
 nofullskip prove
 cover
 bigtest cover
-basic cover : default
 
 [options]
 cover:

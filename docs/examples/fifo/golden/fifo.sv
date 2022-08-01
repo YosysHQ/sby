@@ -31,7 +31,7 @@ module fifo
 );
     // fifo storage
     // async read, sync write
-    wire [3:0] waddr, raddr;
+    wire [ADDR_BITS-1:0] waddr, raddr;
     reg [7:0] data [MAX_DATA-1:0];
     always @(posedge clk)
         if (wen) 
