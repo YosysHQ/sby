@@ -176,13 +176,57 @@ class SbyProc:
                 fcntl.fcntl(self.p.stdout, fcntl.F_SETFL, fl | os.O_NONBLOCK)
 
             else:
-                self.p = subprocess.Popen(self.cmdline, shell=True, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+                self.p = subprocess.Popen(self.cmdline + " & exit !errorlevel!", shell=True, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
                         stderr=(subprocess.STDOUT if self.logstderr else None))
 
             self.task.update_proc_running(self)
             self.running = True
             return
 
+        self.read_output()
+
+        if self.p.poll() is not None:
+            # The process might have written something since the last time we checked
+            self.read_output()
+
+            if not self.silent:
+                self.task.log(f"{self.info}: finished (returncode={self.p.returncode})")
+            self.task.update_proc_stopped(self)
+            self.running = False
+            self.exited = True
+
+            if os.name == "nt":
+                if self.p.returncode == 9009:
+                    returncode = 127
+                else:
+                    returncode = self.p.returncode & 0xff
+            else:
+                returncode = self.p.returncode
+
+            if returncode == 127:
+                if not self.silent:
+                    self.task.log(f"{self.info}: COMMAND NOT FOUND. ERROR.")
+                self.handle_error(returncode)
+                self.terminated = True
+                self.task.proc_failed(self)
+                return
+
+            if self.checkretcode and returncode not in self.retcodes:
+                if not self.silent:
+                    self.task.log(f"{self.info}: task failed. ERROR.")
+                self.handle_error(returncode)
+                self.terminated = True
+                self.task.proc_failed(self)
+                return
+
+            self.handle_exit(returncode)
+
+            self.finished = True
+            for next_proc in self.notify:
+                next_proc.poll()
+            return
+
+    def read_output(self):
         while True:
             outs = self.p.stdout.readline().decode("utf-8")
             if len(outs) == 0: break
@@ -192,36 +236,6 @@ class SbyProc:
             outs = (self.linebuffer + outs).strip()
             self.linebuffer = ""
             self.handle_output(outs)
-
-        if self.p.poll() is not None:
-            if not self.silent:
-                self.task.log(f"{self.info}: finished (returncode={self.p.returncode})")
-            self.task.update_proc_stopped(self)
-            self.running = False
-            self.exited = True
-
-            if self.p.returncode == 127:
-                if not self.silent:
-                    self.task.log(f"{self.info}: COMMAND NOT FOUND. ERROR.")
-                self.handle_error(self.p.returncode)
-                self.terminated = True
-                self.task.proc_failed(self)
-                return
-
-            if self.checkretcode and self.p.returncode not in self.retcodes:
-                if not self.silent:
-                    self.task.log(f"{self.info}: task failed. ERROR.")
-                self.handle_error(self.p.returncode)
-                self.terminated = True
-                self.task.proc_failed(self)
-                return
-
-            self.handle_exit(self.p.returncode)
-
-            self.finished = True
-            for next_proc in self.notify:
-                next_proc.poll()
-            return
 
 
 class SbyAbort(BaseException):
@@ -552,7 +566,8 @@ class SbyTask(SbyConfig):
         if not os.path.isdir(f"{self.workdir}/model"):
             os.makedirs(f"{self.workdir}/model")
 
-        def print_common_prep():
+        def print_common_prep(check):
+            print("scc -select; simplemap; select -clear", file=f)
             if self.opt_multiclock:
                 print("clk2fflogic", file=f)
             else:
@@ -569,7 +584,7 @@ class SbyTask(SbyConfig):
             print("setundef -anyseq", file=f)
             print("opt -keepdc -fast", file=f)
             print("check", file=f)
-            print("hierarchy -simcheck", file=f)
+            print(f"hierarchy {check}", file=f)
 
         if model_name == "base":
             with open(f"""{self.workdir}/model/design.ys""", "w") as f:
@@ -577,7 +592,7 @@ class SbyTask(SbyConfig):
                 for cmd in self.script:
                     print(cmd, file=f)
                 # the user must designate a top module in [script]
-                print("hierarchy -simcheck", file=f)
+                print("hierarchy -smtcheck", file=f)
                 print(f"""write_jny -no-connections ../model/design.json""", file=f)
                 print(f"""write_rtlil ../model/design.il""", file=f)
 
@@ -610,7 +625,7 @@ class SbyTask(SbyConfig):
                     print("memory_map", file=f)
                 else:
                     print("memory_nordff", file=f)
-                print_common_prep()
+                print_common_prep("-smtcheck")
                 if "_syn" in model_name:
                     print("techmap", file=f)
                     print("opt -fast", file=f)
@@ -643,7 +658,7 @@ class SbyTask(SbyConfig):
                     print("memory_map", file=f)
                 else:
                     print("memory_nordff", file=f)
-                print_common_prep()
+                print_common_prep("-simcheck")
                 print("flatten", file=f)
                 print("setundef -undriven -anyseq", file=f)
                 if "_syn" in model_name:
@@ -653,7 +668,7 @@ class SbyTask(SbyConfig):
                     print("abc", file=f)
                     print("opt_clean", file=f)
                 else:
-                    print("opt -fast", file=f)
+                    print("opt -fast -keepdc", file=f)
                 print("delete -output", file=f)
                 print("dffunmap", file=f)
                 print("stat", file=f)
@@ -675,7 +690,7 @@ class SbyTask(SbyConfig):
                 print(f"# running in {self.workdir}/model/", file=f)
                 print("read_ilang design.il", file=f)
                 print("memory_map", file=f)
-                print_common_prep()
+                print_common_prep("-simcheck")
                 print("flatten", file=f)
                 print("setundef -undriven -anyseq", file=f)
                 print("setattr -unset keep", file=f)
