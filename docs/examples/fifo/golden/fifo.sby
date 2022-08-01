@@ -17,6 +17,7 @@ mode bmc
 --
 bigtest: depth 120
 ~bigtest: depth 10
+nofullskip: expect fail
 
 [engines]
 smtbmc boolector
