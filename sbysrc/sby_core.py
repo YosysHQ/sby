@@ -290,6 +290,7 @@ class SbyConfig:
                         self.error(f"sby file syntax error: '[options]' section does not accept any arguments. got {args}")
                     continue
 
+                # [engines (MODE)]
                 if section == "engines":
                     mode = "engines"
                     if len(entries) > 2:
@@ -306,30 +307,36 @@ class SbyConfig:
                         #     self.error(f"Already defined engine block for mode '{entries[1]}'")
 
                 # [setup]
-                if entries[0] == "setup":
+                if section == "setup":
                     mode = "setup"
-                    if len(self.setup) != 0 or len(entries) != 1:
-                        self.error(f"sby file syntax error: {line}")
-                    continue
+                    if len(self.setup) != 0:
+                        self.error(f"sby file syntax error: '[setup]' section already defined")
+
+                    if args is not None:
+                        self.error(f"sby file syntax error: '[setup]' section does not accept any arguments. got {args}")
 
                 # [stage <NAME> (PARENTS,...)]
-                if entries[0] == "stage":
+                if section == "stage":
                     mode = "stage"
-                    if len(entries) > 3 or len(entries) < 2:
-                        self.error(f"sby file syntax error: {line}")
 
-                    if len(entries) == 2:
-                        parent = None
+                    if args is None:
+                        self.error(f"sby file syntax error: '[stage]' section expects arguments, got none")
+
+                    section_args = args.split(" ", maxsplit = 1)
+
+
+                    if len(section_args) == 1:
+                        parents = None
                     else:
-                        parent = entries[2].split(',')
+                        parents = list(map(lambda a: a.trim(), section_args[1].split(',')))
 
-                    key = entries[1]
+                    stage_name = section_args[0]
 
-                    if key in self.stage:
-                        self.error(f"stage {key} already defined")
+                    if stage_name in self.stage:
+                        self.error(f"stage {stage_name} already defined")
 
-                    self.stage[key] = {
-                        'parent': parent
+                    self.stage[stage_name] = {
+                        'parents': parents
                     }
 
                     continue
