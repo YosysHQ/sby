@@ -906,6 +906,8 @@ class SbyTask(SbyConfig):
 
     def print_junit_result(self, f, junit_ts_name, junit_tc_name, junit_format_strict=False):
         junit_time = strftime('%Y-%m-%dT%H:%M:%S')
+        if not self.design:
+            self.precise_prop_status = False
         if self.precise_prop_status:
             checks = self.design.hierarchy.get_property_list()
             junit_tests = len(checks)
