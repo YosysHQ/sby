@@ -1,0 +1,22 @@
+[options]
+mode cover
+depth 36
+
+[engines]
+smtbmc boolector
+
+[script]
+read -formal top.sv
+prep -top top
+
+[file top.sv]
+module top(input clk);
+    reg [33:0] bits = 0;
+    reg [5:0] counter = 0;
+
+    always @(posedge clk) begin
+        counter <= counter + 1;
+        bits[counter] <= 1;
+        cover (&bits);
+    end
+endmodule
