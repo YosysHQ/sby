@@ -268,7 +268,7 @@ class SbyConfig:
                 continue
             match = re.match(r"^\s*\[(.*)\]\s*$", line)
             if match:
-                entries = match.group(1).split(" ", maxsplit = 1)
+                entries = match.group(1).strip().split(maxsplit = 1)
                 if len(entries) == 0:
                     self.error(f"sby file syntax error: Expected section header, got '{line}'")
                 elif len(entries) == 1:
