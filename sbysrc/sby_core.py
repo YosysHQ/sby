@@ -661,7 +661,8 @@ class SbyTask(SbyConfig):
                 print(f"""read_ilang design_prep.il""", file=f)
                 print("hierarchy -smtcheck", file=f)
                 if "_nomem" in model_name:
-                    print("memory_map", file=f)
+                    print("memory_map -formal", file=f)
+                    print("formalff -clk2ff -ff2anyinit", file=f)
                 if "_syn" in model_name:
                     print("techmap", file=f)
                     print("opt -fast", file=f)
@@ -692,7 +693,8 @@ class SbyTask(SbyConfig):
                 print(f"""read_ilang design_prep.il""", file=f)
                 print("hierarchy -simcheck", file=f)
                 if "_nomem" in model_name:
-                    print("memory_map", file=f)
+                    print("memory_map -formal", file=f)
+                    print("formalff -clk2ff -ff2anyinit", file=f)
                 print("flatten", file=f)
                 print("setundef -undriven -anyseq", file=f)
                 if "_syn" in model_name:
@@ -724,7 +726,8 @@ class SbyTask(SbyConfig):
                 print(f"# running in {self.workdir}/model/", file=f)
                 print("read_ilang design_prep.il", file=f)
                 print("hierarchy -simcheck", file=f)
-                print("memory_map", file=f)
+                print("memory_map -formal", file=f)
+                print("formalff -clk2ff -ff2anyinit", file=f)
                 print("flatten", file=f)
                 print("setundef -undriven -anyseq", file=f)
                 print("setattr -unset keep", file=f)
