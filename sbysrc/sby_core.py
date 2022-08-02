@@ -268,37 +268,41 @@ class SbyConfig:
                 continue
             match = re.match(r"^\s*\[(.*)\]\s*$", line)
             if match:
-                entries = match.group(1).split()
+                entries = match.group(1).split(" ", maxsplit = 1)
                 if len(entries) == 0:
                     self.error(f"sby file syntax error: Expected section header, got '{line}'")
+                elif len(entries) == 1:
+                    section, args = (*entries, None)
+                else:
+                    section, args = entries
 
-                if entries[0] == "options":
+                if section == "options":
                     mode = "options"
                     if len(self.options) != 0:
                         self.error(f"sby file syntax error: '[options]' section already defined")
 
-                    if len(entries) != 1:
-                        self.error(f"sby file syntax error: '[options]' section accepts no arguments, got '{line}'")
+                    if args is not None:
+                        self.error(f"sby file syntax error: '[options]' section does not accept any arguments. got {args}")
                     continue
 
-                if entries[0] == "engines":
+                if section == "engines":
                     mode = "engines"
                     if len(self.engines) != 0:
                         self.error(f"sby file syntax error: '[engines]' section already defined")
-                    if len(entries) != 1:
-                        self.error(f"sby file syntax error: '[engines]' section accepts no arguments, got '{line}'")
+                    if args is not None:
+                        self.error(f"sby file syntax error: '[engines]' section does not accept any arguments. got {args}")
                     continue
 
-                if entries[0] == "script":
+                if section == "script":
                     mode = "script"
                     if len(self.script) != 0:
                         self.error(f"sby file syntax error: '[script]' section already defined")
-                    if len(entries) != 1:
-                        self.error(f"sby file syntax error: '[script]' section accepts no arguments, got '{line}'")
+                    if args is not None:
+                        self.error(f"sby file syntax error: '[script]' section does not accept any arguments. got {args}")
 
                     continue
 
-                if entries[0] == "autotune":
+                if section == "autotune":
                     mode = "autotune"
                     if self.autotune_config:
                         self.error(f"sby file syntax error: '[autotune]' section already defined")
@@ -307,23 +311,28 @@ class SbyConfig:
                     self.autotune_config = sby_autotune.SbyAutotuneConfig()
                     continue
 
-                if entries[0] == "file":
+                if section == "file":
                     mode = "file"
-                    if len(entries) != 2:
+                    if args is None:
                         self.error(f"sby file syntax error: '[file]' section expects a file name argument")
-                    current_verbatim_file = entries[1]
+
+                    section_args = args.split()
+
+                    if len(section_args) > 1:
+                        self.error(f"sby file syntax error: '[file]' section expects exactly one file name argument, got {len(section_args)}")
+                    current_verbatim_file = section_args[0]
                     if current_verbatim_file in self.verbatim_files:
-                        self.error(f"duplicate file: {entries[1]}")
+                        self.error(f"duplicate file: {current_verbatim_file}")
                     self.verbatim_files[current_verbatim_file] = list()
                     continue
 
-                if entries[0] == "files":
+                if section == "files":
                     mode = "files"
-                    if len(entries) != 1:
-                        self.error(f"sby file syntax error: '[files]' section expects no arguments, got '{line}'")
+                    if args is not None:
+                        self.error(f"sby file syntax error: '[files]' section does not accept any arguments. got {args}")
                     continue
 
-                self.error(f"sby file syntax error: unexpected section '{entries[0]}', expected one of 'options, engines, script, autotune, file, files'")
+                self.error(f"sby file syntax error: unexpected section '{section}', expected one of 'options, engines, script, autotune, file, files'")
 
             if mode == "options":
                 entries = line.split()
