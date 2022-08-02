@@ -1,32 +1,36 @@
 // address generator/counter
 module addr_gen 
 #(  parameter MAX_DATA=16
-) ( input en, clk, rst_n,
+) ( input en, clk, rst,
     output reg [3:0] addr
 );
     initial addr <= 0;
 
     // async reset
     // increment address when enabled
-    always @(posedge clk or negedge rst_n)
-        if (~rst_n)
+    always @(posedge clk or posedge rst)
+        if (rst)
             addr <= 0;
-        else if (en)
+        else if (en) begin
             if (addr == MAX_DATA-1)
                 addr <= 0;
             else
                 addr <= addr + 1;
+        end
 endmodule
 
 // Define our top level fifo entity
 module fifo 
 #(  parameter MAX_DATA=16
-) ( input wen, ren, clk, rst_n,
+) ( input wen, ren, clk, rst,
     input [7:0] wdata,
     output [7:0] rdata,
     output [4:0] count,
     output full, empty
 );
+    wire wskip, rskip;
+    reg [4:0] data_count;
+
     // fifo storage
     // async read, sync write
     wire [3:0] waddr, raddr;
@@ -42,7 +46,7 @@ module fifo
     fifo_writer (
         .en     (wen || wskip),
         .clk    (clk  ),
-        .rst_n  (rst_n),
+        .rst    (rst),
         .addr   (waddr)
     );
 
@@ -50,16 +54,15 @@ module fifo
     fifo_reader (
         .en     (ren || rskip),
         .clk    (clk  ),
-        .rst_n  (rst_n),
+        .rst    (rst),
         .addr   (raddr)
     );
 
     // status signals
-    reg [4:0] data_count;
     initial data_count <= 0;
 
-    always @(posedge clk or negedge rst_n) begin
-        if (~rst_n)
+    always @(posedge clk or posedge rst) begin
+        if (rst)
             data_count <= 0;
         else if (wen && !ren && data_count < MAX_DATA)
             data_count <= data_count + 1;
@@ -68,11 +71,10 @@ module fifo
     end
 
     assign full  = data_count == MAX_DATA;
-    assign empty = (data_count == 0) && rst_n;
+    assign empty = (data_count == 0) && ~rst;
     assign count = data_count;
 
     // overflow protection
-    wire wskip, rskip;
 `ifndef NO_FULL_SKIP
     // write while full => overwrite oldest data, move read pointer
     assign rskip = wen && !ren && data_count >= MAX_DATA;
@@ -90,19 +92,10 @@ module fifo
                      ? waddr - raddr 
                      : waddr + MAX_DATA - raddr;
 
-    reg init = 0;
-    always @(posedge clk) begin
-        if (rst_n)
-            init <= 1;
-        // if init is low we don't care about the value of rst_n
-        // if init is high (rst_n has ben high), then rst_n must remain high
-        assume (!init || rst_n);
-    end
-
     // tests
     always @(posedge clk) begin
-        if (rst_n) begin
-            // waddr and raddr can only be non zero if reset is high
+        if (~rst) begin
+            // waddr and raddr can only be non zero if reset is low
             w_nreset: cover (waddr || raddr);
 
             // count never more than max
@@ -132,49 +125,44 @@ module fifo
             w_full:  cover  (wen && !ren && count == MAX_DATA-1);
             a_empty: assert (!empty || count == 0);
             w_empty: cover  (ren && !wen && count == 1);
-            
-            // can we corrupt our data?
-            w_overfill:  cover ($past(rskip) && raddr);
-            w_underfill: cover ($past(wskip) && waddr);
-        end else begin
-            // waddr and raddr are zero while reset is low
-            a_reset: assert (!waddr && !raddr);
-            w_reset: cover  (~rst_n);
 
-            // outputs are zero while reset is low
+            // reading/writing non zero values
+            w_nzero_write: cover (wen && wdata);
+            w_nzero_read:  cover (ren && rdata);
+        end else begin
+            // waddr and raddr are zero while reset is high
+            a_reset: assert (!waddr && !raddr);
+            w_reset: cover  (rst);
+
+            // outputs are zero while reset is high
             a_zero_out: assert (!empty && !full && !count);
         end
     end
 
 `ifdef VERIFIC
     // if we have verific we can also do the following additional tests
-    always @(posedge clk) begin
-        if (rst_n) begin
-            // read/write enables enable
-            ap_raddr2: assert property (ren |=> $changed(raddr));
-            ap_waddr2: assert property (wen |=> $changed(waddr));
+    // read/write enables enable
+    ap_raddr2: assert property (@(posedge clk) disable iff (rst) ren |=> $changed(raddr));
+    ap_waddr2: assert property (@(posedge clk) disable iff (rst) wen |=> $changed(waddr));
 
-            // read/write needs enable UNLESS full/empty
-            ap_raddr3: assert property (!ren && !full  |=> $stable(raddr));
-            ap_waddr3: assert property (!wen && !empty |=> $stable(waddr));
-                    
-            // can we corrupt our data?
-            // these should already be covered by ap_{r,w}addr2
-            ap_overfill:  assert property (wen && full  |=> $changed(raddr));
-            ap_underfill: assert property (ren && empty |=> $changed(waddr));
-            
-            // change data when writing (and only when writing) so we can line
-            // up reads with writes
-            //TODO: this but with a cover statement
-            // assume property (wen |=> $changed(wdata));
-            // assume property (!wen |=> $stable(wdata));
-        end
-    end
+    // read/write needs enable UNLESS full/empty
+    ap_raddr3: assert property (@(posedge clk) disable iff (rst) !ren && !full  |=> $stable(raddr));
+    ap_waddr3: assert property (@(posedge clk) disable iff (rst) !wen && !empty |=> $stable(waddr));
+
+    // can we corrupt our data?
+    w_underfill: cover property (@(posedge clk) disable iff (rst) !wen |=> $changed(waddr));
+    // look for an overfill where the value in memory changes
+    let d_change = (wdata != rdata);
+    w_overfill:  cover property (@(posedge clk) disable iff (rst) !ren && d_change |=> $changed(raddr));
 `else // !VERIFIC
-    // without verific we are more limited in describing the above assumption
     always @(posedge clk) begin
-        assume ((wen && wdata != $past(wdata)) 
-            || (!wen && wdata == $past(wdata)));
+        if (~rst) begin
+            // this is less reliable because $past() can sometimes give false
+            //  positives in the first cycle
+            w_overfill:  cover ($past(rskip) && raddr);
+            w_underfill: cover ($past(wskip) && waddr);
+
+        end
     end
 `endif // VERIFIC
 

@@ -131,7 +131,7 @@ adjustments to code and rerunning tests to validate.
     
     sby -f fifo.sby nofullskip
 
-The noskip task disables the code shown below.  Because the count signal has
+The nofullskip task disables the code shown below.  Because the count signal has
 been written such that it cannot exceed MAX_DATA, removing this code will lead
 to the ``a_count_diff`` assertion failing.  Without this assertion, there is no
 guarantee that data will be read in the same order it was written should an
@@ -143,13 +143,12 @@ overflow occur and the oldest data be written.
    :end-at: endif
    :lines: 1-5,9
 
-The last few lines of output for the noskip task should be similar to the
+The last few lines of output for the nofullskip task should be similar to the
 following:
 
 .. code-block:: text
 
     SBY [fifo_nofullskip] engine_0.basecase: ##  Assert failed in fifo: a_count_diff
-    SBY [fifo_nofullskip] engine_0.basecase: ##  Assert failed in fifo: ap_underfill
     SBY [fifo_nofullskip] engine_0.basecase: ##  Writing trace to VCD file: engine_0/trace.vcd
     SBY [fifo_nofullskip] engine_0.basecase: ##  Writing trace to Verilog testbench: engine_0/trace_tb.v
     SBY [fifo_nofullskip] engine_0.basecase: ##  Writing trace to constraints file: engine_0/trace.smtc
@@ -162,7 +161,7 @@ following:
     SBY [fifo_nofullskip] summary: engine_0 (smtbmc boolector) returned FAIL for basecase
     SBY [fifo_nofullskip] summary: counterexample trace: fifo_nofullskip/engine_0/trace.vcd
     SBY [fifo_nofullskip] DONE (FAIL, rc=2)
-    SBY The following tasks failed: ['noskip']
+    SBY The following tasks failed: ['nofullskip']
 
 Using the ``noskip.gtkw`` file provided, use the below command to examine the
 error trace.
@@ -189,16 +188,16 @@ Searching the file for ``w_underfill`` will reveal the below.
 
 .. code-block:: text
 
-    $ grep "w_underfill" fifo_cover/logfile.txt -A 1
+    $ grep "w_underfill" fifo_cover/logfile.txt -A 2
     SBY [fifo_cover] engine_0: ##  Reached cover statement at w_underfill in step 2.
-    SBY [fifo_cover] engine_0: ##  Writing trace to VCD file: engine_0/trace2.vcd
+    SBY [fifo_cover] engine_0: ##  Writing trace to VCD file: engine_0/trace4.vcd
 
 We can then run gtkwave with the trace file indicated to see the correct
 operation as in the image below.  When the buffer is empty, a read with no write
 will result in the ``wksip`` signal going high, incrementing *both* read and
 write addresses and avoiding underflow.
     
-    gtkwave fifo_cover/engine_0/trace2.vcd noskip.gtkw
+    gtkwave fifo_cover/engine_0/trace4.vcd noskip.gtkw
 
 .. image:: media/gtkwave_coverskip.png
 
