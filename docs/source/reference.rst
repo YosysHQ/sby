@@ -153,6 +153,12 @@ options are:
 | ``tbtop``        |   All      | The top module for generated Verilog test benches, as   |
 |                  |            | hierarchical path relative to the design top module.    |
 +------------------+------------+---------------------------------------------------------+
+| ``make_model``   |   All      | Force generation of the named formal models. Takes a    |
+|                  |            | comma-separated list of model names. For a model        |
+|                  |            | ``<name>`` this will generate the                       |
+|                  |            | ``model/design_<name>.*`` files within the working      |
+|                  |            | directory, even when not required to run the task.      |
++------------------+------------+---------------------------------------------------------+
 | ``smtc``         | ``bmc``,   | Pass this ``.smtc`` file to the smtbmc engine. All      |
 |                  | ``prove``, | other engines are disabled when this option is used.    |
 |                  | ``cover``  | Default: None                                           |

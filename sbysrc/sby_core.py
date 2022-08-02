@@ -81,6 +81,7 @@ class SbyProc:
         self.linebuffer = ""
         self.logstderr = logstderr
         self.silent = silent
+        self.wait = False
 
         self.task.update_proc_pending(self)
 
@@ -130,7 +131,7 @@ class SbyProc:
             self.error_callback(retcode)
 
     def terminate(self, timeout=False):
-        if self.task.opt_wait and not timeout:
+        if (self.task.opt_wait or self.wait) and not timeout:
             return
         if self.running:
             if not self.silent:
@@ -749,7 +750,7 @@ class SbyTask(SbyConfig):
 
             return [proc]
 
-        assert False
+        self.error(f"Invalid model name: {model_name}")
 
     def model(self, model_name):
         if model_name not in self.models:
@@ -827,6 +828,8 @@ class SbyTask(SbyConfig):
         self.handle_int_option("skip", None)
         self.handle_str_option("tbtop", None)
 
+        self.handle_str_option("make_model", None)
+
     def setup_procs(self, setupmode):
         self.handle_non_engine_options()
         if self.opt_smtc is not None:
@@ -853,6 +856,13 @@ class SbyTask(SbyConfig):
         if setupmode:
             self.retcode = 0
             return
+
+        if self.opt_make_model is not None:
+            for name in self.opt_make_model.split(","):
+                self.model(name.strip())
+
+            for proc in self.procs_pending:
+                proc.wait = True
 
         if self.opt_mode == "bmc":
             import sby_mode_bmc
