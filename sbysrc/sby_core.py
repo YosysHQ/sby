@@ -608,9 +608,7 @@ class SbyTask(SbyConfig):
                 print("check", file=f)  # can't detect undriven wires past this point
                 print("setundef -undriven -anyseq", file=f)
                 print("opt -fast", file=f)
-                # running opt before the renames below results in fewer unnamed witness signals
-                for celltype in ["anyconst", "anyseq", "anyinit", "allconst", "allseq"]:
-                    print(f"rename -enumerate -pattern _sby_witness_{celltype}_% t:${celltype} %co w:* %i", file=f)
+                print("rename -witness", file=f)
                 print("opt_clean", file=f)
                 print(f"""write_rtlil ../model/design_prep.il""", file=f)
 
