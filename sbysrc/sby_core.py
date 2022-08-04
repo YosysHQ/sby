@@ -335,7 +335,7 @@ class SbyConfig:
                 self.error(f"sby file syntax error: unexpected section '{section}', expected one of 'options, engines, script, autotune, file, files'")
 
             if mode == "options":
-                entries = line.split(maxsplit = 1)
+                entries = line.strip().split(maxsplit = 1)
                 if len(entries) != 2:
                     self.error(f"sby file syntax error: '[options]' section entry does not have an argument '{line}'")
                 self.options[entries[0]] = entries[1]
