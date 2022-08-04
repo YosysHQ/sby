@@ -178,6 +178,9 @@ options are:
 |                  | ``prove``, | specified number of cycles at the end of the trace.     |
 |                  | ``cover``  | Default: ``0``                                          |
 +------------------+------------+---------------------------------------------------------+
+| ``stage``        | All        | The stages to select to run.                            |
+|                  |            | Default: All                                            |
++------------------+------------+---------------------------------------------------------+
 
 Engines section
 ---------------
@@ -204,6 +207,19 @@ solver options.
 
 In the 2nd line ``abc`` is the engine, there are no engine options, ``sim3`` is the
 solver, and ``-W 15`` are solver options.
+
+
+The ``[engines]`` section also takes an argument as to what mode that block applies to.
+Meaning you can specify an engine block for a given mode.
+
+Example:
+
+.. code-block:: text
+
+   [engines bmc]
+   btor pono
+   abc sim3
+
 
 The following mode/engine/solver combinations are currently supported:
 
@@ -390,6 +406,48 @@ when Yosys is not built with Verific support):
 Run ``yosys`` in a terminal window and enter ``help`` on the Yosys prompt
 for a command list. Run ``help <command>`` for a detailed description of the
 command, for example ``help prep``.
+
+Setup section
+-------------
+
+The ``[setup]`` section provides a way to add global cutpoints, and enable/disable/assume/define patterns.
+By default properties that are unspecified default to enabled, and a ``disable *`` at the end of the settings
+will set the default to be disabled.
+
+For example:
+
+.. code-block:: text
+
+   [setup]
+   enable *
+
+The following options are available for the ``[setup]`` section:
+
+.. todo::
+
+   Document better
+
++------------------+---------------------------------------------------------+
+|   Option         | Description                                             |
++==================+=========================================================+
+| ``cutpoint``     | Defines a cutpoint pattern.                             |
++------------------+---------------------------------------------------------+
+| ``disable``      | Defines a disable pattern.                              |
++------------------+---------------------------------------------------------+
+| ``enable``       | Defines an enable pattern.                              |
++------------------+---------------------------------------------------------+
+| ``assume``       | Defines an assume pattern.                              |
++------------------+---------------------------------------------------------+
+| ``define``       | Define a value.                                         |
++------------------+---------------------------------------------------------+
+
+
+Stage section
+-------------
+
+.. todo::
+
+   Document
 
 Files section
 -------------
