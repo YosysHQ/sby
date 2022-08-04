@@ -293,18 +293,22 @@ class SbyConfig:
                 # [engines (MODE)]
                 if section == "engines":
                     mode = "engines"
-                    if len(entries) > 2:
-                        self.error(f"sby file syntax error: [engine] sections expects at most 1 argument, got more '{line}'")
 
-                    if len(entries) == 2 and entries[1] not in ("bmc", "prove", "cover", "live"):
-                        self.error(f"sby file syntax error: Expected one of 'bmc, prove, cover, live' not '{entries[1]}'")
-                    elif len(entries) == 2:
-                        pass
-                        # if entries[1] not in self.engines:
-                        #     self.engines[entries[1]] = list()
-                        #     engine_mode = entries[1]
-                        # else:
-                        #     self.error(f"Already defined engine block for mode '{entries[1]}'")
+                    if args is not None:
+                        section_args = args.split()
+
+                        if len(section_args) > 1:
+                            self.error(f"sby file syntax error: '[engine]' sections expects at most 1 argument, got '{len(section_args)}'")
+
+                        if section_args[0] not in ("bmc", "prove", "cover", "live"):
+                            self.error(f"sby file syntax error: Expected one of 'bmc, prove, cover, live' as '[engine]` argument, not '{section_args[0]}'")
+
+                        if section_args[0] in self.engines:
+                            self.error(f"Already defined engine block for mode '{section_args[0]}'")
+                        else:
+                            self.engines[section_args[0]] = list()
+                            engine_mode = section_args[0]
+                    continue
 
                 # [setup]
                 if section == "setup":
