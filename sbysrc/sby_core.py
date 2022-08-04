@@ -401,8 +401,8 @@ class SbyConfig:
                 continue
 
             if mode == "engines":
-                entries = line.split()
-                self.engines[engine_mode].append(entries)
+                args = line.strip().split()
+                self.engines[engine_mode].append(args)
                 continue
 
             if mode == "setup":
