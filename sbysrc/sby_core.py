@@ -259,6 +259,7 @@ class SbyConfig:
     def parse_config(self, f):
         mode = None
         engine_mode = None
+        stage_name = None
 
         for line in f:
             raw_line = line
@@ -326,7 +327,7 @@ class SbyConfig:
                     if args is None:
                         self.error(f"sby file syntax error: '[stage]' section expects arguments, got none")
 
-                    section_args = args.split(" ", maxsplit = 1)
+                    section_args = args.strip().split(maxsplit = 1)
 
 
                     if len(section_args) == 1:
@@ -424,31 +425,40 @@ class SbyConfig:
                 continue
 
             if mode == "stage":
-                kvp = line.split()
-                if key is None or key == '':
-                    self.error(f"sby file syntax error: in stage mode but unknown key")
+                _valid_options = (
+                    "mode", "depth", "timeout", "expect", "engine",
+                    "cutpoint", "enable", "disable", "assume", "skip",
+                    "check", "prove", "abstract", "setsel"
+                )
 
-                if len(kvp) == 0:
-                    continue
+                args = line.strip().split(maxsplit = 1)
 
-                if kvp[0] not in ("mode", "depth", "timeout", "expect", "engine",
-                                  "cutpoint", "enable", "disable", "assume", "skip",
-                                  "check", "prove", "abstract", "setsel") or len(kvp) < 2:
-                    self.error(f"sby file syntax error: {line}")
+                if args is None:
+                    self.error(f"sby file syntax error: unknown key in '[stage]' section")
+
+                if len(args) < 2:
+                    self.error(f"sby file syntax error: entry in '[stage]' must have an argument, got {' '.join(args)}")
+
+                if args[0] not in _valid_options:
+                    self.error(f"sby file syntax error: expected on of '{', '.join(_valid_options)}' in '[stage]' section, got '{args[0]}'")
                 else:
-                    stmt = kvp[0]
-                    if stmt == 'setsel':
-                        if len(kvp[1:]) < 2:
-                            self.error(f"sby file syntax error: 'setsel' statement takes 2 arguments, got {len(kvp[1:])}")
-                        elif kvp[1][0] != '@':
-                            self.error(f"sby file syntax error: 'setsel' statement expects an '@' prefixed name as the first parameter, got {line}")
-                        else:
-                            name = kvp[1][1:]
-                            self.stage[key][stmt] = {
-                                'name': name, 'pattern': kvp[2:]
-                            }
+                    opt_key = args[0]
+                    opt_args = args[1].strip().split()
+                    if opt_key == 'setsel':
+
+                        if len(opt_args) != 2:
+                            self.error(f"sby file syntax error: 'setsel' statement in '[stage]' section takes  exactly 2 arguments, got {len(opt_args)}")
+
+                        if opt_args[0][0] != '@':
+                            self.error(f"sby file syntax error: 'setsel' statement in '[stage]' section expects an '@' prefixed name as the first parameter, got {opt_args[0]}")
+
+                        name = opt_args[0][1:]
+                        self.stage[stage_name][opt_key] = {
+                            'name': name, 'pattern': opt_args[2:]
+                        }
+
                     else:
-                        self.stage[key][stmt] = kvp[1:]
+                        self.stage[stage_name][opt_key] = opt_args[1:]
                 continue
 
             if mode == "script":
