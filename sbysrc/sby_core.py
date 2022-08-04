@@ -320,6 +320,8 @@ class SbyConfig:
                     if args is not None:
                         self.error(f"sby file syntax error: '[setup]' section does not accept any arguments. got {args}")
 
+                    continue
+
                 # [stage <NAME> (PARENTS,...)]
                 if section == "stage":
                     mode = "stage"
@@ -404,24 +406,40 @@ class SbyConfig:
                 continue
 
             if mode == "setup":
-                kvp = line.split()
-                if kvp[0] not in ("cutpoint", "disable", "enable", "assume", "define"):
-                    self.error(f"sby file syntax error: found '{kvp[0]}' but expected one of 'cutpoint', 'disable', 'enable', 'assume', or 'define'")
+                _valid_options = (
+                    "cutpoint", "disable", "enable", "assume", "define"
+                )
+
+                args = line.strip().split(maxsplit = 1)
+
+
+                if args is None:
+                    self.error(f"sby file syntax error: unknown key in '[setup]' section")
+
+                if len(args) < 2:
+                    self.error(f"sby file syntax error: entry in '[setup]' must have an argument, got {' '.join(args)}")
+
+                if args[0] not in _valid_options:
+                    self.error(f"sby file syntax error: expected on of '{', '.join(_valid_options)}' in '[setup]' section, got '{args[0]}'")
+
                 else:
-                    stmt = kvp[0]
-                    if stmt == 'define':
+                    opt_key = args[0]
+                    opt_args = args[1].strip().split()
+
+                    if opt_key == 'define':
                         if 'define' not in self.setup:
                             self.setup['define'] = {}
 
-                        if len(kvp[1:]) < 2:
-                            self.error(f"sby file syntax error: 'define' statement takes 2 arguments, got {len(kvp[1:])}")
-                        elif kvp[1][0] != '@':
-                            self.error(f"sby file syntax error: 'define' statement expects an '@' prefixed name as the first parameter, got {line}")
-                        else:
-                            name = kvp[1][1:]
-                            self.setup['define'][name] = kvp[2:]
+                        if len(opt_args) != 2:
+                            self.error(f"sby file syntax error: 'define' statement in '[setup]' section takes  exactly 2 arguments, got {len(opt_args)}")
+
+                        if opt_args[0][0] != '@':
+                            self.error(f"sby file syntax error: 'define' statement in '[setup]' section expects an '@' prefixed name as the first parameter, got {opt_args[0]}")
+
+                        name = opt_args[0][1:]
+                        self.setup['define'][name] =  opt_args[2:]
                     else:
-                        self.setup[stmt] = kvp[1:]
+                        self.setup[opt_key] =  opt_args[1:]
                 continue
 
             if mode == "stage":
@@ -453,11 +471,18 @@ class SbyConfig:
                             self.error(f"sby file syntax error: 'setsel' statement in '[stage]' section expects an '@' prefixed name as the first parameter, got {opt_args[0]}")
 
                         name = opt_args[0][1:]
+
+                        if stage_name not in self.stage:
+                            self.stage[stage_name] = dict()
+
                         self.stage[stage_name][opt_key] = {
                             'name': name, 'pattern': opt_args[2:]
                         }
 
                     else:
+                        if stage_name not in self.stage:
+                            self.stage[stage_name] = dict()
+
                         self.stage[stage_name][opt_key] = opt_args[1:]
                 continue
 
@@ -482,6 +507,9 @@ class SbyConfig:
                 continue
 
             self.error(f"sby file syntax error: In an incomprehensible mode '{mode}'")
+
+        if len(self.stage.keys()) == 0:
+            self.stage['default'] = { 'enable': '*' }
 
     def error(self, logmessage):
         raise SbyAbort(logmessage)
