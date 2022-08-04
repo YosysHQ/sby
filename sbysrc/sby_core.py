@@ -291,7 +291,6 @@ class SbyConfig:
                         self.error(f"sby file syntax error: '[options]' section does not accept any arguments. got {args}")
                     continue
 
-                # [engines (MODE)]
                 if section == "engines":
                     mode = "engines"
 
@@ -311,8 +310,9 @@ class SbyConfig:
                             engine_mode = section_args[0]
                     continue
 
-                # [setup]
                 if section == "setup":
+                    self.error(f"sby file syntax error: the '[setup]' section is not yet supported")
+
                     mode = "setup"
                     if len(self.setup) != 0:
                         self.error(f"sby file syntax error: '[setup]' section already defined")
@@ -324,6 +324,8 @@ class SbyConfig:
 
                 # [stage <NAME> (PARENTS,...)]
                 if section == "stage":
+                    self.error(f"sby file syntax error: the '[stage]' section is not yet supported")
+
                     mode = "stage"
 
                     if args is None:
