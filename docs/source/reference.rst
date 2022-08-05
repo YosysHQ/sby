@@ -346,6 +346,15 @@ solvers:
 Solver options are passed as additional arguments to the ABC command
 implementing the solver.
 
+
+``none`` engine
+~~~~~~~~~~~~~~~
+
+The ``none`` engine does not run any solver. It can be used together with the
+``make_model`` option to manually generate any model supported by one of the
+other engines. This makes it easier to use the same models outside of sby.
+
+
 Script section
 --------------
 

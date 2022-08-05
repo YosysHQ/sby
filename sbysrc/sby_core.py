@@ -597,7 +597,8 @@ class SbyTask(SbyConfig):
                 else:
                     print("async2sync", file=f)
                     print("chformal -assume -early", file=f)
-                print("formalff -clk2ff -ff2anyinit", file=f)
+                print("opt_clean", file=f)
+                print("formalff -setundef -clk2ff -ff2anyinit", file=f)
                 if self.opt_mode in ["bmc", "prove"]:
                     print("chformal -live -fair -cover -remove", file=f)
                 if self.opt_mode == "cover":
@@ -661,7 +662,7 @@ class SbyTask(SbyConfig):
                 print("hierarchy -smtcheck", file=f)
                 if "_nomem" in model_name:
                     print("memory_map -formal", file=f)
-                    print("formalff -clk2ff -ff2anyinit", file=f)
+                    print("formalff -setundef -clk2ff -ff2anyinit", file=f)
                 if "_syn" in model_name:
                     print("techmap", file=f)
                     print("opt -fast", file=f)
@@ -693,7 +694,7 @@ class SbyTask(SbyConfig):
                 print("hierarchy -simcheck", file=f)
                 if "_nomem" in model_name:
                     print("memory_map -formal", file=f)
-                    print("formalff -clk2ff -ff2anyinit", file=f)
+                    print("formalff -setundef -clk2ff -ff2anyinit", file=f)
                 print("flatten", file=f)
                 print("setundef -undriven -anyseq", file=f)
                 if "_syn" in model_name:
@@ -726,7 +727,7 @@ class SbyTask(SbyConfig):
                 print("read_ilang design_prep.il", file=f)
                 print("hierarchy -simcheck", file=f)
                 print("memory_map -formal", file=f)
-                print("formalff -clk2ff -ff2anyinit", file=f)
+                print("formalff -setundef -clk2ff -ff2anyinit", file=f)
                 print("flatten", file=f)
                 print("setundef -undriven -anyseq", file=f)
                 print("setattr -unset keep", file=f)
