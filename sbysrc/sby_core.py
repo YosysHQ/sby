@@ -945,11 +945,6 @@ class SbyTask(SbyConfig):
         with open(f"{self.workdir}/config.sby", "r") as f:
             self.parse_config(f)
 
-        if len(self.stage) == 0:
-            self.stage['default'] = {
-                'enable', '*'
-            }
-
         self.handle_str_option("mode", None)
 
         if self.opt_mode not in ["bmc", "prove", "cover", "live"]:
