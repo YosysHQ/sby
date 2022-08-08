@@ -2,6 +2,7 @@
 basic bmc
 nofullskip prove
 cover
+noverific cover
 bigtest cover
 
 [options]
@@ -23,6 +24,7 @@ smtbmc boolector
 
 [script]
 nofullskip: read -define NO_FULL_SKIP=1
+noverific: read -noverific
 read -formal fifo.sv
 bigtest: hierarchy -check -top fifo -chparam MAX_DATA 100 -chparam ADDR_BITS 7
 ~bigtest: hierarchy -check -top fifo -chparam MAX_DATA 5 -chparam ADDR_BITS 3

@@ -114,6 +114,7 @@ verification.
 **cover**
     Cover mode (testing cover statements).
 
+
 The use of the ``:default`` tag indicates that by default, basic and cover
 should be run if no tasks are specified, such as when running the command below.
 
@@ -188,7 +189,7 @@ Searching the file for ``w_underfill`` will reveal the below.
 
 .. code-block:: text
 
-    $ grep "w_underfill" fifo_cover/logfile.txt -A 2
+    $ grep "w_underfill" fifo_cover/logfile.txt -A 1
     SBY [fifo_cover] engine_0: ##  Reached cover statement at w_underfill in step 2.
     SBY [fifo_cover] engine_0: ##  Writing trace to VCD file: engine_0/trace4.vcd
 
@@ -210,6 +211,7 @@ Adjust the ``[script]`` section of ``fifo.sby`` so that it looks like the below.
 
     [script]
     nofullskip: read -define NO_FULL_SKIP=1
+    noverific: read -noverific
     read -formal fifo.sv
     hierarchy -check -top fifo -chparam MAX_DATA 17
     prep -top fifo

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-python3 $SBY_MAIN -f fifo.sby
+python3 $SBY_MAIN -f fifo.sby basic cover noverific
 
 if [[ $? -ne 0 ]] ; then
     exit 1
