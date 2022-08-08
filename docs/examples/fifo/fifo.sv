@@ -149,19 +149,45 @@ module fifo
     ap_raddr3: assert property (@(posedge clk) disable iff (rst) !ren && !full  |=> $stable(raddr));
     ap_waddr3: assert property (@(posedge clk) disable iff (rst) !wen && !empty |=> $stable(waddr));
 
-    // can we corrupt our data?
-    w_underfill: cover property (@(posedge clk) disable iff (rst) !wen |=> $changed(waddr));
-    // look for an overfill where the value in memory changes
-    let d_change = (wdata != rdata);
-    w_overfill:  cover property (@(posedge clk) disable iff (rst) !ren && d_change |=> $changed(raddr));
-`else // !VERIFIC
-    always @(posedge clk) begin
-        if (~rst) begin
-            // this is less reliable because $past() can sometimes give false
-            //  positives in the first cycle
-            w_overfill:  cover ($past(rskip) && raddr);
-            w_underfill: cover ($past(wskip) && waddr);
+    // use block formatting for w_underfill so it's easier to describe in docs
+    // and is more readily comparable with the non SVA implementation
+    property write_skip;
+        @(posedge clk) disable iff (rst)
+        !wen |=> $changed(waddr);
+    endproperty
+    w_underfill: cover property (write_skip);
 
+    // look for an overfill where the value in memory changes
+    // the change in data makes certain that the value is overriden
+    let d_change = (wdata != rdata);
+    property read_skip;
+        @(posedge clk) disable iff (rst) 
+        !ren && d_change |=> $changed(raddr);
+    endproperty
+    w_overfill:  cover property (read_skip);
+`else // !VERIFIC
+    // implementing w_underfill without properties
+    // can't use !$past(wen) since it will always trigger in the first cycle
+    reg past_nwen;
+    initial past_nwen <= 0;
+    always @(posedge clk) begin
+        if (rst) past_nwen <= 0;
+        if (!rst) begin
+            w_underfill: cover (past_nwen && $changed(waddr));
+            past_nwen <= !wen;
+        end
+    end
+    // end w_underfill
+
+    // w_overfill does the same, but has been separated so that w_underfill
+    // can be included in the docs more cleanly
+    reg past_nren;
+    initial past_nren <= 0;
+    always @(posedge clk) begin
+        if (rst) past_nren <= 0;
+        if (!rst) begin
+            w_overfill: cover (past_nren && $changed(raddr));
+            past_nren <= !ren;
         end
     end
 `endif // VERIFIC

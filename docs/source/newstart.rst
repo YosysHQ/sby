@@ -114,6 +114,8 @@ verification.
 **cover**
     Cover mode (testing cover statements).
 
+**noverific**
+    Test fallback to default Verilog frontend.
 
 The use of the ``:default`` tag indicates that by default, basic and cover
 should be run if no tasks are specified, such as when running the command below.
@@ -202,6 +204,12 @@ write addresses and avoiding underflow.
 
 .. image:: media/gtkwave_coverskip.png
 
+.. note::
+
+    Implementation of the ``w_underfill`` cover statement depends on whether
+    Verific is used or not.  See the `Concurrent assertions`_ section for more
+    detail.
+
 Exercise
 ********
 
@@ -250,24 +258,46 @@ Until this point, all of the properties described have been *immediate*
 assertions.  As the name suggests, immediate assertions are evaluated
 immediately whereas concurrent assertions allow for the capture of sequences of
 events which occur across time.  The use of concurrent assertions requires a
-more advanced series of checks.  Using a parser such as Verific supports these
-checks *without* having to write out potentially complicated state machines.
-Verific is included for use in the *Tabby CAD Suite*.  
+more advanced series of checks.  
 
-With concurrent assertions we are able to verify more fully that our enables and
-status flags work as desired.  For example, we can assert that if the read
-enable signal is high then the address of the read pointer *must* change.
-Because of our earlier *immediate* assertions that the pointer address can only
-increment or remain the same we do not need to specify that here.  We can also
-assert that if the enable is low, and the buffer is not full and potentially
-requires a skip in the read address, then the read address will *not* change.
+Compare the difference in implementation of ``w_underfill`` depending on the
+presence of Verific.  ``w_underfill`` looks for a sequence of events where the
+write enable is low but the write address changes in the following cycle.  This
+is the expected behaviour for reading while empty and implies that the
+``w_skip`` signal went high.  Verific enables elaboration of SystemVerilog
+Assertions (SVA) properties.  Here we use such a property, ``write_skip``.  
 
 .. literalinclude:: ../examples/fifo/fifo.sv
    :language: systemverilog
-   :start-at: ap_raddr2
-   :end-at: ap_raddr3
+   :start-at: property write_skip
+   :end-at: w_underfill
    :dedent:
-   :lines: 1,5
+
+This property describes a *sequence* of events which occurs on the ``clk``
+signal and are disabled/restarted when the ``rst`` signal is high.  The property
+first waits for a low ``wen`` signal, and then a change in ``waddr`` in the
+following cycle.  ``w_underfill`` is then a cover of this property to verify
+that it is possible.  Now look at the implementation without Verific.
+
+.. literalinclude:: ../examples/fifo/fifo.sv
+   :language: systemverilog
+   :start-at: reg past_nwen;
+   :end-before: end w_underfill
+   :dedent:
+
+In this case we do not have access to SVA properties and are more limited in the
+tools available to us.  Ideally we would use ``$past`` to read the value of
+``wen`` in the previous cycle and then check for a change in ``waddr``. However,
+in the first cycle of simulation, reading ``$past`` will return a value of
+``X``.  This results in false triggers of the property so we instead implement
+the ``past_nwen`` register which we can initialise to ``0`` and ensure it does
+not trigger in the first cycle.
+
+As verification properties become more complex and check longer sequences, the
+additional effort of hand-coding without SVA properties becomes much more
+difficult.  Using a parser such as Verific supports these checks *without*
+having to write out potentially complicated state machines. Verific is included
+for use in the *Tabby CAD Suite*.  
 
 Further information
 *******************
