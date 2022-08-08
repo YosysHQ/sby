@@ -229,7 +229,7 @@ while still passing all of the tests?
 
 Once the tests are passing with ``MAX_DATA=17``, try something bigger, like 64,
 or 100.  Does the ``basic`` task still pass?  What about ``cover``?  By default,
-``bmc & cover`` modes will run to a depth of 20 cycles.  If a maximum of one
+``bmc`` & ``cover`` modes will run to a depth of 20 cycles.  If a maximum of one
 value can be loaded in each cycle, how many cycles will it take to load 100
 values?  Using the :ref:`.sby reference page <Reference for .sby file format>`,
 try to increase the cover mode depth to be at least a few cycles larger than the
