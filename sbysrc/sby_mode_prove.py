@@ -49,5 +49,8 @@ def run(task):
             import sby_engine_abc
             sby_engine_abc.run("prove", task, engine_idx, engine)
 
+        elif engine[0] == "none":
+            pass
+
         else:
             task.error(f"Invalid engine '{engine[0]}' for prove mode.")

@@ -34,5 +34,8 @@ def run(task):
             import sby_engine_aiger
             sby_engine_aiger.run("live", task, engine_idx, engine)
 
+        elif engine[0] == "none":
+            pass
+
         else:
             task.error(f"Invalid engine '{engine[0]}' for live mode.")

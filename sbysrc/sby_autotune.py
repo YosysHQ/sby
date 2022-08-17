@@ -391,7 +391,7 @@ class SbyAutotune:
         else:
             self.task.copy_src()
 
-        self.model(None, "base")
+        self.model(None, "prep")
         self.task.taskloop.run()
 
         if self.task.status == "ERROR":

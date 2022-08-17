@@ -111,7 +111,7 @@ def run(mode, task, engine_idx, engine):
                         f"engine_{engine_idx}",
                         task.model("smt2"),
                         ("cd {}; {} -g -s {}{} --noprogress --dump-vcd engine_{i}/trace.vcd --dump-vlogtb engine_{i}/trace_tb.v " +
-                             "--dump-smtc engine_{i}/trace.smtc --aig model/design_aiger.aim:engine_{i}/trace.aiw model/design_smt2.smt2").format
+                             "--dump-smtc engine_{i}/trace.smtc --dump-yw engine_{i}/trace.yw --aig model/design_aiger.aim:engine_{i}/trace.aiw model/design_smt2.smt2").format
                                     (task.workdir, task.exe_paths["smtbmc"], task.opt_aigsmt,
                                     "" if task.opt_tbtop is None else f" --vlogtb-top {task.opt_tbtop}",
                                     i=engine_idx),
@@ -123,7 +123,7 @@ def run(mode, task, engine_idx, engine):
                         f"engine_{engine_idx}",
                         task.model("smt2"),
                         ("cd {}; {} -s {}{} --noprogress --append {} --dump-vcd engine_{i}/trace.vcd --dump-vlogtb engine_{i}/trace_tb.v " +
-                             "--dump-smtc engine_{i}/trace.smtc --aig model/design_aiger.aim:engine_{i}/trace.aiw model/design_smt2.smt2").format
+                             "--dump-smtc engine_{i}/trace.smtc --dump-yw engine_{i}/trace.yw --aig model/design_aiger.aim:engine_{i}/trace.aiw model/design_smt2.smt2").format
                                     (task.workdir, task.exe_paths["smtbmc"], task.opt_aigsmt,
                                     "" if task.opt_tbtop is None else f" --vlogtb-top {task.opt_tbtop}",
                                     task.opt_append, i=engine_idx),
