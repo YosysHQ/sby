@@ -298,10 +298,10 @@ class SbyConfig:
                         section_args = args.split()
 
                         if len(section_args) > 1:
-                            self.error(f"sby file syntax error: '[engine]' sections expects at most 1 argument, got '{len(section_args)}'")
+                            self.error(f"sby file syntax error: '[engines]' section expects at most 1 argument, got '{' '.join(section_args)}'")
 
                         if section_args[0] not in ("bmc", "prove", "cover", "live"):
-                            self.error(f"sby file syntax error: Expected one of 'bmc, prove, cover, live' as '[engine]` argument, not '{section_args[0]}'")
+                            self.error(f"sby file syntax error: Expected one of 'bmc', 'prove', 'cover', 'live' as '[engines]' argument, got '{section_args[0]}'")
 
                         if section_args[0] in self.engines:
                             self.error(f"Already defined engine block for mode '{section_args[0]}'")
@@ -318,7 +318,7 @@ class SbyConfig:
                         self.error(f"sby file syntax error: '[setup]' section already defined")
 
                     if args is not None:
-                        self.error(f"sby file syntax error: '[setup]' section does not accept any arguments. got {args}")
+                        self.error(f"sby file syntax error: '[setup]' section does not accept any arguments, got '{args}'")
 
                     continue
 
@@ -337,12 +337,12 @@ class SbyConfig:
                     if len(section_args) == 1:
                         parents = None
                     else:
-                        parents = list(map(lambda a: a.trim(), section_args[1].split(',')))
+                        parents = list(map(lambda a: a.strip(), section_args[1].split(',')))
 
                     stage_name = section_args[0]
 
                     if stage_name in self.stage:
-                        self.error(f"stage {stage_name} already defined")
+                        self.error(f"stage '{stage_name}' already defined")
 
                     self.stage[stage_name] = {
                         'parents': parents
@@ -419,10 +419,10 @@ class SbyConfig:
                     self.error(f"sby file syntax error: unknown key in '[setup]' section")
 
                 if len(args) < 2:
-                    self.error(f"sby file syntax error: entry in '[setup]' must have an argument, got {' '.join(args)}")
+                    self.error(f"sby file syntax error: entry in '[setup]' must have an argument, got '{' '.join(args)}'")
 
                 if args[0] not in _valid_options:
-                    self.error(f"sby file syntax error: expected on of '{', '.join(_valid_options)}' in '[setup]' section, got '{args[0]}'")
+                    self.error(f"sby file syntax error: expected one of '{', '.join(_valid_options)}' in '[setup]' section, got '{args[0]}'")
 
                 else:
                     opt_key = args[0]
@@ -433,10 +433,10 @@ class SbyConfig:
                             self.setup['define'] = {}
 
                         if len(opt_args) != 2:
-                            self.error(f"sby file syntax error: 'define' statement in '[setup]' section takes  exactly 2 arguments, got {len(opt_args)}")
+                            self.error(f"sby file syntax error: 'define' statement in '[setup]' section takes  exactly 2 arguments, got '{' '.join(opt_args)}'")
 
                         if opt_args[0][0] != '@':
-                            self.error(f"sby file syntax error: 'define' statement in '[setup]' section expects an '@' prefixed name as the first parameter, got {opt_args[0]}")
+                            self.error(f"sby file syntax error: 'define' statement in '[setup]' section expects an '@' prefixed name as the first parameter, got '{opt_args[0]}'")
 
                         name = opt_args[0][1:]
                         self.setup['define'][name] =  opt_args[2:]
@@ -460,17 +460,17 @@ class SbyConfig:
                     self.error(f"sby file syntax error: entry in '[stage]' must have an argument, got {' '.join(args)}")
 
                 if args[0] not in _valid_options:
-                    self.error(f"sby file syntax error: expected on of '{', '.join(_valid_options)}' in '[stage]' section, got '{args[0]}'")
+                    self.error(f"sby file syntax error: expected one of '{', '.join(map(repr, _valid_options))}' in '[stage]' section, got '{args[0]}'")
                 else:
                     opt_key = args[0]
                     opt_args = args[1].strip().split()
                     if opt_key == 'setsel':
 
                         if len(opt_args) != 2:
-                            self.error(f"sby file syntax error: 'setsel' statement in '[stage]' section takes  exactly 2 arguments, got {len(opt_args)}")
+                            self.error(f"sby file syntax error: 'setsel' statement in '[stage]' section takes  exactly 2 arguments, got '{' '.join(opt_args)}'")
 
                         if opt_args[0][0] != '@':
-                            self.error(f"sby file syntax error: 'setsel' statement in '[stage]' section expects an '@' prefixed name as the first parameter, got {opt_args[0]}")
+                            self.error(f"sby file syntax error: 'setsel' statement in '[stage]' section expects an '@' prefixed name as the first parameter, got '{opt_args[0]}'")
 
                         name = opt_args[0][1:]
 
