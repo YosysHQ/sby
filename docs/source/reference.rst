@@ -205,7 +205,6 @@ solver options.
 In the 2nd line ``abc`` is the engine, there are no engine options, ``sim3`` is the
 solver, and ``-W 15`` are solver options.
 
-
 The following mode/engine/solver combinations are currently supported:
 
 +-----------+--------------------------+
