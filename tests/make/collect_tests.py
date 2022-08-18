@@ -18,6 +18,8 @@ def collect(path):
         if not SAFE_PATH.match(filename):
             print(f"skipping {filename!r}, use only [a-zA-Z0-9_./] in filenames")
             continue
+        if entry.name.startswith("skip_"):
+            continue
         tests.append(entry)
     for entry in path.glob("*"):
         if entry.is_dir():
