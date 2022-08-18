@@ -28,14 +28,12 @@ def run(task):
             engine = engine_section
             engine_name = None
         else:
+            assert len(engine_section[1]) > 0
             engine = engine_section[1][0]
             engine_name = engine_section[0]
 
         if engine_name is None:
             engine_name = engine_idx
-
-
-        assert len(engine) > 0
 
         task.log(f"""engine_{engine_name}: {" ".join(engine)}""")
         task.makedirs(f"{task.workdir}/engine_{engine_idx}")

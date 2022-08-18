@@ -246,8 +246,7 @@ class SbyAbort(BaseException):
 class SbyConfig:
     def __init__(self):
         self.options = dict()
-        # Define a default case for the engine block
-        self.engines = { None: list() }
+        self.engines = dict()
         self.setup = dict()
         self.stage = dict()
         self.script = list()
@@ -263,7 +262,7 @@ class SbyConfig:
 
         for line in f:
             raw_line = line
-            if mode in ["options", "engines", "files", "autotune"]:
+            if mode in ["options", "engines", "files", "autotune", "setup", "stage"]:
                 line = re.sub(r"\s*(\s#.*)?$", "", line)
                 if line == "" or line[0] == "#":
                     continue
@@ -404,6 +403,8 @@ class SbyConfig:
 
             if mode == "engines":
                 args = line.strip().split()
+                if engine_mode not in self.engines:
+                    self.engines[engine_mode] = list()
                 self.engines[engine_mode].append(args)
                 continue
 
