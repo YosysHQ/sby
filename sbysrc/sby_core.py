@@ -415,10 +415,6 @@ class SbyConfig:
 
                 args = line.strip().split(maxsplit = 1)
 
-
-                if args is None:
-                    self.error(f"sby file syntax error: unknown key in '[setup]' section")
-
                 if len(args) < 2:
                     self.error(f"sby file syntax error: entry in '[setup]' must have an argument, got '{' '.join(args)}'")
 
