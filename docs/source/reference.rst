@@ -391,6 +391,7 @@ Run ``yosys`` in a terminal window and enter ``help`` on the Yosys prompt
 for a command list. Run ``help <command>`` for a detailed description of the
 command, for example ``help prep``.
 
+
 Files section
 -------------
 

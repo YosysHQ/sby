@@ -246,7 +246,9 @@ class SbyAbort(BaseException):
 class SbyConfig:
     def __init__(self):
         self.options = dict()
-        self.engines = list()
+        self.engines = dict()
+        self.setup = dict()
+        self.stage = dict()
         self.script = list()
         self.autotune_config = None
         self.files = dict()
@@ -255,10 +257,12 @@ class SbyConfig:
 
     def parse_config(self, f):
         mode = None
+        engine_mode = None
+        stage_name = None
 
         for line in f:
             raw_line = line
-            if mode in ["options", "engines", "files", "autotune"]:
+            if mode in ["options", "engines", "files", "autotune", "setup", "stage"]:
                 line = re.sub(r"\s*(\s#.*)?$", "", line)
                 if line == "" or line[0] == "#":
                     continue
@@ -288,10 +292,61 @@ class SbyConfig:
 
                 if section == "engines":
                     mode = "engines"
-                    if len(self.engines) != 0:
-                        self.error(f"sby file syntax error: '[engines]' section already defined")
+
                     if args is not None:
-                        self.error(f"sby file syntax error: '[engines]' section does not accept any arguments. got {args}")
+                        section_args = args.split()
+
+                        if len(section_args) > 1:
+                            self.error(f"sby file syntax error: '[engines]' section expects at most 1 argument, got '{' '.join(section_args)}'")
+
+                        if section_args[0] not in ("bmc", "prove", "cover", "live"):
+                            self.error(f"sby file syntax error: Expected one of 'bmc', 'prove', 'cover', 'live' as '[engines]' argument, got '{section_args[0]}'")
+
+                        if section_args[0] in self.engines:
+                            self.error(f"Already defined engine block for mode '{section_args[0]}'")
+                        else:
+                            self.engines[section_args[0]] = list()
+                            engine_mode = section_args[0]
+                    continue
+
+                if section == "setup":
+                    self.error(f"sby file syntax error: the '[setup]' section is not yet supported")
+
+                    mode = "setup"
+                    if len(self.setup) != 0:
+                        self.error(f"sby file syntax error: '[setup]' section already defined")
+
+                    if args is not None:
+                        self.error(f"sby file syntax error: '[setup]' section does not accept any arguments, got '{args}'")
+
+                    continue
+
+                # [stage <NAME> (PARENTS,...)]
+                if section == "stage":
+                    self.error(f"sby file syntax error: the '[stage]' section is not yet supported")
+
+                    mode = "stage"
+
+                    if args is None:
+                        self.error(f"sby file syntax error: '[stage]' section expects arguments, got none")
+
+                    section_args = args.strip().split(maxsplit = 1)
+
+
+                    if len(section_args) == 1:
+                        parents = None
+                    else:
+                        parents = list(map(lambda a: a.strip(), section_args[1].split(',')))
+
+                    stage_name = section_args[0]
+
+                    if stage_name in self.stage:
+                        self.error(f"stage '{stage_name}' already defined")
+
+                    self.stage[stage_name] = {
+                        'parents': parents
+                    }
+
                     continue
 
                 if section == "script":
@@ -347,8 +402,87 @@ class SbyConfig:
                 continue
 
             if mode == "engines":
-                entries = line.split()
-                self.engines.append(entries)
+                args = line.strip().split()
+                if engine_mode not in self.engines:
+                    self.engines[engine_mode] = list()
+                self.engines[engine_mode].append(args)
+                continue
+
+            if mode == "setup":
+                _valid_options = (
+                    "cutpoint", "disable", "enable", "assume", "define"
+                )
+
+                args = line.strip().split(maxsplit = 1)
+
+                if len(args) < 2:
+                    self.error(f"sby file syntax error: entry in '[setup]' must have an argument, got '{' '.join(args)}'")
+
+                if args[0] not in _valid_options:
+                    self.error(f"sby file syntax error: expected one of '{', '.join(_valid_options)}' in '[setup]' section, got '{args[0]}'")
+
+                else:
+                    opt_key = args[0]
+                    opt_args = args[1].strip().split()
+
+                    if opt_key == 'define':
+                        if 'define' not in self.setup:
+                            self.setup['define'] = {}
+
+                        if len(opt_args) != 2:
+                            self.error(f"sby file syntax error: 'define' statement in '[setup]' section takes  exactly 2 arguments, got '{' '.join(opt_args)}'")
+
+                        if opt_args[0][0] != '@':
+                            self.error(f"sby file syntax error: 'define' statement in '[setup]' section expects an '@' prefixed name as the first parameter, got '{opt_args[0]}'")
+
+                        name = opt_args[0][1:]
+                        self.setup['define'][name] =  opt_args[2:]
+                    else:
+                        self.setup[opt_key] =  opt_args[1:]
+                continue
+
+            if mode == "stage":
+                _valid_options = (
+                    "mode", "depth", "timeout", "expect", "engine",
+                    "cutpoint", "enable", "disable", "assume", "skip",
+                    "check", "prove", "abstract", "setsel"
+                )
+
+                args = line.strip().split(maxsplit = 1)
+
+                if args is None:
+                    self.error(f"sby file syntax error: unknown key in '[stage]' section")
+
+                if len(args) < 2:
+                    self.error(f"sby file syntax error: entry in '[stage]' must have an argument, got {' '.join(args)}")
+
+                if args[0] not in _valid_options:
+                    self.error(f"sby file syntax error: expected one of '{', '.join(map(repr, _valid_options))}' in '[stage]' section, got '{args[0]}'")
+                else:
+                    opt_key = args[0]
+                    opt_args = args[1].strip().split()
+                    if opt_key == 'setsel':
+
+                        if len(opt_args) != 2:
+                            self.error(f"sby file syntax error: 'setsel' statement in '[stage]' section takes  exactly 2 arguments, got '{' '.join(opt_args)}'")
+
+                        if opt_args[0][0] != '@':
+                            self.error(f"sby file syntax error: 'setsel' statement in '[stage]' section expects an '@' prefixed name as the first parameter, got '{opt_args[0]}'")
+
+                        name = opt_args[0][1:]
+
+                        if stage_name not in self.stage:
+                            self.stage[stage_name] = dict()
+
+                        self.stage[stage_name][opt_key] = {
+                            'name': name, 'pattern': opt_args[2:]
+                        }
+
+                    else:
+                        if stage_name not in self.stage:
+                            self.stage[stage_name] = dict()
+
+                        self.stage[stage_name][opt_key] = opt_args[1:]
                 continue
 
             if mode == "script":
@@ -372,6 +506,9 @@ class SbyConfig:
                 continue
 
             self.error(f"sby file syntax error: In an incomprehensible mode '{mode}'")
+
+        if len(self.stage.keys()) == 0:
+            self.stage['default'] = { 'enable': '*' }
 
     def error(self, logmessage):
         raise SbyAbort(logmessage)
@@ -476,7 +613,7 @@ class SbyTask(SbyConfig):
                     print(line, file=f)
 
     def engine_list(self):
-        return list(enumerate(self.engines))
+        return list(enumerate(self.engines.items()))
 
     def check_timeout(self):
         if self.opt_timeout is not None:
