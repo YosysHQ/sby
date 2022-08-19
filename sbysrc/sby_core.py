@@ -82,6 +82,7 @@ class SbyProc:
         self.logstderr = logstderr
         self.silent = silent
         self.wait = False
+        self.job_lease = None
 
         self.task.update_proc_pending(self)
 
@@ -162,6 +163,13 @@ class SbyProc:
                 if not dep.finished:
                     return
 
+            if self.task.taskloop.jobclient:
+                if self.job_lease is None:
+                    self.job_lease = self.task.taskloop.jobclient.request_lease()
+
+                if not self.job_lease.is_ready:
+                    return
+
             if not self.silent:
                 self.task.log(f"{self.info}: starting process \"{self.cmdline}\"")
 
@@ -190,8 +198,12 @@ class SbyProc:
             # The process might have written something since the last time we checked
             self.read_output()
 
+            if self.job_lease:
+                self.job_lease.done()
+
             if not self.silent:
                 self.task.log(f"{self.info}: finished (returncode={self.p.returncode})")
+
             self.task.update_proc_stopped(self)
             self.running = False
             self.exited = True
@@ -515,18 +527,26 @@ class SbyConfig:
 
 
 class SbyTaskloop:
-    def __init__(self):
+    def __init__(self, jobclient=None):
         self.procs_pending = []
         self.procs_running = []
         self.tasks = []
         self.poll_now = False
+        self.jobclient = jobclient
 
     def run(self):
         for proc in self.procs_pending:
             proc.poll()
 
-        while len(self.procs_running) or self.poll_now:
+
+        waiting_for_jobslots = False
+        if self.jobclient:
+            waiting_for_jobslots = self.jobclient.has_pending_leases()
+
+        while self.procs_running or waiting_for_jobslots or self.poll_now:
             fds = []
+            if self.jobclient:
+                fds.extend(self.jobclient.poll_fds())
             for proc in self.procs_running:
                 if proc.running:
                     fds.append(proc.p.stdout)
@@ -541,11 +561,19 @@ class SbyTaskloop:
                     sleep(0.1)
             self.poll_now = False
 
+            if self.jobclient:
+                self.jobclient.poll()
+
+            self.procs_waiting = []
+
             for proc in self.procs_running:
                 proc.poll()
 
             for proc in self.procs_pending:
                 proc.poll()
+
+            if self.jobclient:
+                waiting_for_jobslots = self.jobclient.has_pending_leases()
 
             tasks = self.tasks
             self.tasks = []
@@ -574,6 +602,7 @@ class SbyTask(SbyConfig):
         self.precise_prop_status = False
         self.timeout_reached = False
         self.task_local_abort = False
+        self.exit_callback = self.summarize
 
         yosys_program_prefix = "" ##yosys-program-prefix##
         self.exe_paths = {
@@ -932,12 +961,6 @@ class SbyTask(SbyConfig):
         else:
             assert 0
 
-    def run(self, setupmode):
-        self.setup_procs(setupmode)
-        if not setupmode:
-            self.taskloop.run()
-            self.write_summary_file()
-
     def handle_non_engine_options(self):
         with open(f"{self.workdir}/config.sby", "r") as f:
             self.parse_config(f)
@@ -1034,6 +1057,8 @@ class SbyTask(SbyConfig):
             total_process_time = int((ru.ru_utime + ru.ru_stime) - self.start_process_time)
             self.total_time = total_process_time
 
+            # TODO process time is incorrect when running in parallel
+
             self.summary = [
                 "Elapsed clock time [H:MM:SS (secs)]: {}:{:02d}:{:02d} ({})".format
                         (total_clock_time // (60*60), (total_clock_time // 60) % 60, total_clock_time % 60, total_clock_time),
@@ -1065,9 +1090,6 @@ class SbyTask(SbyConfig):
         with open(f"{self.workdir}/{self.status}", "w") as f:
             for line in self.summary:
                 print(line, file=f)
-
-    def exit_callback(self):
-        self.summarize()
 
     def print_junit_result(self, f, junit_ts_name, junit_tc_name, junit_format_strict=False):
         junit_time = strftime('%Y-%m-%dT%H:%M:%S')

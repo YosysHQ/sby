@@ -82,7 +82,7 @@ with rules_file.open("w") as rules:
             command = f"cd {sby_dir_unix} && python3 $(SBY_MAIN) -f {sby_file.name} {task}"
 
         print(
-            f"\t@python3 make/required_tools.py run {target} {shlex.quote(command)} {shlex.join(required_tools)}",
+            f"\t+@python3 make/required_tools.py run {target} {shlex.quote(command)} {shlex.join(required_tools)}",
             file=rules,
         )
 
