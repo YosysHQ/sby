@@ -15,7 +15,7 @@ formal tasks:
    :maxdepth: 3
 
    install.rst
-   newstart.rst
+   quickstart.rst
    reference.rst
    autotune.rst
    verilog.rst
