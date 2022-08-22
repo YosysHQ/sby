@@ -10,11 +10,6 @@ formal tasks:
    * Unbounded verification of safety properties
    * Generation of test benches from cover statements
    * Verification of liveness properties
-   * Formal equivalence checking [TBD]
-   * Reactive Synthesis [TBD]
-
-(Items marked [TBD] are features under construction and not available
-at the moment.)
 
 .. toctree::
    :maxdepth: 3

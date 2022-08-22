@@ -233,7 +233,7 @@ while still passing all of the tests?
 .. note::
 
     If you need a **hint**, try increasing the width of the address wires.  4 bits
-    supports up to :math:`2^4=16` addresses.  Are there other signals that 
+    supports up to 2\ :sup:`4`\ =16 addresses.  Are there other signals that 
     need to be wider?  Can you make the width parameterisable to support 
     arbitrarily large buffers?  
 

@@ -88,6 +88,7 @@ Boolector
 https://boolector.github.io
 
 .. code-block:: text
+    
     git clone https://github.com/boolector/boolector
     cd boolector
     ./contrib/setup-btor2tools.sh
