@@ -1,5 +1,5 @@
 
-SymbiYosys License
+SymbiYosys license
 ==================
 
 SymbiYosys (sby) itself is licensed under the ISC license:

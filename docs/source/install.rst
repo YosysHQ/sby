@@ -1,9 +1,40 @@
-Installing
-==========
+.. _install-doc:
 
-Follow the instructions below to install SymbiYosys and its dependencies.
-Yosys, SymbiYosys, and Z3 are non-optional. The other packages are only
-required for some engine configurations.
+Installation guide
+==================
+
+This document will guide you through the process of installing sby.
+
+CAD suite(s)
+************
+
+Sby (SymbiYosys) is part of the `Tabby CAD Suite
+<https://www.yosyshq.com/tabby-cad-datasheet>`_ and the `OSS CAD Suite
+<https://github.com/YosysHQ/oss-cad-suite-build>`_! The easiest way to use sby
+is to install the binary software suite, which contains all required
+dependencies, including all supported solvers.
+
+* `Contact YosysHQ <https://www.yosyshq.com/contact>`_ for a `Tabby CAD Suite
+  <https://www.yosyshq.com/tabby-cad-datasheet>`_ Evaluation License and
+  download link
+* OR go to https://github.com/YosysHQ/oss-cad-suite-build/releases to download
+  the free OSS CAD Suite
+* Follow the `Install Instructions on GitHub
+  <https://github.com/YosysHQ/oss-cad-suite-build#installation>`_
+
+Make sure to get a Tabby CAD Suite Evaluation License for extensive
+SystemVerilog Assertion (SVA) support, as well as industry-grade SystemVerilog
+and VHDL parsers!
+
+For more information about the difference between Tabby CAD Suite and the OSS
+CAD Suite, please visit https://www.yosyshq.com/tabby-cad-datasheet.
+
+Installing from source
+**********************
+
+Follow the instructions below to install sby and its dependencies. Yosys and sby
+are non-optional.  Boolector is recommended to install but not required.  The
+other packages are only required for some engine configurations.
 
 Prerequisites
 -------------
@@ -18,137 +49,79 @@ Installing prerequisites (this command is for Ubuntu 16.04):
                         libboost-program-options-dev autoconf libgmp-dev \
                         cmake curl
 
+Required components
+-------------------
+
 Yosys, Yosys-SMTBMC and ABC
----------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 https://yosyshq.net/yosys/
 
 https://people.eecs.berkeley.edu/~alanmi/abc/
 
-Next install Yosys, Yosys-SMTBMC and ABC (``yosys-abc``):
+Note that this will install Yosys, Yosys-SMTBMC and ABC (as ``yosys-abc``):
 
 .. code-block:: text
 
-   git clone https://github.com/YosysHQ/yosys.git yosys
+   git clone https://github.com/YosysHQ/yosys
    cd yosys
    make -j$(nproc)
    sudo make install
 
-SymbiYosys
-----------
+sby
+^^^
 
-https://github.com/YosysHQ/SymbiYosys
+https://github.com/YosysHQ/sby
 
 .. code-block:: text
 
-   git clone https://github.com/YosysHQ/SymbiYosys.git SymbiYosys
-   cd SymbiYosys
+   git clone https://github.com/YosysHQ/sby
+   cd sby
    sudo make install
 
-Yices 2
--------
-
-http://yices.csl.sri.com/
-
-.. code-block:: text
-
-   git clone https://github.com/SRI-CSL/yices2.git yices2
-   cd yices2
-   autoconf
-   ./configure
-   make -j$(nproc)
-   sudo make install
-
-Z3
---
-
-https://github.com/Z3Prover/z3/wiki
-
-.. code-block:: text
-
-   git clone https://github.com/Z3Prover/z3.git z3
-   cd z3
-   python scripts/mk_make.py
-   cd build
-   make -j$(nproc)
-   sudo make install
-
-super_prove
------------
-
-https://github.com/sterin/super-prove-build
-
-.. code-block:: text
-
-   sudo apt-get install cmake ninja-build g++ python-dev python-setuptools \
-                        python-pip git
-   git clone --recursive https://github.com/sterin/super-prove-build
-   cd super-prove-build
-   mkdir build
-   cd build
-   cmake -DCMAKE_BUILD_TYPE=Release -G Ninja ..
-   ninja
-   ninja package
-
-This creates a .tar.gz archive for the target system. Extract it to
-``/usr/local/super_prove``
-
-.. code-block:: text
-
-   sudo tar -C /usr/local -x super_prove-X-Y-Release.tar.gz
-
-Then create a wrapper script ``/usr/local/bin/suprove`` with the following contents:
-
-.. code-block:: text
-
-   #!/bin/bash
-   tool=super_prove; if [ "$1" != "${1#+}" ]; then tool="${1#+}"; shift; fi
-   exec /usr/local/super_prove/bin/${tool}.sh "$@"
-
-And make this wrapper script executable:
-
-.. code-block:: text
-
-   sudo chmod +x /usr/local/bin/suprove
-
-Avy
----
-
-https://arieg.bitbucket.io/avy/
-
-.. code-block:: text
-
-   git clone https://bitbucket.org/arieg/extavy.git
-   cd extavy
-   git submodule update --init
-   mkdir build; cd build
-   cmake -DCMAKE_BUILD_TYPE=Release ..
-   make -j$(nproc)
-   sudo cp avy/src/{avy,avybmc} /usr/local/bin/
+Recommended components
+----------------------
 
 Boolector
----------
+^^^^^^^^^
 
-http://fmv.jku.at/boolector/
-
-.. code-block:: text
-
-   git clone https://github.com/boolector/boolector
-   cd boolector
-   ./contrib/setup-btor2tools.sh
-   ./contrib/setup-lingeling.sh
-   ./configure.sh
-   make -C build -j$(nproc)
-   sudo cp build/bin/{boolector,btor*} /usr/local/bin/
-   sudo cp deps/btor2tools/bin/btorsim /usr/local/bin/
-
-To use the ``btor`` engine you additionally need a newer version of btorsim than the boolector setup script builds:
+https://boolector.github.io
 
 .. code-block:: text
+    
+    git clone https://github.com/boolector/boolector
+    cd boolector
+    ./contrib/setup-btor2tools.sh
+    ./contrib/setup-lingeling.sh
+    ./configure.sh
+    make -C build -j$(nproc)
+    sudo cp build/bin/{boolector,btor*} /usr/local/bin/
+    sudo cp deps/btor2tools/bin/btorsim /usr/local/bin/
 
-   git clone https://github.com/boolector/btor2tools
-   cd btor2tools
-   ./configure.sh
-   cmake . -DBUILD_SHARED_LIBS=OFF
-   make -j$(nproc)
-   sudo make install
+To use the ``btor`` engine you will need to install btor2tools from 
+`commit c35cf1c <https://github.com/Boolector/btor2tools/commit/c35cf1c>`_ or
+newer. 
+
+Optional components
+-------------------
+Additional solver engines can be installed as per their instructions, links are
+provided below.
+
+Z3
+^^^
+
+  https://github.com/Z3Prover/z3
+
+Yices 2
+^^^^^^^
+  http://yices.csl.sri.com/
+
+  https://github.com/SRI-CSL/yices2
+
+super_prove
+^^^^^^^^^^^
+  https://github.com/sterin/super-prove-build
+
+Avy
+^^^
+  https://arieg.bitbucket.io/avy/

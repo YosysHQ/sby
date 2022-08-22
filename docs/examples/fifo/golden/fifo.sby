@@ -1,0 +1,34 @@
+[tasks]
+basic bmc
+nofullskip prove
+cover
+noverific cover
+bigtest cover
+
+[options]
+cover:
+mode cover
+--
+prove:
+mode prove
+--
+bmc: 
+mode bmc
+--
+bigtest: depth 120
+~bigtest: depth 10
+nofullskip: expect fail
+
+[engines]
+smtbmc boolector
+
+[script]
+nofullskip: read -define NO_FULL_SKIP=1
+noverific: read -noverific
+read -formal fifo.sv
+bigtest: hierarchy -check -top fifo -chparam MAX_DATA 100 -chparam ADDR_BITS 7
+~bigtest: hierarchy -check -top fifo -chparam MAX_DATA 5 -chparam ADDR_BITS 3
+prep -top fifo
+
+[files]
+fifo.sv

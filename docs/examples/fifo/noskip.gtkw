@@ -1,0 +1,28 @@
+[*]
+[*] GTKWave Analyzer v3.4.0 (w)1999-2022 BSI
+[*] Thu Jun 09 02:02:01 2022
+[*]
+[timestart] 0
+[size] 1000 320
+[pos] -1 -1
+*-3.253757 18 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[sst_width] 246
+[signals_width] 200
+[sst_expanded] 1
+[sst_vpaned_height] 58
+@28
+fifo.clk
+@22
+fifo.data_count[4:0]
+fifo.addr_diff[4:0]
+@28
+fifo.ren
+fifo.wen
+@22
+fifo.raddr[3:0]
+fifo.waddr[3:0]
+@28
+fifo.rskip
+fifo.wskip
+[pattern_trace] 1
+[pattern_trace] 0
