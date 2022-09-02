@@ -51,15 +51,16 @@ with rules_file.open("w") as rules:
 
         required_tools = set()
 
-        for engine in info["engines"]:
-            engine, solver = parse_engine(engine)
-            engines.add(engine)
-            required_tools.update(
-                REQUIRED_TOOLS.get((engine, solver), REQUIRED_TOOLS.get(engine, ()))
-            )
-            if solver:
-                solvers.add(solver)
-                engine_solvers.add((engine, solver))
+        for mode_engines in info["engines"].values():
+            for engine in mode_engines:
+                engine, solver = parse_engine(engine)
+                engines.add(engine)
+                required_tools.update(
+                    REQUIRED_TOOLS.get((engine, solver), REQUIRED_TOOLS.get(engine, ()))
+                )
+                if solver:
+                    solvers.add(solver)
+                    engine_solvers.add((engine, solver))
 
         if any(
             line.startswith("read -verific") or line.startswith("verific")
