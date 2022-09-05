@@ -1,0 +1,37 @@
+[tasks]
+smtbmc mode_bmc
+btor_bmc engine_btor mode_bmc
+btor_cover engine_btor mode_cover
+abc mode_bmc
+aiger engine_aiger mode_prove
+
+[options]
+mode_bmc: mode bmc
+mode_prove: mode prove
+mode_cover: mode cover
+vcd off
+~mode_cover: expect fail
+
+[engines]
+smtbmc: smtbmc
+engine_btor: btor btormc
+abc: abc bmc3
+aiger: aiger suprove
+
+[script]
+read_verilog -formal no_vcd.sv
+prep -top top
+
+[file no_vcd.sv]
+module top(input clk, input force);
+
+reg [4:0] counter = 0;
+
+always @(posedge clk) begin
+    if (!counter[4] || force)
+        counter <= counter + 1;
+    assert (counter < 10);
+    cover (counter == 4);
+end
+
+endmodule

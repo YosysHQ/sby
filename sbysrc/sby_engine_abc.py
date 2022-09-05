@@ -89,15 +89,20 @@ def run(mode, task, engine_idx, engine):
         task.terminate()
 
         if proc_status == "FAIL" and task.opt_aigsmt != "none":
+            trace_prefix = f"engine_{engine_idx}/trace"
+            dump_flags = f"--dump-vcd {trace_prefix}.vcd " if task.opt_vcd else ""
+            dump_flags += f"--dump-yw {trace_prefix}.yw --dump-vlogtb {trace_prefix}_tb.v --dump-smtc {trace_prefix}.smtc"
+
             proc2 = SbyProc(
                 task,
                 f"engine_{engine_idx}",
                 task.model("smt2"),
-                ("cd {}; {} -s {}{} --noprogress --append {} --dump-vcd engine_{i}/trace.vcd --dump-vlogtb engine_{i}/trace_tb.v " +
-                     "--dump-smtc engine_{i}/trace.smtc --aig model/design_aiger.aim:engine_{i}/trace.aiw --aig-noheader model/design_smt2.smt2").format
+                ("cd {}; {} -s {}{} --noprogress --append {} {dump_flags} --aig model/design_aiger.aim:engine_{i}/trace.aiw --aig-noheader model/design_smt2.smt2").format
                             (task.workdir, task.exe_paths["smtbmc"], task.opt_aigsmt,
                             "" if task.opt_tbtop is None else f" --vlogtb-top {task.opt_tbtop}",
-                            task.opt_append, i=engine_idx),
+                            task.opt_append,
+                            dump_flags=dump_flags,
+                            i=engine_idx),
                 logfile=open(f"{task.workdir}/engine_{engine_idx}/logfile2.txt", "w")
             )
 
