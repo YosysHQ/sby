@@ -148,11 +148,13 @@ def run(mode, task, engine_idx, engine):
         t_opt = "{}".format(task.opt_depth)
 
     random_seed = f"--info \"(set-option :random-seed {random_seed})\"" if random_seed else ""
+    dump_flags = f"--dump-vcd {trace_prefix}.vcd " if task.opt_vcd else ""
+    dump_flags += f"--dump-yw {trace_prefix}.yw --dump-vlogtb {trace_prefix}_tb.v --dump-smtc {trace_prefix}.smtc"
     proc = SbyProc(
         task,
         procname,
         task.model(model_name),
-        f"""cd {task.workdir}; {task.exe_paths["smtbmc"]} {" ".join(smtbmc_opts)} -t {t_opt} {random_seed} --append {task.opt_append} --dump-vcd {trace_prefix}.vcd --dump-yw {trace_prefix}.yw --dump-vlogtb {trace_prefix}_tb.v --dump-smtc {trace_prefix}.smtc model/design_{model_name}.smt2""",
+        f"""cd {task.workdir}; {task.exe_paths["smtbmc"]} {" ".join(smtbmc_opts)} -t {t_opt} {random_seed} --append {task.opt_append} {dump_flags} model/design_{model_name}.smt2""",
         logfile=open(logfile_prefix + ".txt", "w"),
         logstderr=(not progress)
     )

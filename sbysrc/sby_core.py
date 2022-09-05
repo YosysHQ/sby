@@ -986,6 +986,8 @@ class SbyTask(SbyConfig):
         self.handle_bool_option("wait", False)
         self.handle_int_option("timeout", None)
 
+        self.handle_bool_option("vcd", True)
+
         self.handle_str_option("smtc", None)
         self.handle_int_option("skip", None)
         self.handle_str_option("tbtop", None)

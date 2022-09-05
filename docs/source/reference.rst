@@ -146,6 +146,9 @@ options are:
 |                  |            | wait for all engines to return and check for            |
 |                  |            | consistency. Values: ``on``, ``off``. Default: ``off``  |
 +------------------+------------+---------------------------------------------------------+
+| ``vcd``          |   All      | Write VCD traces for counter-example or cover traces.   |
+|                  |            | Values: ``on``, ``off``. Default: ``on``                |
++------------------+------------+---------------------------------------------------------+
 | ``aigsmt``       |   All      | Which SMT2 solver to use for converting AIGER witnesses |
 |                  |            | to counter example traces. Use ``none`` to disable      |
 |                  |            | conversion of AIGER witnesses. Default: ``yices``       |

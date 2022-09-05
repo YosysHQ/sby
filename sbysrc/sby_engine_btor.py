@@ -152,17 +152,20 @@ def run(mode, task, engine_idx, engine):
                     suffix = ""
                 else:
                     suffix = common_state.produced_cex
-                proc2 = SbyProc(
-                    task,
-                    f"engine_{engine_idx}_{common_state.produced_cex}",
-                    task.model("btor"),
-                    "cd {dir} ; btorsim -c --vcd engine_{idx}/trace{i}.vcd --hierarchical-symbols --info model/design_btor{s}.info model/design_btor{s}.btor engine_{idx}/trace{i}.wit".format(dir=task.workdir, idx=engine_idx, i=suffix, s='_single' if solver_args[0] == 'pono' else ''),
-                    logfile=open(f"{task.workdir}/engine_{engine_idx}/logfile2.txt", "w")
-                )
-                proc2.output_callback = output_callback2
-                proc2.exit_callback = make_exit_callback(suffix)
-                proc2.checkretcode = True
-                common_state.running_procs += 1
+
+                if mode == "cover" or task.opt_vcd:
+                    # TODO cover runs btorsim not only for trace generation, can we run it without VCD generation in that case?
+                    proc2 = SbyProc(
+                        task,
+                        f"engine_{engine_idx}_{common_state.produced_cex}",
+                        task.model("btor"),
+                        "cd {dir} ; btorsim -c --vcd engine_{idx}/trace{i}.vcd --hierarchical-symbols --info model/design_btor{s}.info model/design_btor{s}.btor engine_{idx}/trace{i}.wit".format(dir=task.workdir, idx=engine_idx, i=suffix, s='_single' if solver_args[0] == 'pono' else ''),
+                        logfile=open(f"{task.workdir}/engine_{engine_idx}/logfile2.txt", "w")
+                    )
+                    proc2.output_callback = output_callback2
+                    proc2.exit_callback = make_exit_callback(suffix)
+                    proc2.checkretcode = True
+                    common_state.running_procs += 1
 
                 common_state.produced_cex += 1
                 common_state.wit_file.close()
