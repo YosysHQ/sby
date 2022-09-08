@@ -161,6 +161,7 @@ module fifo
 
     // look for an overfill where the value in memory changes
     // the change in data makes certain that the value is overriden
+    let d_change = (wdata != rdata);
     property read_skip;
         @(posedge clk) disable iff (rst) 
         !ren && d_change |=> $changed(raddr);
