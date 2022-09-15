@@ -305,7 +305,9 @@ class SbyConfig:
                 if section == "engines":
                     mode = "engines"
 
-                    if args is not None:
+                    if args is None:
+                        engine_mode = None
+                    else:
                         section_args = args.split()
 
                         if len(section_args) > 1:
@@ -314,11 +316,16 @@ class SbyConfig:
                         if section_args[0] not in ("bmc", "prove", "cover", "live"):
                             self.error(f"sby file syntax error: Expected one of 'bmc', 'prove', 'cover', 'live' as '[engines]' argument, got '{section_args[0]}'")
 
-                        if section_args[0] in self.engines:
-                            self.error(f"Already defined engine block for mode '{section_args[0]}'")
+                        engine_mode = section_args[0]
+
+                    if engine_mode in self.engines:
+                        if engine_mode is None:
+                            self.error(f"Already defined engine block")
                         else:
-                            self.engines[section_args[0]] = list()
-                            engine_mode = section_args[0]
+                            self.error(f"Already defined engine block for mode '{engine_mode}'")
+                    else:
+                        self.engines[engine_mode] = list()
+
                     continue
 
                 if section == "setup":
@@ -415,8 +422,6 @@ class SbyConfig:
 
             if mode == "engines":
                 args = line.strip().split()
-                if engine_mode not in self.engines:
-                    self.engines[engine_mode] = list()
                 self.engines[engine_mode].append(args)
                 continue
 
@@ -642,7 +647,8 @@ class SbyTask(SbyConfig):
                     print(line, file=f)
 
     def engine_list(self):
-        return list(enumerate(self.engines.items()))
+        engines = self.engines.get(None, []) + self.engines.get(self.opt_mode, [])
+        return list(enumerate(engines))
 
     def check_timeout(self):
         if self.opt_timeout is not None:

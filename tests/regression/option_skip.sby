@@ -1,0 +1,33 @@
+[tasks]
+smtbmc_pass: smtbmc pass
+smtbmc_fail: smtbmc fail
+btormc_pass: btormc pass
+btormc_fail: btormc fail
+
+[options]
+mode bmc
+pass: expect pass
+fail: expect fail
+pass: depth 5
+fail: depth 6
+
+skip 2
+
+[engines]
+smtbmc: smtbmc boolector
+[engines bmc]
+btormc: btor btormc
+
+[script]
+read -formal top.sv
+prep -top top
+
+[file top.sv]
+module top(input clk);
+    reg [7:0] counter = 0;
+
+    always @(posedge clk) begin
+        counter <= counter + 1;
+        assert (counter < 4);
+    end
+endmodule
