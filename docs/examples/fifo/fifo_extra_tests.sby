@@ -1,0 +1,18 @@
+--pycode-begin--
+# This is for our test infrastructure and not part of the example
+
+# Read fifo.sby and patch it on the fly:
+for line in open("fifo.sby"):
+    line = line.rstrip()
+
+    # change the tasks to run as tests
+    if line.endswith(": default"):
+        line = "nofullskip noverific : default"
+
+    output(line)
+
+    # add expect fail to the failing tasks
+    if line == "[options]":
+        output("nofullskip: expect fail")
+
+--pycode-end--
