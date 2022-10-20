@@ -65,6 +65,8 @@ parser.add_argument("--abc", metavar="<path_to_executable>",
         action=DictAction, dest="exe_paths")
 parser.add_argument("--smtbmc", metavar="<path_to_executable>",
         action=DictAction, dest="exe_paths")
+parser.add_argument("--witness", metavar="<path_to_executable>",
+        action=DictAction, dest="exe_paths")
 parser.add_argument("--suprove", metavar="<path_to_executable>",
         action=DictAction, dest="exe_paths")
 parser.add_argument("--aigbmc", metavar="<path_to_executable>",

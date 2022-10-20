@@ -90,19 +90,26 @@ def run(mode, task, engine_idx, engine):
 
         if proc_status == "FAIL" and task.opt_aigsmt != "none":
             trace_prefix = f"engine_{engine_idx}/trace"
-            dump_flags = f"--dump-vcd {trace_prefix}.vcd " if task.opt_vcd else ""
-            dump_flags += f"--dump-yw {trace_prefix}.yw --dump-vlogtb {trace_prefix}_tb.v --dump-smtc {trace_prefix}.smtc"
+
+            smtbmc_opts = []
+            smtbmc_opts += ["-s", task.opt_aigsmt]
+            if task.opt_tbtop is not None:
+                smtbmc_opts  += ["--vlogtb-top", task.opt_tbtop]
+            smtbmc_opts += ["--noprogress", f"--append {task.opt_append}"]
+            if task.opt_vcd:
+                smtbmc_opts += [f"--dump-vcd {trace_prefix}.vcd"]
+            smtbmc_opts += [f"--dump-yw {trace_prefix}.yw", f"--dump-vlogtb {trace_prefix}_tb.v", f"--dump-smtc {trace_prefix}.smtc"]
+
+            witness_proc = SbyProc(
+                task, f"engine_{engine_idx}", [],
+                f"cd {task.workdir}; {task.exe_paths['witness']} aiw2yw engine_{engine_idx}/trace.aiw model/design_aiger.ywa engine_{engine_idx}/trace.yw",
+            )
 
             proc2 = SbyProc(
                 task,
                 f"engine_{engine_idx}",
-                task.model("smt2"),
-                ("cd {}; {} -s {}{} --noprogress --append {} {dump_flags} --aig model/design_aiger.aim:engine_{i}/trace.aiw --aig-noheader model/design_smt2.smt2").format
-                            (task.workdir, task.exe_paths["smtbmc"], task.opt_aigsmt,
-                            "" if task.opt_tbtop is None else f" --vlogtb-top {task.opt_tbtop}",
-                            task.opt_append,
-                            dump_flags=dump_flags,
-                            i=engine_idx),
+                [*task.model("smt2"), witness_proc],
+                f"cd {task.workdir}; {task.exe_paths['smtbmc']} {' '.join(smtbmc_opts)} --yw engine_{engine_idx}/trace.yw model/design_smt2.smt2",
                 logfile=open(f"{task.workdir}/engine_{engine_idx}/logfile2.txt", "w")
             )
 
