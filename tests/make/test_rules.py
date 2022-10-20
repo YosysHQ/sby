@@ -18,7 +18,8 @@ sby_dir = sby_file.parent
 
 taskinfo = json.loads(
     subprocess.check_output(
-        [sys.executable, os.getenv("SBY_MAIN"), "--dumptaskinfo", sby_file]
+        [sys.executable, os.getenv("SBY_MAIN"), "--dumptaskinfo", sby_file.name],
+        cwd=sby_dir,
     )
 )
 
