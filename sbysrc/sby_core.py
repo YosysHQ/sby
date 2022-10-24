@@ -614,6 +614,7 @@ class SbyTask(SbyConfig):
             "yosys": os.getenv("YOSYS", yosys_program_prefix + "yosys"),
             "abc": os.getenv("ABC", yosys_program_prefix + "yosys-abc"),
             "smtbmc": os.getenv("SMTBMC", yosys_program_prefix + "yosys-smtbmc"),
+            "witness": os.getenv("WITNESS", yosys_program_prefix + "yosys-witness"),
             "suprove": os.getenv("SUPROVE", "suprove"),
             "aigbmc": os.getenv("AIGBMC", "aigbmc"),
             "avy": os.getenv("AVY", "avy"),
