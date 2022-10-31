@@ -16,7 +16,7 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #
 
-import re, os, getopt
+import re, os, getopt, click
 from sby_core import SbyProc
 
 def run(mode, task, engine_idx, engine):
@@ -232,7 +232,7 @@ def run(mode, task, engine_idx, engine):
         if mode == "bmc" or mode == "cover":
             task.update_status(proc_status)
             proc_status_lower = proc_status.lower() if proc_status == "PASS" else proc_status
-            task.log(f"engine_{engine_idx}: Status returned by engine: {proc_status_lower}")
+            task.log(f"{click.style(f'engine_{engine_idx}', fg='magenta')}: Status returned by engine: {proc_status_lower}")
             task.summary.append(f"""engine_{engine_idx} ({" ".join(engine)}) returned {proc_status_lower}""")
 
             if proc_status == "FAIL" and mode != "cover":
@@ -260,7 +260,7 @@ def run(mode, task, engine_idx, engine):
 
         elif mode in ["prove_basecase", "prove_induction"]:
             proc_status_lower = proc_status.lower() if proc_status == "PASS" else proc_status
-            task.log(f"""engine_{engine_idx}: Status returned by engine for {mode.split("_")[1]}: {proc_status_lower}""")
+            task.log(f"""{click.style(f'engine_{engine_idx}', fg='magenta')}: Status returned by engine for {mode.split("_")[1]}: {proc_status_lower}""")
             task.summary.append(f"""engine_{engine_idx} ({" ".join(engine)}) returned {proc_status_lower} for {mode.split("_")[1]}""")
 
             if mode == "prove_basecase":

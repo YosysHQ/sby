@@ -16,7 +16,7 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #
 
-import re, os, getopt
+import re, os, getopt, click
 from sby_core import SbyProc
 
 def run(mode, task, engine_idx, engine):
@@ -98,7 +98,7 @@ def run(mode, task, engine_idx, engine):
         aiw_file.close()
 
         task.update_status(proc_status)
-        task.log(f"engine_{engine_idx}: Status returned by engine: {proc_status}")
+        task.log(f"{click.style(f'engine_{engine_idx}', fg='magenta')}: Status returned by engine: {proc_status}")
         task.summary.append(f"""engine_{engine_idx} ({" ".join(engine)}) returned {proc_status}""")
 
         task.terminate()
@@ -159,7 +159,7 @@ def run(mode, task, engine_idx, engine):
                 proc2.exit_callback = exit_callback2
 
             else:
-                task.log(f"engine_{engine_idx}: Engine did not produce a counter example.")
+                task.log(f"{click.style(f'engine_{engine_idx}', fg='magenta')}: Engine did not produce a counter example.")
 
     proc.output_callback = output_callback
     proc.exit_callback = exit_callback

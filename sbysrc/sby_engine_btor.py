@@ -16,7 +16,7 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #
 
-import re, os, getopt
+import re, os, getopt, click
 from types import SimpleNamespace
 from sby_core import SbyProc
 
@@ -87,11 +87,11 @@ def run(mode, task, engine_idx, engine):
                 task.error(f"engine_{engine_idx}: Engine terminated without status.")
 
         task.update_status(proc_status.upper())
-        task.log(f"engine_{engine_idx}: Status returned by engine: {proc_status}")
+        task.log(f"{click.style(f'engine_{engine_idx}', fg='magenta')}: Status returned by engine: {proc_status}")
         task.summary.append(f"""engine_{engine_idx} ({" ".join(engine)}) returned {proc_status}""")
 
         if len(common_state.produced_traces) == 0:
-            task.log(f"""engine_{engine_idx}: Engine did not produce a{" counter" if mode != "cover" else "n "}example.""")
+            task.log(f"""{click.style(f'engine_{engine_idx}', fg='magenta')}: Engine did not produce a{" counter" if mode != "cover" else "n "}example.""")
         elif len(common_state.produced_traces) <= common_state.print_traces_max:
             task.summary.extend(common_state.produced_traces)
         else:
