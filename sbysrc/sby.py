@@ -19,9 +19,9 @@
 
 import argparse, json, os, sys, shutil, tempfile, re
 ##yosys-sys-path##
-from sby_core import SbyConfig, SbyTask, SbyAbort, SbyTaskloop, process_filename
+from sby_core import SbyConfig, SbyTask, SbyAbort, SbyTaskloop, process_filename, dress_message
 from sby_jobserver import SbyJobClient, process_jobserver_environment
-import time, platform
+import time, platform, click
 
 process_jobserver_environment()  # needs to be called early
 
@@ -177,9 +177,8 @@ prep -top top
 early_logmsgs = list()
 
 def early_log(workdir, msg):
-    tm = time.localtime()
-    early_logmsgs.append("SBY {:2d}:{:02d}:{:02d} [{}] {}".format(tm.tm_hour, tm.tm_min, tm.tm_sec, workdir, msg))
-    print(early_logmsgs[-1])
+    early_logmsgs.append(dress_message(workdir, msg))
+    click.echo(early_logmsgs[-1])
 
 def read_sbyconfig(sbydata, taskname):
     cfgdata = list()
@@ -567,7 +566,6 @@ else:
             failed.append(taskname)
 
 if failed and (len(tasknames) > 1 or tasknames[0] is not None):
-    tm = time.localtime()
-    print("SBY {:2d}:{:02d}:{:02d} The following tasks failed: {}".format(tm.tm_hour, tm.tm_min, tm.tm_sec, failed))
+    click.echo(dress_message(None, click.style(f"The following tasks failed: {failed}", fg="red", bold=True)))
 
 sys.exit(retcode)

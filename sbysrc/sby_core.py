@@ -46,6 +46,16 @@ def process_filename(filename):
 
     return filename
 
+def dress_message(workdir, logmessage):
+    tm = localtime()
+    if workdir is not None:
+        logmessage = "[" + click.style(workdir, fg="blue") + "] " + logmessage
+    return " ".join([
+        click.style("SBY", fg="blue"),
+        click.style("{:2d}:{:02d}:{:02d}".format(tm.tm_hour, tm.tm_min, tm.tm_sec), fg="green"),
+        logmessage
+    ])
+
 class SbyProc:
     def __init__(self, task, info, deps, cmdline, logfile=None, logstderr=True, silent=False):
         self.running = False
@@ -680,18 +690,9 @@ class SbyTask(SbyConfig):
         self.procs_pending.remove(proc)
         self.taskloop.procs_pending.remove(proc)
 
-    def dress_message(self, logmessage):
-        tm = localtime()
-        return " ".join([
-            click.style("SBY", fg="blue"),
-            click.style("{:2d}:{:02d}:{:02d}".format(tm.tm_hour, tm.tm_min, tm.tm_sec), fg="green"),
-            "[" + click.style(self.workdir, fg="blue") + "]",
-            logmessage
-        ])
-
     def log(self, logmessage):
         tm = localtime()
-        line = self.dress_message(logmessage)
+        line = dress_message(self.workdir, logmessage)
         for target in self.log_targets:
             click.echo(line, file=target)
 
