@@ -15,7 +15,7 @@ Please fill out All required sections.
 
 ## Step-by-step reproduction instructions
 <!--
-Please list the steps needed to reporduce the bug. For example:
+Please list the steps needed to reproduce the bug. For example:
 1.
 2.
 3.
