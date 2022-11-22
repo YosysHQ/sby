@@ -642,7 +642,7 @@ class SbyTaskloop:
             self.tasks = []
             for task in tasks:
                 task.check_timeout()
-                if task.procs_pending or task.procs_running:
+                if task.procs_pending or task.procs_running or task.stage_running:
                     self.tasks.append(task)
                 else:
                     task.exit_callback()
@@ -876,6 +876,9 @@ class SbyTask(SbyConfig):
         self.taskloop = taskloop or SbyTaskloop()
         self.taskloop.tasks.append(self)
 
+        self.base_dependencies = []
+        self.stages_running = []
+
         self.procs_running = []
         self.procs_pending = []
 
@@ -1075,7 +1078,7 @@ class SbyTask(SbyConfig):
             proc = SbyProc(
                 self,
                 model_name,
-                [],
+                self.base_dependencies,
                 "cd {}/src; {} -ql ../model/design.log ../model/design.ys".format(self.workdir, self.exe_paths["yosys"])
             )
             proc.checkretcode = True
@@ -1329,6 +1332,8 @@ class SbyTask(SbyConfig):
             self.retcode = 0
             return
 
+        # TODO: Stage stuff
+
         if self.opt_make_model is not None:
             for name in self.opt_make_model.split(","):
                 self.model(name.strip())
@@ -1358,6 +1363,12 @@ class SbyTask(SbyConfig):
         for opt in self.options.keys():
             if opt not in self.used_options:
                 self.error(f"Unused option: {opt}")
+
+    def setup_stage(self, setupmode, config, name, depends):
+        stage = SbyStage(config, self, name)
+        stage.base_dependencies.extend(depends)
+        self.stages_running.append(stage)
+        stage.setup_procs(setupmode)
 
     def summarize(self):
         total_clock_time = int(monotonic() - self.start_clock_time)
@@ -1492,3 +1503,23 @@ class SbyTask(SbyConfig):
         print('</system-err>', file=f)
         print(f'</testsuite>', file=f)
         print(f'</testsuites>', file=f)
+
+class SbyStage(SbyTask):
+    def __init__(self, sbyconfig, main_task, name):
+        self.main_task = main_task
+        self.name = name
+        workdir = f'{main_task.workdir}/stage_{name}'
+        os.mkdir(workdir)
+
+        super().__init__(
+            sbyconfig, workdir,
+            early_logs = [], reusedir = False,
+            taskloop = main_task.taskloop, logfile = main_task.logfile
+        )
+
+        self.exit_callback = self.handle_stage_exit
+
+    def handle_stage_exit(self):
+        self.main_task.stages_running.remove(self)
+
+        # TODO pass the status back to the main task
