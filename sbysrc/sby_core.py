@@ -1332,7 +1332,22 @@ class SbyTask(SbyConfig):
             self.retcode = 0
             return
 
-        # TODO: Stage stuff
+        # Check to see if we have stages to implement
+        if len(self.stage.keys()) > 0:
+            for stage_name, data in self.stage.items():
+                self.setup_stage(
+                    setupmode, config = list(
+                        map(
+                            lambda l: l.strip(),
+                            f'''\
+                            [options]
+                            mode {data['mode']}
+                            '''.splitlines()
+                        )
+                    ),
+                    name = stage_name
+                )
+
 
         if self.opt_make_model is not None:
             for name in self.opt_make_model.split(","):
