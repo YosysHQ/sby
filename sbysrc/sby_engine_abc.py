@@ -16,7 +16,7 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #
 
-import re, os, getopt
+import re, os, getopt, click
 from sby_core import SbyProc
 
 def run(mode, task, engine_idx, engine):
@@ -83,7 +83,7 @@ def run(mode, task, engine_idx, engine):
             task.error(f"engine_{engine_idx}: Could not determine engine status.")
 
         task.update_status(proc_status)
-        task.log(f"engine_{engine_idx}: Status returned by engine: {proc_status}")
+        task.log(f"{click.style(f'engine_{engine_idx}', fg='magenta')}: Status returned by engine: {proc_status}")
         task.summary.append(f"""engine_{engine_idx} ({" ".join(engine)}) returned {proc_status}""")
 
         task.terminate()

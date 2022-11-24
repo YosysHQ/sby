@@ -16,7 +16,7 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #
 
-import os, re, sys, signal, platform
+import os, re, sys, signal, platform, click
 if os.name == "posix":
     import resource, fcntl
 import subprocess
@@ -28,7 +28,7 @@ from sby_design import SbyProperty, SbyModule, design_hierarchy
 all_procs_running = []
 
 def force_shutdown(signum, frame):
-    print("SBY ---- Keyboard interrupt or external termination signal ----", flush=True)
+    click.echo("SBY ---- Keyboard interrupt or external termination signal ----")
     for proc in list(all_procs_running):
         proc.terminate()
     sys.exit(1)
@@ -45,6 +45,16 @@ def process_filename(filename):
     filename = os.path.expandvars(filename)
 
     return filename
+
+def dress_message(workdir, logmessage):
+    tm = localtime()
+    if workdir is not None:
+        logmessage = "[" + click.style(workdir, fg="blue") + "] " + logmessage
+    return " ".join([
+        click.style("SBY", fg="blue"),
+        click.style("{:2d}:{:02d}:{:02d}".format(tm.tm_hour, tm.tm_min, tm.tm_sec), fg="green"),
+        logmessage
+    ])
 
 class SbyProc:
     def __init__(self, task, info, deps, cmdline, logfile=None, logstderr=True, silent=False):
@@ -105,8 +115,8 @@ class SbyProc:
     def log(self, line):
         if line is not None and (self.noprintregex is None or not self.noprintregex.match(line)):
             if self.logfile is not None:
-                print(line, file=self.logfile)
-            self.task.log(f"{self.info}: {line}")
+                click.echo(line, file=self.logfile)
+            self.task.log(f"{click.style(self.info, fg='magenta')}: {line}")
 
     def handle_output(self, line):
         if self.terminated or len(line) == 0:
@@ -136,7 +146,7 @@ class SbyProc:
             return
         if self.running:
             if not self.silent:
-                self.task.log(f"{self.info}: terminating process")
+                self.task.log(f"{click.style(self.info, fg='magenta')}: terminating process")
             if os.name == "posix":
                 try:
                     os.killpg(self.p.pid, signal.SIGTERM)
@@ -171,7 +181,7 @@ class SbyProc:
                     return
 
             if not self.silent:
-                self.task.log(f"{self.info}: starting process \"{self.cmdline}\"")
+                self.task.log(f"{click.style(self.info, fg='magenta')}: starting process \"{self.cmdline}\"")
 
             if os.name == "posix":
                 def preexec_fn():
@@ -202,7 +212,7 @@ class SbyProc:
                 self.job_lease.done()
 
             if not self.silent:
-                self.task.log(f"{self.info}: finished (returncode={self.p.returncode})")
+                self.task.log(f"{click.style(self.info, fg='magenta')}: finished (returncode={self.p.returncode})")
 
             self.task.update_proc_stopped(self)
             self.running = False
@@ -218,7 +228,7 @@ class SbyProc:
 
             if returncode == 127:
                 if not self.silent:
-                    self.task.log(f"{self.info}: COMMAND NOT FOUND. ERROR.")
+                    self.task.log(f"{click.style(self.info, fg='magenta')}: COMMAND NOT FOUND. ERROR.")
                 self.handle_error(returncode)
                 self.terminated = True
                 self.task.proc_failed(self)
@@ -226,7 +236,7 @@ class SbyProc:
 
             if self.checkretcode and returncode not in self.retcodes:
                 if not self.silent:
-                    self.task.log(f"{self.info}: task failed. ERROR.")
+                    self.task.log(f"{click.style(self.info, fg='magenta')}: task failed. ERROR.")
                 self.handle_error(returncode)
                 self.terminated = True
                 self.task.proc_failed(self)
@@ -640,12 +650,12 @@ class SbyTask(SbyConfig):
         self.log_targets = [sys.stdout, self.logfile]
 
         for line in early_logs:
-            print(line, file=self.logfile, flush=True)
+            click.echo(line, file=self.logfile)
 
         if not reusedir:
             with open(f"{workdir}/config.sby", "w") as f:
                 for line in sbyconfig:
-                    print(line, file=f)
+                    click.echo(line, file=f)
 
     def engine_list(self):
         engines = self.engines.get(None, []) + self.engines.get(self.opt_mode, [])
@@ -682,13 +692,13 @@ class SbyTask(SbyConfig):
 
     def log(self, logmessage):
         tm = localtime()
-        line = "SBY {:2d}:{:02d}:{:02d} [{}] {}".format(tm.tm_hour, tm.tm_min, tm.tm_sec, self.workdir, logmessage)
+        line = dress_message(self.workdir, logmessage)
         for target in self.log_targets:
-            print(line, file=target, flush=True)
+            click.echo(line, file=target)
 
     def error(self, logmessage):
         tm = localtime()
-        self.log(f"ERROR: {logmessage}")
+        self.log(click.style(f"ERROR: {logmessage}", fg="red", bold=True))
         self.status = "ERROR"
         if "ERROR" not in self.expect:
             self.retcode = 16
@@ -696,7 +706,7 @@ class SbyTask(SbyConfig):
             self.retcode = 0
         self.terminate()
         with open(f"{self.workdir}/{self.status}", "w") as f:
-            print(f"ERROR: {logmessage}", file=f)
+            click.echo(f"ERROR: {logmessage}", file=f)
         raise SbyAbort(logmessage)
 
     def makedirs(self, path):
@@ -1082,7 +1092,10 @@ class SbyTask(SbyConfig):
             ] + self.summary
 
         for line in self.summary:
-            self.log(f"summary: {line}")
+            if line.startswith("Elapsed"):
+                self.log(f"summary: {line}")
+            else:
+                self.log("summary: " + click.style(line, fg="green" if self.status in self.expect else "red", bold=True))
 
         assert self.status in ["PASS", "FAIL", "UNKNOWN", "ERROR", "TIMEOUT"]
 
@@ -1098,7 +1111,7 @@ class SbyTask(SbyConfig):
     def write_summary_file(self):
         with open(f"{self.workdir}/{self.status}", "w") as f:
             for line in self.summary:
-                print(line, file=f)
+                click.echo(line, file=f)
 
     def print_junit_result(self, f, junit_ts_name, junit_tc_name, junit_format_strict=False):
         junit_time = strftime('%Y-%m-%dT%H:%M:%S')
