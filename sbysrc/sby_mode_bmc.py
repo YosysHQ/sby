@@ -16,7 +16,7 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #
 
-import re, os, getopt
+import re, os, getopt, click
 from sby_core import SbyProc
 
 def run(task):
@@ -25,7 +25,7 @@ def run(task):
     task.handle_str_option("aigsmt", "yices")
 
     for engine_idx, engine in task.engine_list():
-        task.log(f"""engine_{engine_idx}: {" ".join(engine)}""")
+        task.log(f"{click.style(f'engine_{engine_idx}', fg='magenta')}: {' '.join(engine)}")
         task.makedirs(f"{task.workdir}/engine_{engine_idx}")
 
         if engine[0] == "smtbmc":
