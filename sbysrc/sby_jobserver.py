@@ -287,7 +287,7 @@ class SbyJobClient:
     def poll_fds(self):
         if self.helper_process:
             return [self.response_read_fd]
-        elif self.read_fd is not None:
+        elif self.read_fd is not None and self.has_pending_leases():
             return [self.read_fd]
         else:
             return []
