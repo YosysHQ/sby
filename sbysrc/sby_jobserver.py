@@ -125,7 +125,7 @@ class SbyJobLease:
         self.is_done = True
 
     def __repr__(self):
-        return f"{self.is_ready=} {self.is_done=}"
+        return f"is_ready={self.is_ready} is_done={self.is_done}"
 
     def __del__(self):
         self.done()
