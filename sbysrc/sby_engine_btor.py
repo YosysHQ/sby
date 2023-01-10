@@ -19,6 +19,7 @@
 import re, os, getopt, click
 from types import SimpleNamespace
 from sby_core import SbyProc
+from sby_sim import sim_witness_trace
 
 def run(mode, task, engine_idx, engine):
     random_seed = None
@@ -54,14 +55,27 @@ def run(mode, task, engine_idx, engine):
     else:
         task.error(f"Invalid solver command {solver_args[0]}.")
 
+    log = task.log_prefix(f"engine_{engine_idx}")
+
+    btorsim_vcd = task.opt_vcd and not task.opt_vcd_sim
+    run_sim = task.opt_fst or not btorsim_vcd
+    sim_append = 0
+
+    if task.opt_append and btorsim_vcd:
+        log("The BTOR engine does not support the 'append' option when using btorsim.")
+    else:
+        sim_append = task.opt_append
+
+    if task.opt_append and task.opt_append_assume:
+        log("The BTOR engine does not support enforcing assumptions in appended time steps.")
+
+
     common_state = SimpleNamespace()
     common_state.solver_status = None
     common_state.produced_cex = 0
     common_state.expected_cex = 1
     common_state.wit_file = None
     common_state.assert_fail = False
-    common_state.produced_traces = []
-    common_state.print_traces_max = 5
     common_state.running_procs = 0
 
     def print_traces_and_terminate():
@@ -87,17 +101,7 @@ def run(mode, task, engine_idx, engine):
                 task.error(f"engine_{engine_idx}: Engine terminated without status.")
 
         task.update_status(proc_status.upper())
-        task.log(f"{click.style(f'engine_{engine_idx}', fg='magenta')}: Status returned by engine: {proc_status}")
-        task.summary.append(f"""engine_{engine_idx} ({" ".join(engine)}) returned {proc_status}""")
-
-        if len(common_state.produced_traces) == 0:
-            task.log(f"""{click.style(f'engine_{engine_idx}', fg='magenta')}: Engine did not produce a{" counter" if mode != "cover" else "n "}example.""")
-        elif len(common_state.produced_traces) <= common_state.print_traces_max:
-            task.summary.extend(common_state.produced_traces)
-        else:
-            task.summary.extend(common_state.produced_traces[:common_state.print_traces_max])
-            excess_traces = len(common_state.produced_traces) - common_state.print_traces_max
-            task.summary.append(f"""and {excess_traces} further trace{"s" if excess_traces > 1 else ""}""")
+        task.summary.set_engine_status(engine_idx, proc_status)
 
         task.terminate()
 
@@ -113,15 +117,20 @@ def run(mode, task, engine_idx, engine):
 
     def make_exit_callback(suffix):
         def exit_callback2(retcode):
-            vcdpath = f"{task.workdir}/engine_{engine_idx}/trace{suffix}.vcd"
-            if os.path.exists(vcdpath):
-                common_state.produced_traces.append(f"""{"" if mode == "cover" else "counterexample "}trace: {vcdpath}""")
+            vcdpath = f"engine_{engine_idx}/trace{suffix}.vcd"
+            if os.path.exists(f"{task.workdir}/{vcdpath}"):
+                task.summary.add_event(engine_idx=engine_idx, trace=f'trace{suffix}', path=vcdpath, type="$cover" if mode == "cover" else "$assert")
 
             common_state.running_procs -= 1
             if (common_state.running_procs == 0):
                 print_traces_and_terminate()
 
         return exit_callback2
+
+    def simple_exit_callback(retcode):
+        common_state.running_procs -= 1
+        if (common_state.running_procs == 0):
+            print_traces_and_terminate()
 
     def output_callback(line):
         if mode == "cover":
@@ -153,18 +162,37 @@ def run(mode, task, engine_idx, engine):
                 else:
                     suffix = common_state.produced_cex
 
-                if mode == "cover" or task.opt_vcd:
+                model = f"design_btor{'_single' if solver_args[0] == 'pono' else ''}"
+
+                yw_proc = SbyProc(
+                    task, f"engine_{engine_idx}.trace{suffix}", [],
+                    f"cd {task.workdir}; {task.exe_paths['witness']} wit2yw engine_{engine_idx}/trace{suffix}.wit model/{model}.ywb engine_{engine_idx}/trace{suffix}.yw",
+                )
+                common_state.running_procs += 1
+                yw_proc.register_exit_callback(simple_exit_callback)
+
+                btorsim_vcd = (task.opt_vcd and not task.opt_vcd_sim)
+
+                if btorsim_vcd:
                     # TODO cover runs btorsim not only for trace generation, can we run it without VCD generation in that case?
                     proc2 = SbyProc(
                         task,
-                        f"engine_{engine_idx}_{common_state.produced_cex}",
+                        f"engine_{engine_idx}.trace{suffix}",
                         task.model("btor"),
-                        "cd {dir} ; btorsim -c --vcd engine_{idx}/trace{i}.vcd --hierarchical-symbols --info model/design_btor{s}.info model/design_btor{s}.btor engine_{idx}/trace{i}.wit".format(dir=task.workdir, idx=engine_idx, i=suffix, s='_single' if solver_args[0] == 'pono' else ''),
+                        "cd {dir} ; btorsim -c --vcd engine_{idx}/trace{i}{i2}.vcd --hierarchical-symbols --info model/design_btor{s}.info model/design_btor{s}.btor engine_{idx}/trace{i}.wit".format(dir=task.workdir, idx=engine_idx, i=suffix, i2='' if btorsim_vcd else '_btorsim', s='_single' if solver_args[0] == 'pono' else ''),
                         logfile=open(f"{task.workdir}/engine_{engine_idx}/logfile2.txt", "w")
                     )
                     proc2.output_callback = output_callback2
-                    proc2.exit_callback = make_exit_callback(suffix)
+                    if run_sim:
+                        proc2.register_exit_callback(simple_exit_callback)
+                    else:
+                        proc2.register_exit_callback(make_exit_callback(suffix))
                     proc2.checkretcode = True
+                    common_state.running_procs += 1
+
+                if run_sim:
+                    sim_proc = sim_witness_trace(f"engine_{engine_idx}", task, engine_idx, f"engine_{engine_idx}/trace{suffix}.yw", append=sim_append, deps=[yw_proc])
+                    sim_proc.register_exit_callback(simple_exit_callback)
                     common_state.running_procs += 1
 
                 common_state.produced_cex += 1
@@ -226,5 +254,5 @@ def run(mode, task, engine_idx, engine):
     if solver_args[0] == "pono":
         proc.retcodes = [0, 1, 255] # UNKNOWN = -1, FALSE = 0, TRUE = 1, ERROR = 2
     proc.output_callback = output_callback
-    proc.exit_callback = exit_callback
+    proc.register_exit_callback(exit_callback)
     common_state.running_procs += 1

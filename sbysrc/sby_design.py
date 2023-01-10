@@ -16,9 +16,37 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #
 
-import json
+import json, re
 from enum import Enum, auto
 from dataclasses import dataclass, field
+from typing import Optional, Tuple
+
+
+addr_re = re.compile(r'\\\[[0-9]+\]$')
+public_name_re = re.compile(r"\\([a-zA-Z_][a-zA-Z0-9_]*(\[[0-9]+\])?|\[[0-9]+\])$")
+
+def pretty_name(id):
+    if public_name_re.match(id):
+        return id.lstrip("\\")
+    else:
+        return id
+
+def pretty_path(path):
+    out = ""
+    for name in path:
+        name = pretty_name(name)
+        if name.startswith("["):
+            out += name
+            continue
+        if out:
+            out += "."
+        if name.startswith("\\") or name.startswith("$"):
+            out += name + " "
+        else:
+            out += name
+
+    return out
+
 
 @dataclass
 class SbyProperty:
@@ -44,18 +72,36 @@ class SbyProperty:
             raise ValueError("Unknown property type: " + name)
 
     name: str
+    path: Tuple[str, ...]
     type: Type
     location: str
     hierarchy: str
     status: str = field(default="UNKNOWN")
-    tracefile: str = field(default="")
+    tracefiles: str = field(default_factory=list)
+
+    @property
+    def tracefile(self):
+        if self.tracefiles:
+            return self.tracefiles[0]
+        else:
+            return ""
+
+    @property
+    def celltype(self):
+        return f"${str(self.type).lower()}"
+
+    @property
+    def hdlname(self):
+        return pretty_path(self.path).rstrip()
+
 
     def __repr__(self):
-        return f"SbyProperty<{self.type} {self.name} at {self.location}: status={self.status}, tracefile=\"{self.tracefile}\">"
+        return f"SbyProperty<{self.type} {self.name} {self.path} at {self.location}: status={self.status}, tracefile=\"{self.tracefile}\">"
 
 @dataclass
 class SbyModule:
     name: str
+    path: Tuple[str, ...]
     type: str
     submodules: dict = field(default_factory=dict)
     properties: list = field(default_factory=list)
@@ -105,15 +151,32 @@ class SbyDesign:
     hierarchy: SbyModule = None
     memory_bits: int = 0
     forall: bool = False
+    properties_by_path: dict = field(default_factory=dict)
+
+    def pass_unknown_asserts(self):
+        for prop in self.hierarchy:
+            if prop.type == prop.Type.ASSERT and prop.status == "UNKNOWN":
+                prop.status = "PASS"
+
+
+def cell_path(cell):
+    path = cell["attributes"].get("hdlname")
+    if path is None:
+        if cell["name"].startswith('$'):
+            return (cell["name"],)
+        else:
+            return ("\\" + cell["name"],)
+    else:
+        return tuple(f"\\{segment}" for segment in path.split())
 
 
 def design_hierarchy(filename):
     design = SbyDesign(hierarchy=None)
     design_json = json.load(filename)
-    def make_mod_hier(instance_name, module_name, hierarchy=""):
+    def make_mod_hier(instance_name, module_name, hierarchy="", path=()):
         # print(instance_name,":", module_name)
         sub_hierarchy=f"{hierarchy}/{instance_name}" if hierarchy else instance_name
-        mod = SbyModule(name=instance_name, type=module_name)
+        mod = SbyModule(name=instance_name, path=path, type=module_name)
 
         for m in design_json["modules"]:
             if m["name"] == module_name:
@@ -129,11 +192,17 @@ def design_hierarchy(filename):
                         location = cell["attributes"]["src"]
                     except KeyError:
                         location = ""
-                    p = SbyProperty(name=cell["name"], type=SbyProperty.Type.from_cell(sort["type"]), location=location, hierarchy=sub_hierarchy)
+                    p = SbyProperty(
+                        name=cell["name"],
+                        path=(*path, *cell_path(cell)),
+                        type=SbyProperty.Type.from_cell(sort["type"]),
+                        location=location,
+                        hierarchy=sub_hierarchy)
                     mod.properties.append(p)
             if sort["type"][0] != '$' or sort["type"].startswith("$paramod"):
                 for cell in sort["cells"]:
-                    mod.submodules[cell["name"]] = make_mod_hier(cell["name"], sort["type"], hierarchy=sub_hierarchy)
+                    mod.submodules[cell["name"]] = make_mod_hier(
+                        cell["name"], sort["type"], sub_hierarchy, (*path, *cell_path(cell)))
             if sort["type"] in ["$mem", "$mem_v2"]:
                 for cell in sort["cells"]:
                     design.memory_bits += int(cell["parameters"]["WIDTH"], 2) * int(cell["parameters"]["SIZE"], 2)
@@ -145,7 +214,10 @@ def design_hierarchy(filename):
     for m in design_json["modules"]:
         attrs = m["attributes"]
         if "top" in attrs and int(attrs["top"]) == 1:
-            design.hierarchy = make_mod_hier(m["name"], m["name"])
+            design.hierarchy = make_mod_hier(m["name"], m["name"], "", (m["name"],))
+
+            for prop in design.hierarchy:
+                design.properties_by_path[prop.path[1:]] = prop
             return design
     else:
         raise ValueError("Cannot find top module")

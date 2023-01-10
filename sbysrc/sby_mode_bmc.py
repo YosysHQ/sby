@@ -21,7 +21,6 @@ from sby_core import SbyProc
 
 def run(task):
     task.handle_int_option("depth", 20)
-    task.handle_int_option("append", 0)
     task.handle_str_option("aigsmt", "yices")
 
     for engine_idx, engine in task.engine_list():

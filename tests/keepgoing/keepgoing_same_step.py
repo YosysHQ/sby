@@ -9,7 +9,7 @@ assert_not_a = line_ref(workdir, src, "assert(!a)")
 assert_0 = line_ref(workdir, src, "assert(0)")
 
 log = open(workdir + "/logfile.txt").read()
-log_per_trace = log.split("Writing trace to VCD file")[:-1]
+log_per_trace = log.split("Writing trace to Yosys witness file")[:-1]
 
 assert len(log_per_trace) == 2
 
