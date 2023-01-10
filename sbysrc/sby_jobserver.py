@@ -58,15 +58,24 @@ def process_jobserver_environment():
         elif flag.startswith("--jobserver-auth=") or flag.startswith("--jobserver-fds="):
             inherited_jobserver_auth_present = True
             if os.name == "posix":
-                arg = flag.split("=", 1)[1].split(",")
-                try:
-                    jobserver_fds = int(arg[0]), int(arg[1])
-                    for fd in jobserver_fds:
-                        fcntl.fcntl(fd, fcntl.F_GETFD)
-                except (ValueError, OSError):
-                    pass
+                arg = flag.split("=", 1)[1]
+                if arg.startswith("fifo:"):
+                    try:
+                        fd = os.open(arg[5:], os.O_RDWR)
+                    except FileNotFoundError:
+                        pass
+                    else:
+                        inherited_jobserver_auth = fd, fd
                 else:
-                    inherited_jobserver_auth = jobserver_fds
+                    arg = arg.split(",")
+                    try:
+                        jobserver_fds = int(arg[0]), int(arg[1])
+                        for fd in jobserver_fds:
+                            fcntl.fcntl(fd, fcntl.F_GETFD)
+                    except (ValueError, OSError):
+                        pass
+                    else:
+                        inherited_jobserver_auth = jobserver_fds
 
 
 def jobserver_helper(jobserver_read_fd, jobserver_write_fd, request_fd, response_fd):
