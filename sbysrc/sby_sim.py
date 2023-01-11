@@ -63,7 +63,10 @@ def sim_witness_trace(prefix, task, engine_idx, witness_file, *, append, deps=()
 
         for assertion in summary["assertions"]:
             if task.design:
-                prop = task.design.properties_by_path[tuple(assertion["path"])]
+                try:
+                    prop = task.design.properties_by_path[tuple(assertion["path"])]
+                except KeyError:
+                    prop = None
             else:
                 prop = None
 
