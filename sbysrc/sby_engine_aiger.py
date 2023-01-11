@@ -31,6 +31,8 @@ def run(mode, task, engine_idx, engine):
 
     status_2 = "UNKNOWN"
 
+    model_variant = ""
+
     if solver_args[0] == "suprove":
         if mode not in ["live", "prove"]:
             task.error("The aiger solver 'suprove' is only supported in live and prove modes.")
@@ -39,6 +41,7 @@ def run(mode, task, engine_idx, engine):
         solver_cmd = " ".join([task.exe_paths["suprove"]] + solver_args[1:])
 
     elif solver_args[0] == "avy":
+        model_variant = "_fold"
         if mode != "prove":
             task.error("The aiger solver 'avy' is only supported in prove mode.")
         solver_cmd = " ".join([task.exe_paths["avy"], "--cex", "-"] + solver_args[1:])
@@ -71,8 +74,8 @@ def run(mode, task, engine_idx, engine):
     proc = SbyProc(
         task,
         f"engine_{engine_idx}",
-        task.model("aig"),
-        f"cd {task.workdir}; {solver_cmd} model/design_aiger.aig",
+        task.model(f"aig{model_variant}"),
+        f"cd {task.workdir}; {solver_cmd} model/design_aiger{model_variant}.aig",
         logfile=open(f"{task.workdir}/engine_{engine_idx}/logfile.txt", "w")
     )
     if solver_args[0] not in ["avy"]:

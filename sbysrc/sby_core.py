@@ -1146,6 +1146,18 @@ class SbyTask(SbyConfig):
 
             return [proc]
 
+        if model_name == "aig_fold":
+            proc = SbyProc(
+                self,
+                model_name,
+                self.model("aig"),
+                f"""cd {self.workdir}/model; {self.exe_paths["abc"]} -c 'read_aiger design_aiger.aig; fold; strash; write_aiger design_aiger_fold.aig'""",
+                logfile=open(f"{self.workdir}/model/design_aiger_fold.log", "w")
+            )
+            proc.checkretcode = True
+
+            return [proc]
+
         self.error(f"Invalid model name: {model_name}")
 
     def model(self, model_name):
