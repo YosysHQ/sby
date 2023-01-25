@@ -12,7 +12,7 @@ assert_false = line_ref(workdir, "extra.smtc", "assert false")
 assert_distinct = line_ref(workdir, "extra.smtc", "assert (distinct")
 
 log = open(workdir + "/logfile.txt").read()
-log_per_trace = log.split("Writing trace to VCD file")[:-1]
+log_per_trace = log.split("Writing trace to Yosys witness file")[:-1]
 
 assert len(log_per_trace) == 4
 

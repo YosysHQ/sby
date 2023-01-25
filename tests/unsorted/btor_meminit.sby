@@ -1,0 +1,48 @@
+[tasks]
+btormc
+#pono
+smtbmc
+
+[options]
+mode bmc
+expect fail
+
+[engines]
+btormc: btor btormc
+# pono: btor pono
+smtbmc: smtbmc
+
+[script]
+read -formal top.sv
+prep -top top -flatten
+
+[file top.sv]
+
+module top(input clk);
+
+    inner inner(clk);
+
+endmodule
+
+module inner(input clk);
+    reg [7:0] counter = 0;
+
+    reg [1:0] mem [0:255];
+
+    initial begin
+        mem[0] = 0;
+        mem[1] = 1;
+        mem[2] = 2;
+        mem[3] = 2;
+        mem[4] = 0;
+        mem[7] = 0;
+    end
+
+    always @(posedge clk) begin
+        counter <= counter + 1;
+        foo: assert (mem[counter] < 3);
+        bar: assume (counter < 7);
+
+        mem[counter] <= 0;
+    end
+endmodule

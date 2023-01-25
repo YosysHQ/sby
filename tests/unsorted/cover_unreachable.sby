@@ -1,0 +1,34 @@
+[tasks]
+btormc
+smtbmc
+
+[options]
+mode cover
+expect fail
+
+[engines]
+btormc: btor btormc
+smtbmc: smtbmc
+
+[script]
+read -formal top.sv
+prep -top top -flatten
+
+[file top.sv]
+
+module top(input clk);
+
+    inner inner(clk);
+
+endmodule
+
+module inner(input clk);
+    reg [7:0] counter = 0;
+
+    always @(posedge clk) begin
+        counter <= counter == 4 ? 0 : counter + 1;
+
+        reachable: cover (counter == 3);
+        unreachable: cover (counter == 5);
+    end
+endmodule
