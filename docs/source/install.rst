@@ -102,6 +102,20 @@ To use the ``btor`` engine you will need to install btor2tools from
 `commit c35cf1c <https://github.com/Boolector/btor2tools/commit/c35cf1c>`_ or
 newer. 
 
+Yices 2
+-------
+
+http://yices.csl.sri.com/
+
+.. code-block:: text
+
+   git clone https://github.com/SRI-CSL/yices2.git yices2
+   cd yices2
+   autoconf
+   ./configure
+   make -j$(nproc)
+   sudo make install
+
 Optional components
 -------------------
 Additional solver engines can be installed as per their instructions, links are
@@ -111,12 +125,6 @@ Z3
 ^^^
 
   https://github.com/Z3Prover/z3
-
-Yices 2
-^^^^^^^
-  http://yices.csl.sri.com/
-
-  https://github.com/SRI-CSL/yices2
 
 super_prove
 ^^^^^^^^^^^
