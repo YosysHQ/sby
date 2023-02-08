@@ -192,7 +192,7 @@ options are:
 |                   | ``prove``, | the trace. Depending on the engine and options used     |
 |                   | ``cover``  | this may be implicitly on or not supported (as          |
 |                   |            | indicated in SBY's log output).                         |
-|                   |            | Values: ``on``, ``off``. Default: ``off``               |
+|                   |            | Values: ``on``, ``off``. Default: ``on``                |
 +-------------------+------------+---------------------------------------------------------+
 
 Engines section
