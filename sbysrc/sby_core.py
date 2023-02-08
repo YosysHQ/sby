@@ -1238,7 +1238,7 @@ class SbyTask(SbyConfig):
 
         if self.opt_mode != "live":
             self.handle_int_option("append", 0)
-            self.handle_bool_option("append_assume", False)
+            self.handle_bool_option("append_assume", True)
 
         self.handle_str_option("make_model", None)
 
