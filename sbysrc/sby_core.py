@@ -1345,7 +1345,7 @@ class SbyTask(SbyConfig):
                             '''.splitlines()
                         )
                     ),
-                    name = stage_name
+                    name = stage_name, depends = self.model('base')
                 )
 
 
