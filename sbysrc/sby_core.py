@@ -920,10 +920,11 @@ class SbyTask(SbyConfig):
     def makedirs(self, path):
         if self.reusedir and os.path.isdir(path):
             rmtree(path, ignore_errors=True)
-        os.makedirs(path)
+        if not os.path.isdir(path):
+            os.makedirs(path)
 
     def copy_src(self):
-        os.makedirs(self.workdir + "/src")
+        self.makedirs(self.workdir + "/src")
 
         for dstfile, lines in self.verbatim_files.items():
             dstfile = self.workdir + "/src/" + dstfile
