@@ -412,6 +412,17 @@ if (workdir is not None) and (len(tasknames) != 1):
     print("ERROR: Exactly one task is required when workdir is specified. Specify the task or use --prefix instead of -d.", file=sys.stderr)
     sys.exit(1)
 
+# Check there are no files in this dir or any of its subdirs
+def check_dirtree_empty_of_files(dir):
+    list = os.listdir(dir)
+    if list:
+        for fn in list:
+            child_dir = os.path.join(dir, fn)
+            if os.path.isdir(child_dir) and check_dirtree_empty_of_files(child_dir):
+                continue
+            return False
+    return True
+
 def start_task(taskloop, taskname):
     sbyconfig, _, _, _ = read_sbyconfig(sbydata, taskname)
 
@@ -446,10 +457,10 @@ def start_task(taskloop, taskname):
 
         if reusedir:
             pass
-        elif os.path.isdir(my_workdir):
+        elif os.path.isdir(my_workdir) and not check_dirtree_empty_of_files(my_workdir):
             print(f"ERROR: Directory '{my_workdir}' already exists, use -f to overwrite the existing directory.")
             sys.exit(1)
-        else:
+        elif not os.path.isdir(my_workdir):
             os.makedirs(my_workdir)
 
     else:
