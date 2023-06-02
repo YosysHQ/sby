@@ -1002,8 +1002,9 @@ class SbyTask(SbyConfig):
                 print("check", file=f)  # can't detect undriven wires past this point
                 print("setundef -undriven -anyseq", file=f)
                 print("opt -fast", file=f)
-                print("rename -witness", file=f)
-                print("opt_clean", file=f)
+                if self.opt_witrename:
+                    print("rename -witness", file=f)
+                    print("opt_clean", file=f)
                 print(f"""write_rtlil ../model/design_prep.il""", file=f)
 
             proc = SbyProc(
@@ -1232,6 +1233,8 @@ class SbyTask(SbyConfig):
         self.handle_bool_option("vcd", True)
         self.handle_bool_option("vcd_sim", False)
         self.handle_bool_option("fst", False)
+
+        self.handle_bool_option("witrename", True)
 
         self.handle_str_option("smtc", None)
         self.handle_int_option("skip", None)
