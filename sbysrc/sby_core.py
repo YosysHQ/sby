@@ -1136,7 +1136,8 @@ class SbyTask(SbyConfig):
                 print("abc -g AND -fast", file=f)
                 print("opt_clean", file=f)
                 print("stat", file=f)
-                print("write_aiger -I -B -zinit -no-startoffset -map design_aiger.aim -ywmap design_aiger.ywa design_aiger.aig", file=f)
+                print(f"write_aiger -I -B -zinit -no-startoffset {'-vmap' if self.opt_aigvmap else '-map'} design_aiger.aim" +
+                        f"{' -symbols' if self.opt_aigsyms else ''} -ywmap design_aiger.ywa design_aiger.aig", file=f)
 
             proc = SbyProc(
                 self,
@@ -1235,6 +1236,8 @@ class SbyTask(SbyConfig):
         self.handle_bool_option("fst", False)
 
         self.handle_bool_option("witrename", True)
+        self.handle_bool_option("aigvmap", False)
+        self.handle_bool_option("aigsyms", False)
 
         self.handle_str_option("smtc", None)
         self.handle_int_option("skip", None)
