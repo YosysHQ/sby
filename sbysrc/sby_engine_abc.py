@@ -66,7 +66,7 @@ def run(mode, task, engine_idx, engine):
         task,
         f"engine_{engine_idx}",
         task.model("aig"),
-        f"""cd {task.workdir}; {task.exe_paths["abc"]} -c 'read_aiger model/design_aiger.aig; fold; strash; {" ".join(abc_command)}; write_cex -a engine_{engine_idx}/trace.aiw'""",
+        f"""cd {task.workdir}; {task.exe_paths["abc"]} -c 'read_aiger model/design_aiger.aig; fold{" -s" if task.opt_aigfolds else ""}; strash; {" ".join(abc_command)}; write_cex -a engine_{engine_idx}/trace.aiw'""",
         logfile=open(f"{task.workdir}/engine_{engine_idx}/logfile.txt", "w")
     )
     proc.checkretcode = True

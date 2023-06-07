@@ -1154,7 +1154,7 @@ class SbyTask(SbyConfig):
                 self,
                 model_name,
                 self.model("aig"),
-                f"""cd {self.workdir}/model; {self.exe_paths["abc"]} -c 'read_aiger design_aiger.aig; fold; strash; write_aiger design_aiger_fold.aig'""",
+                f"""cd {self.workdir}/model; {self.exe_paths["abc"]} -c 'read_aiger design_aiger.aig; fold{" -s" if self.opt_aigfolds else ""}; strash; write_aiger design_aiger_fold.aig'""",
                 logfile=open(f"{self.workdir}/model/design_aiger_fold.log", "w")
             )
             proc.checkretcode = True
@@ -1236,6 +1236,7 @@ class SbyTask(SbyConfig):
         self.handle_bool_option("fst", False)
 
         self.handle_bool_option("witrename", True)
+        self.handle_bool_option("aigfolds", False)
         self.handle_bool_option("aigvmap", False)
         self.handle_bool_option("aigsyms", False)
 
