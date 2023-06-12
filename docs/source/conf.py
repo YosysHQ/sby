@@ -39,3 +39,4 @@ html_theme_options = {
 }
 
 extensions = ['sphinx.ext.autosectionlabel']
+extensions += ['sphinxarg.ext']

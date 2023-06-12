@@ -16,6 +16,7 @@ formal tasks:
 
    install.rst
    quickstart.rst
+   usage.rst
    reference.rst
    autotune.rst
    verilog.rst
