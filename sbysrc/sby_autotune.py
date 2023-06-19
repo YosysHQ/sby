@@ -402,7 +402,7 @@ class SbyAutotune:
 
         self.build_candidates()
         if not self.active_candidates:
-            self.error("no supported engines found for the current configuration and design")
+            self.task.error("no supported engines found for the current configuration and design")
         self.log(f"testing {len(self.active_candidates)} engine configurations...")
 
         self.start_engines()
