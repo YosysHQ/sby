@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+import sys
+import os
+
 project = 'YosysHQ SBY'
 author = 'YosysHQ GmbH'
 copyright = '2023 YosysHQ GmbH'
@@ -40,3 +43,5 @@ html_theme_options = {
 
 extensions = ['sphinx.ext.autosectionlabel']
 extensions += ['sphinxarg.ext']
+
+sys.path.append(os.path.abspath(f"{__file__}/../../../sbysrc"))

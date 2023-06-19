@@ -6,6 +6,6 @@ one of the available CAD suites, it can be called as follows.  Note that this in
 available via `sby --help`.  For more information on installation, see :ref:`install-doc`.
 
 .. argparse::
-    :filename: ../sbysrc/sby_cmdline.py
+    :module: sby_cmdline
     :func: parser_func
     :prog: sby
