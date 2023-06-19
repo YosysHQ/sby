@@ -1,4 +1,10 @@
 #!/usr/bin/env python3
+import os
+import sys
+
+sys.path += [os.path.join(os.path.dirname(__file__),
+                          "..", "..", "sbysrc")]
+
 project = 'YosysHQ SBY'
 author = 'YosysHQ GmbH'
 copyright = '2023 YosysHQ GmbH'
