@@ -69,8 +69,6 @@ def run(mode, task, engine_idx, engine):
                 task.error("smtbmc options --basecase and --induction are exclusive.")
             induction_only = True
         elif o == "--keep-going":
-            if mode not in ("bmc", "prove", "prove_basecase", "prove_induction"):
-                task.error("smtbmc option --keep-going is only supported in bmc and prove mode.")
             keep_going = True
         elif o == "--seed":
             random_seed = a
@@ -134,7 +132,8 @@ def run(mode, task, engine_idx, engine):
 
     if keep_going and mode != "prove_induction":
         smtbmc_opts.append("--keep-going")
-        trace_prefix += "%"
+        if mode != "cover":
+            trace_prefix += "%"
 
     if dumpsmt2:
         smtbmc_opts += ["--dump-smt2", trace_prefix.replace("%", "") + ".smt2"]
