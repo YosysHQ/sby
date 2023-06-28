@@ -42,7 +42,7 @@ def run(mode, task, engine_idx, engine):
     elif abc_command[0] == "pdr":
         if mode != "prove":
             task.error("ABC command 'pdr' is only valid in prove mode.")
-        abc_command[0] += f" -v"
+        abc_command[0] += f" -v -I engine_{engine_idx}/invariants.pla"
 
     else:
         task.error(f"Invalid ABC command {abc_command[0]}.")
@@ -66,7 +66,9 @@ def run(mode, task, engine_idx, engine):
         task,
         f"engine_{engine_idx}",
         task.model("aig"),
-        f"""cd {task.workdir}; {task.exe_paths["abc"]} -c 'read_aiger model/design_aiger.aig; fold; strash; {" ".join(abc_command)}; write_cex -a engine_{engine_idx}/trace.aiw'""",
+        f"""cd {task.workdir}; {task.exe_paths["abc"]} -c 'read_aiger model/design_aiger.aig; fold{
+                " -s" if task.opt_aigfolds or (abc_command[0].startswith("pdr ") and "-d" in abc_command[1:]) else ""
+                }; strash; {" ".join(abc_command)}; write_cex -a engine_{engine_idx}/trace.aiw'""",
         logfile=open(f"{task.workdir}/engine_{engine_idx}/logfile.txt", "w")
     )
     proc.checkretcode = True
