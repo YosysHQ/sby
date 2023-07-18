@@ -1003,8 +1003,9 @@ class SbyTask(SbyConfig):
                     print("check", file=f)  # can't detect undriven wires past this point
                     print("setundef -undriven -anyseq", file=f)
                     print("opt -fast", file=f)
-                    print("rename -witness", file=f)
-                    print("opt_clean", file=f)
+                    if self.opt_witrename:
+                        print("rename -witness", file=f)
+                        print("opt_clean", file=f)
                 print(f"""write_rtlil ../model/design_prep.il""", file=f)
 
             proc = SbyProc(
@@ -1136,7 +1137,8 @@ class SbyTask(SbyConfig):
                 print("abc -g AND -fast", file=f)
                 print("opt_clean", file=f)
                 print("stat", file=f)
-                print("write_aiger -I -B -zinit -no-startoffset -map design_aiger.aim -ywmap design_aiger.ywa design_aiger.aig", file=f)
+                print(f"write_aiger -I -B -zinit -no-startoffset {'-vmap' if self.opt_aigvmap else '-map'} design_aiger.aim" +
+                        f"{' -symbols' if self.opt_aigsyms else ''} -ywmap design_aiger.ywa design_aiger.aig", file=f)
 
             proc = SbyProc(
                 self,
@@ -1153,7 +1155,7 @@ class SbyTask(SbyConfig):
                 self,
                 model_name,
                 self.model("aig"),
-                f"""cd {self.workdir}/model; {self.exe_paths["abc"]} -c 'read_aiger design_aiger.aig; fold; strash; write_aiger design_aiger_fold.aig'""",
+                f"""cd {self.workdir}/model; {self.exe_paths["abc"]} -c 'read_aiger design_aiger.aig; fold{" -s" if self.opt_aigfolds else ""}; strash; write_aiger design_aiger_fold.aig'""",
                 logfile=open(f"{self.workdir}/model/design_aiger_fold.log", "w")
             )
             proc.checkretcode = True
@@ -1233,6 +1235,11 @@ class SbyTask(SbyConfig):
         self.handle_bool_option("vcd", True)
         self.handle_bool_option("vcd_sim", False)
         self.handle_bool_option("fst", False)
+
+        self.handle_bool_option("witrename", True)
+        self.handle_bool_option("aigfolds", False)
+        self.handle_bool_option("aigvmap", False)
+        self.handle_bool_option("aigsyms", False)
 
         self.handle_str_option("smtc", None)
         self.handle_int_option("skip", None)
