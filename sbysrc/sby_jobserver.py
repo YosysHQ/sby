@@ -80,7 +80,16 @@ def process_jobserver_environment():
 
 def jobserver_helper(jobserver_read_fd, jobserver_write_fd, request_fd, response_fd):
     """Helper process to handle blocking jobserver pipes."""
+    def handle_sigusr1(*args):
+        # Since Python doesn't allow user code to handle EINTR anymore, we replace the
+        # jobserver fd with an fd at EOF to interrupt a blocking read in a way that
+        # cannot lose any read data
+        r, w = os.pipe()
+        os.close(w)
+        os.dup2(r, jobserver_read_fd)
+        os.close(r)
     signal.signal(signal.SIGINT, signal.SIG_IGN)
+    signal.signal(signal.SIGUSR1, handle_sigusr1)
     pending = 0
     while True:
         try:
@@ -110,6 +119,8 @@ def jobserver_helper(jobserver_read_fd, jobserver_write_fd, request_fd, response
             except BlockingIOError:
                 select.select([jobserver_read_fd], [], [])
                 continue
+            if not token:
+                break
 
             pending -= 1
 
@@ -239,6 +250,10 @@ class SbyJobClient:
         if self.helper_process:
             # Closing the request pipe singals the helper that we want to exit
             os.close(self.request_write_fd)
+
+            # Additionally we send a signal to interrupt a blocking read within the
+            # helper
+            self.helper_process.send_signal(signal.SIGUSR1)
 
             # The helper might have been in the process of sending us some tokens, which
             # we still need to return
