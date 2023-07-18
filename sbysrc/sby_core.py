@@ -982,29 +982,30 @@ class SbyTask(SbyConfig):
             with open(f"""{self.workdir}/model/design_prep.ys""", "w") as f:
                 print(f"# running in {self.workdir}/model/", file=f)
                 print(f"""read_ilang design.il""", file=f)
-                print("scc -select; simplemap; select -clear", file=f)
-                print("memory_nordff", file=f)
-                if self.opt_multiclock:
-                    print("clk2fflogic", file=f)
-                else:
-                    print("async2sync", file=f)
-                    print("chformal -assume -early", file=f)
-                print("opt_clean", file=f)
-                print("formalff -setundef -clk2ff -ff2anyinit -hierarchy", file=f)
-                if self.opt_mode in ["bmc", "prove"]:
-                    print("chformal -live -fair -cover -remove", file=f)
-                if self.opt_mode == "cover":
-                    print("chformal -live -fair -remove", file=f)
-                if self.opt_mode == "live":
-                    print("chformal -assert2assume", file=f)
-                    print("chformal -cover -remove", file=f)
-                print("opt_clean", file=f)
-                print("check", file=f)  # can't detect undriven wires past this point
-                print("setundef -undriven -anyseq", file=f)
-                print("opt -fast", file=f)
-                if self.opt_witrename:
-                    print("rename -witness", file=f)
+                if not self.opt_skip_prep:
+                    print("scc -select; simplemap; select -clear", file=f)
+                    print("memory_nordff", file=f)
+                    if self.opt_multiclock:
+                        print("clk2fflogic", file=f)
+                    else:
+                        print("async2sync", file=f)
+                        print("chformal -assume -early", file=f)
                     print("opt_clean", file=f)
+                    print("formalff -setundef -clk2ff -ff2anyinit -hierarchy", file=f)
+                    if self.opt_mode in ["bmc", "prove"]:
+                        print("chformal -live -fair -cover -remove", file=f)
+                    if self.opt_mode == "cover":
+                        print("chformal -live -fair -remove", file=f)
+                    if self.opt_mode == "live":
+                        print("chformal -assert2assume", file=f)
+                        print("chformal -cover -remove", file=f)
+                    print("opt_clean", file=f)
+                    print("check", file=f)  # can't detect undriven wires past this point
+                    print("setundef -undriven -anyseq", file=f)
+                    print("opt -fast", file=f)
+                    if self.opt_witrename:
+                        print("rename -witness", file=f)
+                        print("opt_clean", file=f)
                 print(f"""write_rtlil ../model/design_prep.il""", file=f)
 
             proc = SbyProc(
@@ -1212,7 +1213,7 @@ class SbyTask(SbyConfig):
 
         self.handle_str_option("mode", None)
 
-        if self.opt_mode not in ["bmc", "prove", "cover", "live"]:
+        if self.opt_mode not in ["bmc", "prove", "cover", "live", "prep"]:
             self.error(f"Invalid mode: {self.opt_mode}")
 
         self.expect = ["PASS"]
@@ -1249,6 +1250,7 @@ class SbyTask(SbyConfig):
             self.handle_bool_option("append_assume", True)
 
         self.handle_str_option("make_model", None)
+        self.handle_bool_option("skip_prep", False)
 
     def setup_procs(self, setupmode):
         self.handle_non_engine_options()
@@ -1265,7 +1267,7 @@ class SbyTask(SbyConfig):
                     if engine[0] not in ["smtbmc", "btor"]:
                         self.error("Option skip is only valid for smtbmc and btor engines.")
 
-        if len(self.engine_list()) == 0:
+        if len(self.engine_list()) == 0 and self.opt_mode != "prep":
             self.error("Config file is lacking engine configuration.")
 
         if self.reusedir:
@@ -1299,6 +1301,10 @@ class SbyTask(SbyConfig):
         elif self.opt_mode == "cover":
             import sby_mode_cover
             sby_mode_cover.run(self)
+
+        elif self.opt_mode == "prep":
+            self.model("prep")
+            self.update_status("PASS")
 
         else:
             assert False
