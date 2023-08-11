@@ -989,7 +989,8 @@ class SbyTask(SbyConfig):
                         print("clk2fflogic", file=f)
                     else:
                         print("async2sync", file=f)
-                        print("chformal -assume -early", file=f)
+                        if self.opt_assume_early:
+                            print("chformal -assume -early", file=f)
                     print("opt_clean", file=f)
                     print("formalff -setundef -clk2ff -ff2anyinit -hierarchy", file=f)
                     if self.opt_mode in ["bmc", "prove"]:
@@ -1251,6 +1252,8 @@ class SbyTask(SbyConfig):
 
         self.handle_str_option("make_model", None)
         self.handle_bool_option("skip_prep", False)
+
+        self.handle_bool_option("assume_early", True)
 
     def setup_procs(self, setupmode):
         self.handle_non_engine_options()
