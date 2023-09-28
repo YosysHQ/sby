@@ -196,7 +196,7 @@ def run(mode, task, engine_idx, engine):
         nonlocal procs_running
 
         if pending_sim:
-            sim_proc = sim_witness_trace(procname, task, engine_idx, pending_sim, append=sim_append)
+            sim_proc = sim_witness_trace(procname, task, engine_idx, pending_sim, append=sim_append, inductive=mode == "prove_induction")
             sim_proc.register_exit_callback(simple_exit_callback)
             procs_running += 1
             pending_sim = None

@@ -20,7 +20,7 @@ import os, re, glob, json
 from sby_core import SbyProc
 from sby_design import pretty_path
 
-def sim_witness_trace(prefix, task, engine_idx, witness_file, *, append, deps=()):
+def sim_witness_trace(prefix, task, engine_idx, witness_file, *, append, inductive=False, deps=()):
     trace_name = os.path.basename(witness_file)[:-3]
     formats = []
     tracefile = None
@@ -40,8 +40,11 @@ def sim_witness_trace(prefix, task, engine_idx, witness_file, *, append, deps=()
 
     with open(f"{task.workdir}/engine_{engine_idx}/{trace_name}.ys", "w") as f:
         print(f"# running in {task.workdir}/engine_{engine_idx}/", file=f)
-        print(f"read_rtlil ../model/design_prep.il", file=f)
-        print(f"sim -hdlname -summary {trace_name}.json -append {append} -r {trace_name}.yw {' '.join(formats)}", file=f)
+        print("read_rtlil ../model/design_prep.il", file=f)
+        sim_args = ""
+        if inductive:
+            sim_args += " -noinitstate"
+        print(f"sim -hdlname -summary {trace_name}.json -append {append}{sim_args} -r {trace_name}.yw {' '.join(formats)}", file=f)
 
     def exit_callback(retval):
 
