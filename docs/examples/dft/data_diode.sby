@@ -1,0 +1,49 @@
+[tasks]
+diode
+direct
+
+[options]
+mode prove
+
+diode: expect pass
+direct: expect fail
+
+fst on
+
+[engines]
+smtbmc
+
+[script]
+diode: read -define USE_DIODE
+
+verific -sv data_diode.sv
+
+hierarchy -top top
+
+# $overwrite_tag currently requires these two passes directly after importing
+# the design. Otherwise the target signals of $overwrite_tag cannot be properly
+# resolved nor can `dft_tag -overwrite-only` itself detect this situation to
+# report it as an error.
+flatten
+dft_tag -overwrite-only
+
+# Then the design can be prepared as usual
+prep
+
+# And finally the tagging logic can be resolved, which requires converting all
+# FFs into simple D-FFs. Here, if this isn't done `dft_tag` will produce
+# warnings and tell you to run the required passes.
+async2sync
+dffunmap
+dft_tag -tag-public
+
+# The `Unhandled cell` warnings produced by `dft_tag` mean that there is no
+# bit-precise tag propagation model for the listed cell. The cell in question
+# will still propagate tags, but `dft_tag` will use a generic model that
+# assumes all inputs can propagate to all outputs independent of the value of
+# other inputs on the same cell. For built-in logic cells this is a sound
+# over-approximation, but may produce more false-positives than a bit-precise
+# approximation would.
+
+[files]
+data_diode.sv
