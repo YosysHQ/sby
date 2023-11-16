@@ -1,0 +1,17 @@
+[package]
+name = "aigcexmin"
+version = "0.1.0"
+edition = "2021"
+authors = ["Jannis Harder <jix@yosyshq.com> <me@jix.one>"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[profile.release]
+debug = true # profiling
+
+[dependencies]
+clap = { version = "4.4.8", features = ["derive", "cargo", "wrap_help"] }
+color-eyre = "0.6.2"
+flussab = "0.3.1"
+flussab-aiger = "0.1.0"
+zwohash = "0.1.2"
