@@ -1,0 +1,49 @@
+# Run using:
+#
+#   sby -f factor.sby
+#   tabbypy3 cexenum.py factor --enum-depth=0
+#
+[options]
+mode bmc
+make_model prep,smt2
+expect unknown
+
+[engines]
+none
+
+[script]
+read_verilog -sv top.sv
+prep -top top
+
+[file top.sv]
+module top(input clk, input b_bit, output [15:0] acc);
+    reg [7:0] a;
+    reg [7:0] b_mask = 8'hff;
+
+
+    reg [15:0] a_shift = 0;
+    reg [15:0] acc = 0;
+
+
+    always @(posedge clk) begin
+        assume (!clk);
+        if ($initstate) begin
+            a_shift <= a;
+            acc <= 0;
+        end else begin
+
+            if (b_bit) begin
+                acc <= acc + a_shift;
+            end
+            a_shift <= a_shift << 1;
+            b_mask <= b_mask >> 1;
+        end
+
+        if (b_mask == 0) begin
+            a <= 0;
+            assert (acc != 100);
+        end;
+
+    end
+
+endmodule
