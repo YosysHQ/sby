@@ -83,7 +83,7 @@ def arg_parser():
     return parser
 
 
-def lines(*args):
+def lines(*args: Any):
     return "".join(f"{line}\n" for line in args)
 
 
@@ -148,7 +148,7 @@ def setup_logging():
     tl.current_task().set_error_handler(None, error_handler)
 
 
-async def batch(*args):
+async def batch(*args: Awaitable[Any]):
     result = None
     for arg in args:
         result = await arg
@@ -200,7 +200,7 @@ class AigModel(tl.process.Process):
                 "hierarchy -simcheck",
                 "flatten",
                 "setundef -undriven -anyseq",
-                "setattr -set keep 1 w:\*",
+                "setattr -set keep 1 w:\\*",
                 "delete -output",
                 "opt -full",
                 "techmap",
@@ -299,7 +299,7 @@ def relative_to(target: Path, cwd: Path) -> Path:
 class YosysWitness(tl.process.Process):
     def __init__(
         self,
-        mode: Literal["yw2aiw"] | Literal["aiw2yw"],
+        mode: Literal["yw2aiw", "aiw2yw"],
         input: Path,
         mapfile: Path,
         output: Path,
@@ -477,10 +477,10 @@ class Smtbmc(tl.process.Process):
         )
         self.name = "smtbmc"
 
-        self.expected_results = []
+        self.expected_results: list[asyncio.Future[Any]] = []
 
     async def on_run(self) -> None:
-        def output_handler(event: tl.process.StderrEvent):
+        def output_handler(event: tl.process.StdoutEvent):
             result = json.loads(event.output)
             tl.log_debug(f"smtbmc > {result!r}")
             if "err" in result:
@@ -501,11 +501,11 @@ class Smtbmc(tl.process.Process):
     def ping(self) -> Awaitable[None]:
         return self.incremental_command(cmd="ping")
 
-    def incremental_command(self, **command: dict[Any]) -> Awaitable[Any]:
+    def incremental_command(self, **command: Any) -> Awaitable[Any]:
         tl.log_debug(f"smtbmc < {command!r}")
         self.write(json.dumps(command))
         self.write("\n")
-        result = asyncio.Future()
+        result: asyncio.Future[Any] = asyncio.Future()
         self.expected_results.append(result)
 
         return result
@@ -565,7 +565,7 @@ class Smtbmc(tl.process.Process):
         assertions: bool | None = True,
         pred: int | None = None,
     ) -> Awaitable[None]:
-        futures = []
+        futures: list[Awaitable[None]] = []
         futures.append(self.new_step(step))
         futures.append(self.hierarchy(step))
         futures.append(self.assumptions(step))
