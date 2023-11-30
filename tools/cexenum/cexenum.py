@@ -470,6 +470,7 @@ class Smtbmc(tl.process.Process):
             [
                 "yosys-smtbmc",
                 "--incremental",
+                "--noprogress",
                 *App.smtbmc_options,
                 str(smt2_model),
             ],
@@ -481,7 +482,11 @@ class Smtbmc(tl.process.Process):
 
     async def on_run(self) -> None:
         def output_handler(event: tl.process.StdoutEvent):
-            result = json.loads(event.output)
+            line = event.output.strip()
+            if line.startswith('{'):
+                result = json.loads(event.output)
+            else:
+                result = dict(msg=line)
             tl.log_debug(f"smtbmc > {result!r}")
             if "err" in result:
                 exception = tl.logging.LoggedError(
