@@ -1,6 +1,6 @@
 
 DESTDIR =
-PREFIX = /usr/local
+PREFIX ?= /usr/local
 PROGRAM_PREFIX =
 
 # On Windows, manually setting absolute path to Python binary may be required
