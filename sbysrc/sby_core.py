@@ -1055,6 +1055,7 @@ class SbyTask(SbyConfig):
                 print(f"# running in {self.workdir}/model/", file=f)
                 print(f"""read_ilang design_prep.il""", file=f)
                 print("hierarchy -smtcheck", file=f)
+                print("delete */t:$print", file=f)
                 print("formalff -assume", file=f)
                 if "_nomem" in model_name:
                     print("memory_map -formal", file=f)
@@ -1088,6 +1089,7 @@ class SbyTask(SbyConfig):
                 print(f"# running in {self.workdir}/model/", file=f)
                 print(f"""read_ilang design_prep.il""", file=f)
                 print("hierarchy -simcheck", file=f)
+                print("delete */t:$print", file=f)
                 print("formalff -assume", file=f)
                 if "_nomem" in model_name:
                     print("memory_map -formal", file=f)
@@ -1122,6 +1124,7 @@ class SbyTask(SbyConfig):
             with open(f"{self.workdir}/model/design_aiger.ys", "w") as f:
                 print(f"# running in {self.workdir}/model/", file=f)
                 print("read_ilang design_prep.il", file=f)
+                print("delete */t:$print", file=f)
                 print("hierarchy -simcheck", file=f)
                 print("formalff -assume", file=f)
                 print("flatten", file=f)
