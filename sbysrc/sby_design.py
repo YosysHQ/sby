@@ -71,6 +71,18 @@ class SbyProperty:
                 return c.LIVE
             raise ValueError("Unknown property type: " + name)
 
+        @classmethod
+        def from_flavor(c, name):
+            if name == "assume":
+                return c.ASSUME
+            if name == "assert":
+                return c.ASSERT
+            if name == "cover":
+                return c.COVER
+            if name == "live":
+                return c.LIVE
+            raise ValueError("Unknown property type: " + name)
+
     name: str
     path: Tuple[str, ...]
     type: Type
@@ -199,6 +211,20 @@ def design_hierarchy(filename):
                         location=location,
                         hierarchy=sub_hierarchy)
                     mod.properties.append(p)
+            if sort["type"] == "$check":
+                for cell in sort["cells"]:
+                    try:
+                        location = cell["attributes"]["src"]
+                    except KeyError:
+                        location = ""
+                    p = SbyProperty(
+                        name=cell["name"],
+                        path=(*path, *cell_path(cell)),
+                        type=SbyProperty.Type.from_flavor(cell["parameters"]["FLAVOR"]),
+                        location=location,
+                        hierarchy=sub_hierarchy)
+                    mod.properties.append(p)
+
             if sort["type"][0] != '$' or sort["type"].startswith("$paramod"):
                 for cell in sort["cells"]:
                     mod.submodules[cell["name"]] = make_mod_hier(
