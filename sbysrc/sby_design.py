@@ -55,6 +55,7 @@ class SbyProperty:
         ASSERT = auto()
         COVER = auto()
         LIVE = auto()
+        FAIR = auto()
 
         def __str__(self):
             return self.name
@@ -69,6 +70,8 @@ class SbyProperty:
                 return c.COVER
             if name == "$live":
                 return c.LIVE
+            if name == "$fair":
+                return c.FAIR
             raise ValueError("Unknown property type: " + name)
 
         @classmethod
@@ -81,6 +84,8 @@ class SbyProperty:
                 return c.COVER
             if name == "live":
                 return c.LIVE
+            if name == "fair":
+                return c.FAIR
             raise ValueError("Unknown property type: " + name)
 
     name: str
@@ -198,7 +203,7 @@ def design_hierarchy(filename):
             raise ValueError(f"Cannot find module {module_name}")
 
         for sort in cell_sorts:
-            if sort["type"] in ["$assume", "$assert", "$cover", "$live"]:
+            if sort["type"] in ["$assume", "$assert", "$cover", "$live", "$fair"]:
                 for cell in sort["cells"]:
                     try:
                         location = cell["attributes"]["src"]
