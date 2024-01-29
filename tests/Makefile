@@ -18,7 +18,12 @@ help:
 
 export SBY_WORKDIR_GITIGNORE := 1
 
+ifeq ($(SBY_CMD),)
 SBY_MAIN := $(realpath $(dir $(firstword $(MAKEFILE_LIST)))/../sbysrc/sby.py)
+else
+SBY_MAIN := $(realpath $(dir $(firstword $(MAKEFILE_LIST)))/make/run_sby.py)
+endif
+
 ifeq (nt-unix-like,$(OS_NAME))
 SBY_MAIN := $(shell cygpath -w $(SBY_MAIN))
 endif
