@@ -1,0 +1,19 @@
+[options]
+mode bmc
+
+stage_hack yup
+
+[engines]
+smtbmc
+
+[script]
+read -formal stage_hack.sv
+prep -top top
+
+[file stage_hack.sv]
+module top(input clk, output x);
+
+assign x = 1;
+
+endmodule
+

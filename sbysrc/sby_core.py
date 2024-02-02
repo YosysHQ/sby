@@ -600,7 +600,7 @@ class SbyTaskloop:
             self.tasks = []
             for task in tasks:
                 task.check_timeout()
-                if task.procs_pending or task.procs_running:
+                if task.procs_pending or task.procs_running or task.stages_running:
                     self.tasks.append(task)
                 else:
                     task.exit_callback()
@@ -834,6 +834,9 @@ class SbyTask(SbyConfig):
         self.taskloop = taskloop or SbyTaskloop()
         self.taskloop.tasks.append(self)
 
+        self.base_dependencies = []
+        self.stages_running = []
+
         self.procs_running = []
         self.procs_pending = []
 
@@ -1032,7 +1035,7 @@ class SbyTask(SbyConfig):
             proc = SbyProc(
                 self,
                 model_name,
-                [],
+                self.base_dependencies,
                 "cd {}/src; {} -ql ../model/design.log ../model/design.ys".format(self.workdir, self.exe_paths["yosys"])
             )
             proc.checkretcode = True
@@ -1258,6 +1261,8 @@ class SbyTask(SbyConfig):
 
         self.handle_bool_option("assume_early", True)
 
+        self.handle_str_option("stage_hack", None)
+
     def setup_procs(self, setupmode):
         self.handle_non_engine_options()
         if self.opt_smtc is not None:
@@ -1284,6 +1289,27 @@ class SbyTask(SbyConfig):
         if setupmode:
             self.retcode = 0
             return
+
+        if self.opt_stage_hack is not None:
+            # TODO replace with actual configs generated for the stages
+            self.setup_stage(setupmode, config=[
+                "[options]",
+                "mode bmc",
+                "[engines]",
+                "smtbmc",
+                "[script]",
+                "read_rtlil ../../model/design.il",
+                "setundef -zero"
+            ], name="bmc_zero", depends=self.model("base"))
+            self.setup_stage(setupmode, config=[
+                "[options]",
+                "mode bmc",
+                "[engines]",
+                "smtbmc",
+                "[script]",
+                "read_rtlil ../../model/design.il",
+                "setundef -one"
+            ], name="bmc_one", depends=self.model("base"))
 
         if self.opt_make_model is not None:
             for name in self.opt_make_model.split(","):
@@ -1318,6 +1344,12 @@ class SbyTask(SbyConfig):
         for opt in self.options.keys():
             if opt not in self.used_options:
                 self.error(f"Unused option: {opt}")
+
+    def setup_stage(self, setupmode, config, name, depends):
+        stage = SbyStage(config, self, name)
+        stage.base_dependencies.extend(depends)
+        self.stages_running.append(stage)
+        stage.setup_procs(setupmode)
 
     def summarize(self):
         total_clock_time = int(monotonic() - self.start_clock_time)
@@ -1452,3 +1484,22 @@ class SbyTask(SbyConfig):
         print('</system-err>', file=f)
         print(f'</testsuite>', file=f)
         print(f'</testsuites>', file=f)
+
+
+class SbyStage(SbyTask):
+    def __init__(self, sbyconfig, main_task, name):
+        self.main_task = main_task
+        self.name = name
+        workdir = f"{main_task.workdir}/stage_{name}"
+        os.mkdir(workdir)
+        super().__init__(
+            sbyconfig, workdir=workdir, early_logs=[],
+            reusedir=False, taskloop=main_task.taskloop, logfile=main_task.logfile)
+
+        self.exit_callback = self.handle_stage_exit
+
+
+    def handle_stage_exit(self):
+        self.main_task.stages_running.remove(self)
+
+        # TODO pass the status back to the main task
