@@ -1,6 +1,7 @@
 [tasks]
 bmc
 prove
+abc : prove
 
 [options]
 bmc: mode bmc
@@ -8,7 +9,8 @@ prove: mode prove
 expect fail
 
 [engines]
-smtbmc --keep-going boolector
+~abc: smtbmc --keep-going boolector
+abc: abc --keep-going pdr
 
 [script]
 read -sv keepgoing_multi_step.sv

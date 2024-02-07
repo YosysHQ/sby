@@ -18,5 +18,6 @@ module test (
 		if (counter == 7) begin
 			assert(a); // step 7
 		end
+		assert(1);
 	end
 endmodule

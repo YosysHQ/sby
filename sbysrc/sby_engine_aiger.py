@@ -121,70 +121,107 @@ def run(mode, task, engine_idx, engine):
 
 
 def aigsmt_exit_callback(task, engine_idx, proc_status, *, run_aigsmt, smtbmc_vcd, smtbmc_append, sim_append):
-        if proc_status is None:
-            task.error(f"engine_{engine_idx}: Could not determine engine status.")
+    if proc_status is None:
+        task.error(f"engine_{engine_idx}: Could not determine engine status.")
 
-        task.update_status(proc_status)
-        task.summary.set_engine_status(engine_idx, proc_status)
-        task.terminate()
+    task.update_status(proc_status)
+    task.summary.set_engine_status(engine_idx, proc_status)
+    task.terminate()
+    if proc_status == "FAIL" and (not run_aigsmt or task.opt_aigsmt != "none"):
+        aigsmt_trace_callback(task, engine_idx, proc_status, run_aigsmt=run_aigsmt, smtbmc_vcd=smtbmc_vcd, smtbmc_append=smtbmc_append, sim_append=sim_append)
 
-        if proc_status == "FAIL" and (not run_aigsmt or task.opt_aigsmt != "none"):
-            trace_prefix = f"engine_{engine_idx}/trace"
+def aigsmt_trace_callback(task, engine_idx, proc_status, *, run_aigsmt, smtbmc_vcd, smtbmc_append, sim_append, name="trace"):
 
-            aiw2yw_suffix = '_aiw' if run_aigsmt else ''
+    trace_prefix = f"engine_{engine_idx}/{name}"
 
-            witness_proc = SbyProc(
-                task, f"engine_{engine_idx}", [],
-                f"cd {task.workdir}; {task.exe_paths['witness']} aiw2yw engine_{engine_idx}/trace.aiw model/design_aiger.ywa engine_{engine_idx}/trace{aiw2yw_suffix}.yw",
-            )
-            yw_proc = witness_proc
+    aiw2yw_suffix = '_aiw' if run_aigsmt else ''
 
-            if run_aigsmt:
-                smtbmc_opts = []
-                smtbmc_opts += ["-s", task.opt_aigsmt]
-                if task.opt_tbtop is not None:
-                    smtbmc_opts  += ["--vlogtb-top", task.opt_tbtop]
-                smtbmc_opts += ["--noprogress", f"--append {smtbmc_append}"]
-                if smtbmc_vcd:
-                    smtbmc_opts += [f"--dump-vcd {trace_prefix}.vcd"]
-                smtbmc_opts += [f"--dump-yw {trace_prefix}.yw", f"--dump-vlogtb {trace_prefix}_tb.v", f"--dump-smtc {trace_prefix}.smtc"]
+    witness_proc = SbyProc(
+        task, f"engine_{engine_idx}", [],
+        f"cd {task.workdir}; {task.exe_paths['witness']} aiw2yw engine_{engine_idx}/{name}.aiw model/design_aiger.ywa engine_{engine_idx}/{name}{aiw2yw_suffix}.yw",
+    )
+    final_proc = witness_proc
 
-                proc2 = SbyProc(
-                    task,
-                    f"engine_{engine_idx}",
-                    [*task.model("smt2"), witness_proc],
-                    f"cd {task.workdir}; {task.exe_paths['smtbmc']} {' '.join(smtbmc_opts)} --yw engine_{engine_idx}/trace{aiw2yw_suffix}.yw model/design_smt2.smt2",
-                    logfile=open(f"{task.workdir}/engine_{engine_idx}/logfile2.txt", "w")
-                )
+    if run_aigsmt:
+        smtbmc_opts = []
+        smtbmc_opts += ["-s", task.opt_aigsmt]
+        if task.opt_tbtop is not None:
+            smtbmc_opts  += ["--vlogtb-top", task.opt_tbtop]
+        smtbmc_opts += ["--noprogress", f"--append {smtbmc_append}"]
+        if smtbmc_vcd:
+            smtbmc_opts += [f"--dump-vcd {trace_prefix}.vcd"]
+        smtbmc_opts += [f"--dump-yw {trace_prefix}.yw", f"--dump-vlogtb {trace_prefix}_tb.v", f"--dump-smtc {trace_prefix}.smtc"]
 
-                proc2_status = None
+        proc2 = SbyProc(
+            task,
+            f"engine_{engine_idx}",
+            [*task.model("smt2"), witness_proc],
+            f"cd {task.workdir}; {task.exe_paths['smtbmc']} {' '.join(smtbmc_opts)} --yw engine_{engine_idx}/{name}{aiw2yw_suffix}.yw model/design_smt2.smt2",
+            logfile=open(f"{task.workdir}/engine_{engine_idx}/logfile2.txt", "w"),
+        )
 
-                def output_callback2(line):
-                    nonlocal proc2_status
+        proc2_status = None
 
-                    match = re.match(r"^## [0-9: ]+ Status: FAILED", line)
-                    if match: proc2_status = "FAIL"
+        last_prop = []
+        current_step = None
 
-                    match = re.match(r"^## [0-9: ]+ Status: PASSED", line)
-                    if match: proc2_status = "PASS"
+        def output_callback2(line):
+            nonlocal proc2_status
+            nonlocal last_prop
+            nonlocal current_step
 
-                    return line
+            smt2_trans = {'\\':'/', '|':'/'}
 
-                def exit_callback2(retcode):
-                    if proc2_status is None:
-                        task.error(f"engine_{engine_idx}: Could not determine aigsmt status.")
-                    if proc2_status != "FAIL":
-                        task.error(f"engine_{engine_idx}: Unexpected aigsmt status.")
-                    if os.path.exists(f"{task.workdir}/engine_{engine_idx}/trace.vcd"):
-                        task.summary.add_event(engine_idx, trace="trace", path=f"engine_{engine_idx}/trace.vcd", type="$assert")
+            match = re.match(r"^## [0-9: ]+ .* in step ([0-9]+)\.\.", line)
+            if match:
+                current_step = int(match[1])
+                return line
 
-                proc2.output_callback = output_callback2
-                proc2.register_exit_callback(exit_callback2)
+            match = re.match(r"^## [0-9: ]+ Status: FAILED", line)
+            if match: proc2_status = "FAIL"
 
-                yw_proc = proc2
+            match = re.match(r"^## [0-9: ]+ Status: PASSED", line)
+            if match: proc2_status = "PASS"
 
-            if task.opt_fst or (task.opt_vcd and task.opt_vcd_sim):
-                sim_witness_trace(f"engine_{engine_idx}", task, engine_idx, f"engine_{engine_idx}/trace.yw", append=sim_append, deps=[yw_proc])
+            match = re.match(r"^## [0-9: ]+ Assert failed in (\S+): (\S+)(?: \((\S+)\))?", line)
+            if match:
+                cell_name = match[3] or match[2]
+                prop = task.design.hierarchy.find_property_by_cellname(cell_name, trans_dict=smt2_trans)
+                prop.status = "FAIL"
+                last_prop.append(prop)
+                return line
 
-            else:
-                task.log(f"{click.style(f'engine_{engine_idx}', fg='magenta')}: Engine did not produce a counter example.")
+            match = re.match(r"^## [0-9: ]+ Writing trace to VCD file: (\S+)", line)
+            if match:
+                tracefile = match[1]
+                trace = os.path.basename(tracefile)[:-4]
+                task.summary.add_event(engine_idx=engine_idx, trace=trace, path=tracefile)
+
+            if match and last_prop:
+                for p in last_prop:
+                    task.summary.add_event(
+                        engine_idx=engine_idx, trace=trace,
+                        type=p.celltype, hdlname=p.hdlname, src=p.location, step=current_step)
+                    p.tracefiles.append(tracefile)
+                last_prop = []
+                return line
+
+            return line
+
+        def exit_callback2(retcode):
+            if proc2_status is None:
+                task.error(f"engine_{engine_idx}: Could not determine aigsmt status.")
+            if proc2_status != "FAIL":
+                task.error(f"engine_{engine_idx}: Unexpected aigsmt status.")
+
+        proc2.output_callback = output_callback2
+        proc2.register_exit_callback(exit_callback2)
+
+        final_proc = proc2
+
+    if task.opt_fst or (task.opt_vcd and task.opt_vcd_sim):
+        final_proc = sim_witness_trace(f"engine_{engine_idx}", task, engine_idx, f"engine_{engine_idx}/{name}.yw", append=sim_append, deps=[final_proc])
+    elif not run_aigsmt:
+        task.log(f"{click.style(f'engine_{engine_idx}', fg='magenta')}: Engine did not produce a counter example.")
+
+    return final_proc

@@ -787,8 +787,8 @@ class SbySummary:
                         event = same_events[0]
                         steps = sorted(e.step for e in same_events)
                         if short and len(steps) > step_limit:
-                            steps = [str(step) for step in steps[:step_limit]]
                             excess = len(steps) - step_limit
+                            steps = [str(step) for step in steps[:step_limit]]
                             omitted_excess = True
                             steps[-1] += f" and {excess} further step{'s' if excess != 1 else ''}"
 
