@@ -27,6 +27,7 @@ from shutil import copyfile, copytree, rmtree
 from select import select
 from time import monotonic, localtime, sleep, strftime
 from sby_design import SbyProperty, SbyModule, design_hierarchy
+from sby_status import SbyStatusDb
 
 all_procs_running = []
 
@@ -674,20 +675,41 @@ class SbySummary:
             self.engine_summaries[engine_idx] = SbyEngineSummary(engine_idx)
         return self.engine_summaries[engine_idx]
 
-    def add_event(self, *args, **kwargs):
+    def add_event(self, *args, update_status=True, **kwargs):
         event = SbySummaryEvent(*args, **kwargs)
+
+        engine = self.engine_summary(event.engine_idx)
+
+        if update_status:
+            status_metadata = dict(source="summary_event", engine=engine.engine)
+
         if event.prop:
             if event.type == "$assert":
                 event.prop.status = "FAIL"
                 if event.path:
                     event.prop.tracefiles.append(event.path)
+                    if update_status:
+                        self.task.status_db.add_task_property_data(
+                            event.prop,
+                            "trace",
+                            data=dict(path=event.path, step=event.step, **status_metadata),
+                        )
         if event.prop:
             if event.type == "$cover":
                 event.prop.status = "PASS"
                 if event.path:
                     event.prop.tracefiles.append(event.path)
-
-        engine = self.engine_summary(event.engine_idx)
+                    if update_status:
+                        self.task.status_db.add_task_property_data(
+                            event.prop,
+                            "trace",
+                            data=dict(path=event.path, step=event.step, **status_metadata),
+                        )
+        if event.prop and update_status:
+            self.task.status_db.set_task_property_status(
+                event.prop,
+                data=status_metadata
+            )
 
         if event.trace not in engine.traces:
             engine.traces[event.trace] = SbyTraceSummary(event.trace, path=event.path, engine_case=event.engine_case)
@@ -1041,6 +1063,10 @@ class SbyTask(SbyConfig):
                 if self.design == None:
                     with open(f"{self.workdir}/model/design.json") as f:
                         self.design = design_hierarchy(f)
+                        self.status_db.create_task_properties([
+                            prop for prop in self.design.properties_by_path.values()
+                            if not prop.type.assume_like
+                        ])
 
             def instance_hierarchy_error_callback(retcode):
                 self.precise_prop_status = False
@@ -1186,8 +1212,13 @@ class SbyTask(SbyConfig):
         self.status = "ERROR"
         self.terminate()
 
+    def pass_unknown_asserts(self, data):
+        for prop in self.design.pass_unknown_asserts():
+            self.status_db.set_task_property_status(prop, data=data)
+
     def update_status(self, new_status):
         assert new_status in ["PASS", "FAIL", "UNKNOWN", "ERROR"]
+        self.status_db.set_task_status(new_status)
 
         if new_status == "UNKNOWN":
             return
@@ -1199,7 +1230,7 @@ class SbyTask(SbyConfig):
             assert self.status != "FAIL"
             self.status = "PASS"
             if self.opt_mode in ("bmc", "prove") and self.design:
-                self.design.pass_unknown_asserts()
+                self.pass_unknown_asserts(dict(source="task_status"))
 
         elif new_status == "FAIL":
             assert self.status != "PASS"
@@ -1258,6 +1289,19 @@ class SbyTask(SbyConfig):
 
         self.handle_bool_option("assume_early", True)
 
+    def setup_status_db(self, status_path=None):
+        if hasattr(self, 'status_db'):
+            return
+
+        if status_path is None:
+            try:
+                with open(f"{self.workdir}/status.path", "r") as status_path_file:
+                    status_path = f"{self.workdir}/{status_path_file.read().rstrip()}"
+            except FileNotFoundError:
+                status_path = f"{self.workdir}/status.sqlite"
+
+        self.status_db = SbyStatusDb(status_path, self)
+
     def setup_procs(self, setupmode):
         self.handle_non_engine_options()
         if self.opt_smtc is not None:
@@ -1284,6 +1328,8 @@ class SbyTask(SbyConfig):
         if setupmode:
             self.retcode = 0
             return
+
+        self.setup_status_db()
 
         if self.opt_make_model is not None:
             for name in self.opt_make_model.split(","):

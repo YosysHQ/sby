@@ -69,6 +69,11 @@ def parser_func():
     parser.add_argument("--setup", action="store_true", dest="setupmode",
             help="set up the working directory and exit")
 
+    parser.add_argument("--status", action="store_true", dest="status",
+            help="summarize the contents of the status database")
+    parser.add_argument("--statusreset", action="store_true", dest="status_reset",
+            help="reset the contents of the status database")
+
     parser.add_argument("--init-config-file", dest="init_config_file",
             help="create a default .sby config file")
     parser.add_argument("sbyfile", metavar="<jobname>.sby | <dirname>", nargs="?",

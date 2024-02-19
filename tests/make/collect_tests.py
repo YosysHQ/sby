@@ -9,7 +9,11 @@ SAFE_PATH = re.compile(r"^[a-zA-Z0-9_./\\]*$")
 
 def collect(path):
     # don't pick up any paths that need escaping nor any sby workdirs
-    if not SAFE_PATH.match(str(path)) or (path / "config.sby").exists():
+    if (
+        not SAFE_PATH.match(str(path))
+        or (path / "config.sby").exists()
+        or (path / "status.sqlite").exists()
+    ):
         return
 
     checked_dirs.append(path)
