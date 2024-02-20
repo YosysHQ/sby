@@ -188,6 +188,7 @@ def aigsmt_trace_callback(task, engine_idx, proc_status, *, run_aigsmt, smtbmc_v
                 cell_name = match[3] or match[2]
                 prop = task.design.hierarchy.find_property_by_cellname(cell_name, trans_dict=smt2_trans)
                 prop.status = "FAIL"
+                task.status_db.set_task_property_status(prop, data=dict(source="aigsmt", engine=f"engine_{engine_idx}"))
                 last_prop.append(prop)
                 return line
 
