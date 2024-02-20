@@ -30,6 +30,9 @@ help:
 	@echo "make clean"
 	@echo "    cleanup"
 	@echo ""
+	@echo "make format"
+	@echo "    run formatting tool"
+	@echo ""
 
 install:
 	mkdir -p $(DESTDIR)$(PREFIX)/bin
@@ -81,3 +84,6 @@ html:
 clean:
 	$(MAKE) -C docs clean
 	rm -rf docs/build sbysrc/sby sbysrc/__pycache__
+
+format:
+	yapf -ir sbysrc
