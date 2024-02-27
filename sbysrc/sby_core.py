@@ -1027,6 +1027,7 @@ class SbyTask(SbyConfig):
                     print("setundef -undriven -anyseq", file=f)
                     print("opt -fast", file=f)
                     if self.opt_witrename:
+                        # we need to run this a second time to handle anything added by prep
                         print("rename -witness", file=f)
                         print("opt_clean", file=f)
                 print(f"""write_rtlil ../model/design_prep.il""", file=f)
@@ -1048,6 +1049,9 @@ class SbyTask(SbyConfig):
                     print(cmd, file=f)
                 # the user must designate a top module in [script]
                 print("hierarchy -smtcheck", file=f)
+                # we need to give flatten-preserved names before write_jny
+                if self.opt_witrename:
+                    print("rename -witness", file=f)
                 print(f"""write_jny -no-connections ../model/design.json""", file=f)
                 print(f"""write_rtlil ../model/design.il""", file=f)
 

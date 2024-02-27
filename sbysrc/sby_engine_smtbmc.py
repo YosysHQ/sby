@@ -295,8 +295,8 @@ def run(mode, task, engine_idx, engine):
                 task.pass_unknown_asserts(dict(source="smtbmc", keep_going=True, engine=f"engine_{engine_idx}"))
             proc_status_lower = proc_status.lower() if proc_status == "PASS" else proc_status
             task.summary.set_engine_status(engine_idx, proc_status_lower)
-
-            task.terminate()
+            if not keep_going:
+                task.terminate()
 
         elif mode in ["prove_basecase", "prove_induction"]:
             proc_status_lower = proc_status.lower() if proc_status == "PASS" else proc_status
@@ -326,7 +326,8 @@ def run(mode, task, engine_idx, engine):
             if task.basecase_pass and task.induction_pass:
                 task.update_status("PASS")
                 task.summary.append("successful proof by k-induction.")
-                task.terminate()
+                if not keep_going:
+                    task.terminate()
 
         else:
             assert False
