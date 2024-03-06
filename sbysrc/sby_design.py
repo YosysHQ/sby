@@ -88,6 +88,10 @@ class SbyProperty:
                 return c.FAIR
             raise ValueError("Unknown property type: " + name)
 
+        @property
+        def assume_like(self):
+            return self in [self.ASSUME, self.FAIR]
+
     name: str
     path: Tuple[str, ...]
     type: Type
@@ -171,9 +175,12 @@ class SbyDesign:
     properties_by_path: dict = field(default_factory=dict)
 
     def pass_unknown_asserts(self):
+        updated = []
         for prop in self.hierarchy:
             if prop.type == prop.Type.ASSERT and prop.status == "UNKNOWN":
                 prop.status = "PASS"
+                updated.append(prop)
+        return updated
 
 
 def cell_path(cell):

@@ -22,6 +22,7 @@ import json, os, sys, shutil, tempfile, re
 from sby_cmdline import parser_func
 from sby_core import SbyConfig, SbyTask, SbyAbort, SbyTaskloop, process_filename, dress_message
 from sby_jobserver import SbyJobClient, process_jobserver_environment
+from sby_status import SbyStatusDb
 import time, platform, click
 
 process_jobserver_environment()  # needs to be called early
@@ -55,6 +56,39 @@ autotune_config = args.autotune_config
 sequential = args.sequential
 jobcount = args.jobcount
 init_config_file = args.init_config_file
+status_show = args.status
+status_reset = args.status_reset
+
+if status_show or status_reset:
+    target = workdir_prefix or workdir or sbyfile
+    if not os.path.isdir(target) and target.endswith('.sby'):
+        target = target[:-4]
+    if not os.path.isdir(target):
+        print(f"ERROR: No directory found at {target!r}.", file=sys.stderr)
+        sys.exit(1)
+
+    try:
+        with open(f"{target}/status.path", "r") as status_path_file:
+            status_path = f"{target}/{status_path_file.read().rstrip()}"
+    except FileNotFoundError:
+        status_path = f"{target}/status.sqlite"
+
+    if not os.path.exists(status_path):
+        print(f"ERROR: No status database found at {status_path!r}.", file=sys.stderr)
+        sys.exit(1)
+
+    status_db = SbyStatusDb(status_path, task=None)
+
+    if status_show:
+        status_db.print_status_summary()
+        sys.exit(0)
+
+    if status_reset:
+        status_db.reset()
+
+    status_db.db.close()
+    sys.exit(0)
+
 
 if sbyfile is not None:
     if os.path.isdir(sbyfile):
@@ -356,6 +390,7 @@ def start_task(taskloop, taskname):
 
     my_opt_tmpdir = opt_tmpdir
     my_workdir = None
+    my_status_db = None
 
     if workdir is not None:
         my_workdir = workdir
@@ -364,10 +399,12 @@ def start_task(taskloop, taskname):
             my_workdir = workdir_prefix
         else:
             my_workdir = workdir_prefix + "_" + taskname
+            my_status_db = f"../{os.path.basename(workdir_prefix)}/status.sqlite"
 
     if my_workdir is None and sbyfile is not None and not my_opt_tmpdir:
         my_workdir = sbyfile[:-4]
         if taskname is not None:
+            my_status_db = f"../{os.path.basename(my_workdir)}/status.sqlite"
             my_workdir += "_" + taskname
 
     if my_workdir is not None:
@@ -398,6 +435,14 @@ def start_task(taskloop, taskname):
     if os.getenv("SBY_WORKDIR_GITIGNORE"):
         with open(f"{my_workdir}/.gitignore", "w") as gitignore:
             print("*", file=gitignore)
+
+    if my_status_db is not None:
+        os.makedirs(f"{my_workdir}/{os.path.dirname(my_status_db)}", exist_ok=True)
+        if os.getenv("SBY_WORKDIR_GITIGNORE"):
+            with open(f"{my_workdir}/{os.path.dirname(my_status_db)}/.gitignore", "w") as gitignore:
+                print("*", file=gitignore)
+        with open(f"{my_workdir}/status.path", "w") as status_path:
+            print(my_status_db, file=status_path)
 
     junit_ts_name = os.path.basename(sbyfile[:-4]) if sbyfile is not None else workdir if workdir is not None else "stdin"
     junit_tc_name = taskname if taskname is not None else "default"

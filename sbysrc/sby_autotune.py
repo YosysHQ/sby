@@ -378,6 +378,7 @@ class SbyAutotune:
 
     def run(self):
         self.task.handle_non_engine_options()
+        self.task.setup_status_db(':memory:')
         self.config = self.task.autotune_config or SbyAutotuneConfig()
 
         if "expect" not in self.task.options:

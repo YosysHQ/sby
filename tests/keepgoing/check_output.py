@@ -12,6 +12,6 @@ def line_ref(dir, filename, pattern):
         for number, line in enumerate(file, 1):
             if pattern_re.search(line):
                 # Needs to match source locations for both verilog frontends
-                return fr"{filename}:(?:{number}|\d+.\d+-{number}.\d+)"
+                return fr"{filename}:(?:{number}|\d+\.\d+-{number}\.\d+)"
 
         raise RuntimeError("%s: pattern `%s` not found" % (filename, pattern))

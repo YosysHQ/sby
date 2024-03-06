@@ -233,6 +233,7 @@ def run(mode, task, engine_idx, engine):
             cell_name = match[3] or match[2]
             prop = task.design.hierarchy.find_property_by_cellname(cell_name, trans_dict=smt2_trans)
             prop.status = "FAIL"
+            task.status_db.set_task_property_status(prop, data=dict(source="smtbmc", engine=f"engine_{engine_idx}"))
             last_prop.append(prop)
             return line
 
@@ -241,6 +242,7 @@ def run(mode, task, engine_idx, engine):
             cell_name = match[2] or match[1]
             prop = task.design.hierarchy.find_property_by_cellname(cell_name, trans_dict=smt2_trans)
             prop.status = "PASS"
+            task.status_db.set_task_property_status(prop, data=dict(source="smtbmc", engine=f"engine_{engine_idx}"))
             last_prop.append(prop)
             return line
 
@@ -271,6 +273,7 @@ def run(mode, task, engine_idx, engine):
             cell_name = match[2]
             prop = task.design.hierarchy.find_property_by_cellname(cell_name, trans_dict=smt2_trans)
             prop.status = "FAIL"
+            task.status_db.set_task_property_status(prop, data=dict(source="smtbmc", engine=f"engine_{engine_idx}"))
 
         return line
 
@@ -288,10 +291,12 @@ def run(mode, task, engine_idx, engine):
     def last_exit_callback():
         if mode == "bmc" or mode == "cover":
             task.update_status(proc_status)
+            if proc_status == "FAIL" and mode == "bmc" and keep_going:
+                task.pass_unknown_asserts(dict(source="smtbmc", keep_going=True, engine=f"engine_{engine_idx}"))
             proc_status_lower = proc_status.lower() if proc_status == "PASS" else proc_status
             task.summary.set_engine_status(engine_idx, proc_status_lower)
-
-            task.terminate()
+            if not keep_going:
+                task.terminate()
 
         elif mode in ["prove_basecase", "prove_induction"]:
             proc_status_lower = proc_status.lower() if proc_status == "PASS" else proc_status
@@ -321,7 +326,8 @@ def run(mode, task, engine_idx, engine):
             if task.basecase_pass and task.induction_pass:
                 task.update_status("PASS")
                 task.summary.append("successful proof by k-induction.")
-                task.terminate()
+                if not keep_going:
+                    task.terminate()
 
         else:
             assert False
