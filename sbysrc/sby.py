@@ -61,6 +61,9 @@ status_reset = args.status_reset
 
 if status_show or status_reset:
     target = workdir_prefix or workdir or sbyfile
+    if target is None:
+        print("ERROR: Specify a .sby config file or working directory to use --status.")
+        sys.exit(1)
     if not os.path.isdir(target) and target.endswith('.sby'):
         target = target[:-4]
     if not os.path.isdir(target):
