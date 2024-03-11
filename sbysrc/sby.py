@@ -297,6 +297,8 @@ def read_sbyconfig(sbydata, taskname):
 
 
 sbydata = list()
+if sbyfile is None:
+    print("Reading .sby configuration from stdin:")
 with (open(sbyfile, "r") if sbyfile is not None else sys.stdin) as f:
     for line in f:
         sbydata.append(line)
