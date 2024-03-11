@@ -61,6 +61,9 @@ status_reset = args.status_reset
 
 if status_show or status_reset:
     target = workdir_prefix or workdir or sbyfile
+    if target is None:
+        print("ERROR: Specify a .sby config file or working directory to use --status.")
+        sys.exit(1)
     if not os.path.isdir(target) and target.endswith('.sby'):
         target = target[:-4]
     if not os.path.isdir(target):
@@ -294,6 +297,8 @@ def read_sbyconfig(sbydata, taskname):
 
 
 sbydata = list()
+if sbyfile is None:
+    print("Reading .sby configuration from stdin:")
 with (open(sbyfile, "r") if sbyfile is not None else sys.stdin) as f:
     for line in f:
         sbydata.append(line)
