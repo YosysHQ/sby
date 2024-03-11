@@ -182,7 +182,7 @@ def run(mode, task, engine_idx, engine):
             match = re.match(r"^Output [0-9]+ of miter .* was asserted in frame [0-9]+.", line)
             if match: proc_status = "FAIL"
 
-        match = re.match(r"^Proved output +([0-9]+) in frame +[0-9]+", line)
+        match = re.match(r"^Proved output +([0-9]+) in frame +-?[0-9]+", line)
         if match:
             output = int(match[1])
             prop = aiger_props[output]
