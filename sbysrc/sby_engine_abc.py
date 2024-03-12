@@ -166,7 +166,10 @@ def run(mode, task, engine_idx, engine):
             match = re.match(r"Writing CEX for output ([0-9]+) to engine_[0-9]+/(.*)\.aiw", line)
             if match:
                 output = int(match[1])
-                prop = aiger_props[output]
+                try:
+                    prop = aiger_props[output]
+                except IndexError:
+                    prop = None
                 if prop:
                     prop.status = "FAIL"
                     task.status_db.set_task_property_status(prop, data=dict(source="abc pdr",  engine=f"engine_{engine_idx}"))
@@ -185,7 +188,10 @@ def run(mode, task, engine_idx, engine):
         match = re.match(r"^Proved output +([0-9]+) in frame +-?[0-9]+", line)
         if match:
             output = int(match[1])
-            prop = aiger_props[output]
+            try:
+                prop = aiger_props[output]
+            except IndexError:
+                prop = None
             if prop:
                 prop.status = "PASS"
                 task.status_db.set_task_property_status(prop, data=dict(source="abc pdr",  engine=f"engine_{engine_idx}"))
