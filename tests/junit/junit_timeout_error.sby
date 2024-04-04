@@ -17,26 +17,25 @@ solver: smtbmc foo
 [script]
 read -noverific
 syntax: read -define SYNTAX_ERROR
-read -sv primes.sv
-prep -top primes
+read -sv diophantine.sv
+prep -top diophantine
 
-[file primes.sv]
-module primes;
-	parameter [8:0] offset = 7;
-	(* anyconst *) reg [8:0] prime1;
-	wire [9:0] prime2 = prime1 + offset;
-	(* allconst *) reg [4:0] factor;
+[file diophantine.sv]
+module diophantine;
+	(* anyconst *) reg [15:0] a, b, c;
 
-`ifdef SYNTAX_ERROR
+	`ifdef SYNTAX_ERROR
 	foo
-`endif
+	`endif
+
+	wire [48:0] x = a*a*a + b*b*b;
+	wire [48:0] y = c*c*c;
 
 	always @* begin
-		if (1 < factor && factor < prime1)
-			assume ((prime1 % factor) != 0);
-		if (1 < factor && factor < prime2)
-			assume ((prime2 % factor) != 0);
-		assume (1 < prime1);
+		assume (a > 0);
+		assume (b > 0);
+		assume (c > 0);
+		assume (x == y);
 		cover (1);
 	end
 endmodule
