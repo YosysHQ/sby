@@ -422,8 +422,7 @@ def start_task(taskloop, taskname):
 
         if opt_force and not reusedir:
             early_log(my_workdir, f"Removing directory '{os.path.abspath(my_workdir)}'.")
-            if sbyfile:
-                shutil.rmtree(my_workdir, ignore_errors=True)
+            shutil.rmtree(my_workdir, ignore_errors=True)
 
         if reusedir:
             pass
