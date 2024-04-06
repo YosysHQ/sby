@@ -82,12 +82,14 @@ async def main() -> None:
         pattern = r"(?P<type>[cil])(?P<input>\d+) (?P<path>.*?)(\[(?P<offset>\d+)\])?$"
         m = re.match(pattern, string)
         md = m.groupdict()
+        md['input'] = int(md['input'])
         if md['type'] == 'i':
             md['type'] = 'input'
         elif md['type'] == 'c':
             md['type'] = 'clk'
         elif md['type'] == 'l':
             md['type'] = 'latch'
+            md['input'] += ywa['input_count']
         else:
             raise ValueError(f"Unknown type identifier {md['type']!r}")
         for k in ['input', 'offset']:
@@ -109,7 +111,7 @@ async def main() -> None:
         elif md_type == 'input':
             ywa['inputs'].append(md)
         elif md_type == 'latch':
-            ywa['latches'].append(md)
+            ywa['inits'].append(md)
 
         # get next line
         data = await proc.stdout.readline()
