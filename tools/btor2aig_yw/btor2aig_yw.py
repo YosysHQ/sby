@@ -23,6 +23,13 @@ def arg_parser():
 
     return parser
 
+def fix_path(path: str) -> list[str]:
+    if path[0] == '$':
+        fixed = [path]
+    else:
+        fixed = [f"\\{s}" for s in path.replace('[','.[').split('.')]
+    return fixed
+
 async def main() -> None:
     args = arg_parser().parse_args()
 
@@ -95,10 +102,7 @@ async def main() -> None:
 
         # update ywa
         md_type = md.pop('type')
-        if md['path'][0] == '$':
-            md['path'] = [md['path']]
-        else:
-            md['path'] = [f"\\{s}" for s in md['path'].replace('[','.[').split('.')]
+        md['path'] = fix_path(md['path'])
         if md_type == 'clk':
             md['edge'] = "posedge" # always?
             ywa['clocks'].append(md)
@@ -110,6 +114,17 @@ async def main() -> None:
         # get next line
         data = await proc.stdout.readline()
     aimf.close()
+
+    # find assertions by looking for 'bad' statements in the btor
+    with open(args.btor_file, mode='r') as f:
+        data = f.readline()
+        while data:
+            if "bad" in data:
+                m = re.match(r"^\d+ bad \d+ (\S+)", data)
+                path = fix_path(m.group(1))
+                ywa['asserts'].append(path)
+            data = f.readline()
+
 
     with open(work_dir / "design_aiger.ywa", mode="w") as f:
         json.dump(ywa, f, indent=2)
