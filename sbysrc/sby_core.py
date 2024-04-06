@@ -1137,7 +1137,8 @@ class SbyTask(SbyConfig):
                 print("delete -output", file=f)
                 print("dffunmap", file=f)
                 print("stat", file=f)
-                print("write_btor {}-i design_{m}.info -ywmap design_btor.ywb design_{m}.btor".format("-c " if self.opt_mode == "cover" else "", m=model_name), file=f)
+                #TODO: put -x in a conditional
+                print("write_btor -x {}-i design_{m}.info -ywmap design_btor.ywb design_{m}.btor".format("-c " if self.opt_mode == "cover" else "", m=model_name), file=f)
                 print("write_btor -s {}-i design_{m}_single.info -ywmap design_btor_single.ywb design_{m}_single.btor".format("-c " if self.opt_mode == "cover" else "", m=model_name), file=f)
 
             proc = SbyProc(
@@ -1151,15 +1152,14 @@ class SbyTask(SbyConfig):
             return [proc]
 
         if model_name == "aig" and self.opt_btor_aig:
-            #TODO: split .aim from .aig?
-            #TODO: figure out .ywa
-            # Going via btor seems to lose the seqs, not sure how important they are
+            #TODO: aiw2yw doesn't know what to do with the latches
             btor_model = "btor_nomem"
             proc = SbyProc(
                 self,
                 "btor_aig",
                 self.model(btor_model),
-                f"""cd {self.workdir}/model; btor2aiger design_{btor_model}.btor > design_aiger.aig"""
+                #TODO: fix hardcoded path
+                f"cd {self.workdir}/model; python3 ~/sby/tools/btor2aig_yw/btor2aig_yw.py design_{btor_model}.btor"
             )
             proc.checkretcode = True
 
