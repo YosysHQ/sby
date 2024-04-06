@@ -16,6 +16,11 @@ def arg_parser():
     )
 
     parser.add_argument(
+        "ywb_file",
+        type=Path
+    )
+
+    parser.add_argument(
         "-d", "--dest",
         dest="dest",
         required=False,
@@ -118,15 +123,10 @@ async def main() -> None:
         data = await proc.stdout.readline()
     aimf.close()
 
-    # find assertions by looking for 'bad' statements in the btor
-    with open(args.btor_file, mode='r') as f:
-        data = f.readline()
-        while data:
-            if "bad" in data:
-                m = re.match(r"^\d+ bad \d+ (\S+)", data)
-                path = fix_path(m.group(1))
-                ywa['asserts'].append(path)
-            data = f.readline()
+    with open(args.ywb_file, mode='r') as f:
+        data = json.load(f)
+        ywa['asserts'].extend(data['asserts'])
+        ywa['assumes'].extend(data['assumes'])
 
 
     with open(work_dir / "design_aiger.ywa", mode="w") as f:

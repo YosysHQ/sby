@@ -1159,7 +1159,7 @@ class SbyTask(SbyConfig):
                 self,
                 "btor_aig",
                 self.model(btor_model),
-                f"cd {self.workdir}/model; btor2aig_yw design_{btor_model}.btor"
+                f"cd {self.workdir}/model; btor2aig_yw design_{btor_model}.btor design_btor.ywb"
             )
             proc.checkretcode = True
 
