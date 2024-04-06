@@ -1150,6 +1150,21 @@ class SbyTask(SbyConfig):
 
             return [proc]
 
+        if model_name == "aig" and self.opt_btor_aig:
+            #TODO: split .aim from .aig?
+            #TODO: figure out .ywa
+            # Going via btor seems to lose the seqs, not sure how important they are
+            btor_model = "btor_nomem"
+            proc = SbyProc(
+                self,
+                "btor_aig",
+                self.model(btor_model),
+                f"""cd {self.workdir}/model; btor2aiger design_{btor_model}.btor > design_aiger.aig"""
+            )
+            proc.checkretcode = True
+
+            return [proc]
+
         if model_name == "aig":
             with open(f"{self.workdir}/model/design_aiger.ys", "w") as f:
                 print(f"# running in {self.workdir}/model/", file=f)
@@ -1279,6 +1294,7 @@ class SbyTask(SbyConfig):
         self.handle_bool_option("aigfolds", False)
         self.handle_bool_option("aigvmap", False)
         self.handle_bool_option("aigsyms", False)
+        self.handle_bool_option("btor_aig", False)
 
         self.handle_str_option("smtc", None)
         self.handle_int_option("skip", None)
