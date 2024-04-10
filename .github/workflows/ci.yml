@@ -1,14 +1,56 @@
 name: ci
-on: [push, pull_request]
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: '30 0 * * *'
 
 jobs:
-  build:
+  build_oss:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
-      - uses: YosysHQ/setup-oss-cad-suite@v3
+      - name: Checkout SBY
+        uses: actions/checkout@v4
+
+      - name: Install oss-cad-suite
+        uses: YosysHQ/setup-oss-cad-suite@v3
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Run checks
+      - name: Run SBY tests
         run: pip install xmlschema && make ci
+
+  build_verific:
+    runs-on: [self-hosted, linux, x64]
+    steps:
+      - name: Checkout SBY
+        uses: actions/checkout@v4
+
+      - name: Checkout Yosys
+        uses: actions/checkout@v4
+        with:
+          repository: 'YosysHQ/yosys'
+          path: 'yosys'
+
+      - name: Runtime environment
+        run: |
+          echo "procs=$(nproc)" >> $GITHUB_ENV
+
+      - name: Build Yosys
+        run: |
+          cd yosys
+          make config-clang
+          echo "ENABLE_VERIFIC := 1" >> Makefile.conf
+          echo "ENABLE_VERIFIC_EDIF := 1" >> Makefile.conf
+          echo "ENABLE_VERIFIC_LIBERTY := 1" >> Makefile.conf
+          echo "ENABLE_CCACHE := 1" >> Makefile.conf
+          make -j${{ env.procs }}
+          make install DESTDIR=${GITHUB_WORKSPACE}/.local PREFIX=
+
+      - name: Build SBY
+        run: |
+          make install DESTDIR=${GITHUB_WORKSPACE}/.local PREFIX=
+
+      - name: Run SBY tests
+        run: |
+          make run_ci
