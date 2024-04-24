@@ -69,6 +69,14 @@ def run(mode, task, engine_idx, engine):
     if task.opt_aigfolds:
         fold_command += " -s"
 
+    prep_commands = []
+
+    for i, arg in reversed(list(enumerate(engine[1:], 1))):
+        if arg.endswith(';'):
+            prep_commands = engine[1:i + 1]
+            engine[1:] = engine[i + 1:]
+            break
+
     abc_command, custom_options, toggles = abc_getopt(engine[1:], [
         "keep-going",
     ])
@@ -115,6 +123,8 @@ def run(mode, task, engine_idx, engine):
 
     else:
         task.error(f"Invalid ABC command {abc_command[0]}.")
+
+    abc_command[0:0] = prep_commands
 
     smtbmc_vcd = task.opt_vcd and not task.opt_vcd_sim
     run_aigsmt = smtbmc_vcd or (task.opt_append and task.opt_append_assume)
