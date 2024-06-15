@@ -44,6 +44,8 @@ else
 	sed 's|##yosys-sys-path##|sys.path += [os.path.dirname(__file__) + p for p in ["/share/python3", "/../share/yosys/python3"]]|;' < sbysrc/sby.py > $(DESTDIR)$(PREFIX)/bin/sby
 	chmod +x $(DESTDIR)$(PREFIX)/bin/sby
 endif
+	cp tools/btor2aig_yw/btor2aig_yw.py $(DESTDIR)$(PREFIX)/bin/btor2aig_yw
+	chmod +x $(DESTDIR)$(PREFIX)/bin/btor2aig_yw
 
 .PHONY: check_cad_suite run_ci
 
