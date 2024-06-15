@@ -215,7 +215,7 @@ Exercise
 
 Adjust the ``[script]`` section of ``fifo.sby`` so that it looks like the below.
 
-.. code-block:: text
+.. code-block:: sby
 
     [script]
     nofullskip: read -define NO_FULL_SKIP=1

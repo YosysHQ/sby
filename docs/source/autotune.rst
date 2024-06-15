@@ -29,7 +29,7 @@ directory.
 
 The ``divider.sby`` file contains the following ``[engines]`` section:
 
-.. code-block:: text
+.. code-block:: sby
 
    [engines]
    smtbmc
@@ -51,7 +51,7 @@ This tells us that for the ``medium`` task, the best engine choice (#1) is
 ``smtbmc bitwuzla -- --noincr``. To use this engine by default we can change
 the ``[engines]`` section of ``divider.sby`` to:
 
-.. code-block:: text
+.. code-block:: sby
 
    [engines]
    smtbmc bitwuzla -- --noincr
