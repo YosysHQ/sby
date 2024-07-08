@@ -6,7 +6,7 @@ class DictAction(argparse.Action):
         name = option_string.lstrip(parser.prefix_chars).replace("-", "_")
         getattr(namespace, self.dest)[name] = values
 
-def parser_func():
+def parser_func(release_version='unknown SBY version'):
     parser = argparse.ArgumentParser(prog="sby",
             usage="%(prog)s [options] [<jobname>.sby [tasknames] | <dirname>]")
     parser.set_defaults(exe_paths=dict())
@@ -80,5 +80,7 @@ def parser_func():
             help=".sby file OR directory containing config.sby file")
     parser.add_argument("arg_tasknames", metavar="tasknames", nargs="*",
             help="tasks to run (only valid when <jobname>.sby is used)")
+
+    parser.add_argument('--version', action='version', version=release_version)
 
     return parser

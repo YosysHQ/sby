@@ -10,6 +10,12 @@ ifeq ($(OS), Windows_NT)
 PYTHON = $(shell cygpath -w -m $(PREFIX)/bin/python3)
 endif
 
+ifeq ($(file < .gittag),$$Format:%(describe)$$)
+YOSYS_RELEASE_VERSION := SBY $(shell git describe --dirty)
+else
+YOSYS_RELEASE_VERSION := SBY $(file < .gittag)
+endif
+
 .PHONY: help install ci test html clean
 
 help:
@@ -38,10 +44,12 @@ install:
 	sed -e 's|##yosys-program-prefix##|"'$(PROGRAM_PREFIX)'"|' < sbysrc/sby_core.py > $(DESTDIR)$(PREFIX)/share/yosys/python3/sby_core.py
 ifeq ($(OS), Windows_NT)
 	sed -e 's|##yosys-sys-path##|sys.path += [os.path.dirname(__file__) + p for p in ["/share/python3", "/../share/yosys/python3"]]|;' \
+		-e "s|##yosys-release-version##|release_version = '$(YOSYS_RELEASE_VERSION)'|;" \
 		-e "s|#!/usr/bin/env python3|#!$(PYTHON)|" < sbysrc/sby.py > $(DESTDIR)$(PREFIX)/bin/sby-script.py
 	gcc -DGUI=0 -O -s -o $(DESTDIR)$(PREFIX)/bin/sby.exe extern/launcher.c
 else
-	sed 's|##yosys-sys-path##|sys.path += [os.path.dirname(__file__) + p for p in ["/share/python3", "/../share/yosys/python3"]]|;' < sbysrc/sby.py > $(DESTDIR)$(PREFIX)/bin/sby
+	sed -e 's|##yosys-sys-path##|sys.path += [os.path.dirname(__file__) + p for p in ["/share/python3", "/../share/yosys/python3"]]|;' \
+		-e "s|##yosys-release-version##|release_version = '$(YOSYS_RELEASE_VERSION)'|;" < sbysrc/sby.py > $(DESTDIR)$(PREFIX)/bin/sby
 	chmod +x $(DESTDIR)$(PREFIX)/bin/sby
 endif
 
