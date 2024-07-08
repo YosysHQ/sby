@@ -25,9 +25,12 @@ from sby_jobserver import SbyJobClient, process_jobserver_environment
 from sby_status import SbyStatusDb
 import time, platform, click
 
+release_version = 'unknown SBY version'
+##yosys-release-version##
+
 process_jobserver_environment()  # needs to be called early
 
-parser = parser_func()
+parser = parser_func(release_version)
 
 args = parser.parse_args()
 
