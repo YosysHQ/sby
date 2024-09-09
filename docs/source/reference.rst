@@ -236,7 +236,7 @@ The following mode/engine/solver combinations are currently supported:
 |           |                          |
 |           | ``abc sim3``             |
 |           |                          |
-|           | ``aiger smtbmc``         |
+|           | ``aiger aigbmc``         |
 +-----------+--------------------------+
 | ``prove`` | ``smtbmc [all solvers]`` |
 |           |                          |
