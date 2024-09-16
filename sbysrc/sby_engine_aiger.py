@@ -16,7 +16,7 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #
 
-import re, os, getopt, click
+import re, os, getopt, click, json
 from sby_core import SbyProc
 from sby_sim import sim_witness_trace
 
@@ -32,6 +32,7 @@ def run(mode, task, engine_idx, engine):
     status_2 = "UNKNOWN"
 
     model_variant = ""
+    json_output = False
 
     if solver_args[0] == "suprove":
         if mode not in ["live", "prove"]:
@@ -51,6 +52,14 @@ def run(mode, task, engine_idx, engine):
             task.error("The aiger solver 'aigbmc' is only supported in bmc mode.")
         solver_cmd = " ".join([task.exe_paths["aigbmc"], str(task.opt_depth - 1)] + solver_args[1:])
         status_2 = "PASS"  # aigbmc outputs status 2 when BMC passes
+
+    elif solver_args[0] == "imctk-eqy-engine":
+        model_variant = "_fold"
+        json_output = True
+        if mode != "prove":
+            task.error("The aiger solver 'imctk-eqy-engine' is only supported in prove mode.")
+        args = ["--bmc-depth", str(task.opt_depth), "--jsonl-output"]
+        solver_cmd = " ".join([task.exe_paths["imctk-eqy-engine"], *args, *solver_args[1:]])
 
     else:
         task.error(f"Invalid solver command {solver_args[0]}.")
@@ -90,6 +99,27 @@ def run(mode, task, engine_idx, engine):
         nonlocal proc_status
         nonlocal produced_cex
         nonlocal end_of_cex
+
+        if json_output:
+            # Forward log messages, but strip the prefix containing runtime and memory stats
+            if not line.startswith('{'):
+                print(line, file=proc.logfile, flush=True)
+                matched = re.match(r".*(TRACE|DEBUG|INFO|WARN|ERROR) (.*)", line)
+                if matched:
+                    if matched[1] == "INFO":
+                        task.log(matched[2])
+                    else:
+                        task.log(f"{matched[1]} {matched[2]}")
+                return None
+            event = json.loads(line)
+            if "aiw" in event:
+                print(event["aiw"], file=aiw_file)
+            if "status" in event:
+                if event["status"] == "pass":
+                    proc_status = "PASS"
+                elif event["status"] == "fail":
+                    proc_status = "FAIL"
+            return None
 
         if proc_status is not None:
             if not end_of_cex and not produced_cex and line.isdigit():
