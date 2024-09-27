@@ -1,19 +1,23 @@
+.. role:: sby(code)
+   :language: sby
 
 Reference for .sby file format
 ==============================
 
 A ``.sby`` file consists of sections. Each section start with a single-line
-section header in square brackets. The order of sections in a ``.sby`` file
-is for the most part irrelevant, but by convention the usual order is
-``[tasks]``, ``[options]``, ``[engines]``, ``[script]``,  and ``[files]``.
+section header in square brackets. The order of sections in a ``.sby`` file is
+for the most part irrelevant, but by convention the usual order is
+:sby:`[tasks]`, :sby:`[options]`, :sby:`[engines]`, :sby:`[script]`,  and
+:sby:`[files]`.
 
 Tasks section
 -------------
 
-The optional ``[tasks]`` section can be used to configure multiple verification tasks in
-a single ``.sby`` file. Each line in the ``[tasks]`` section configures one task. For example:
+The optional :sby:`[tasks]` section can be used to configure multiple
+verification tasks in a single ``.sby`` file. Each line in the :sby:`[tasks]`
+section configures one task. For example:
 
-.. code-block:: text
+.. code-block:: sby
 
    [tasks]
    task1 task_1_or_2 task_1_or_3
@@ -30,12 +34,12 @@ calling ``sby`` on a ``.sby`` file:
 
    sby example.sby task2
 
-If no task is specified then all tasks in the ``[tasks]`` section are run.
+If no task is specified then all tasks in the :sby:`[tasks]` section are run.
 
-After the ``[tasks]`` section individual lines can be specified for specific
+After the :sby:`[tasks]` section individual lines can be specified for specific
 tasks or task groups:
 
-.. code-block:: text
+.. code-block:: sby
 
    [options]
    task_1_or_2: mode bmc
@@ -45,7 +49,7 @@ tasks or task groups:
 If the tag ``<taskname>:`` is used on a line by itself then the conditional string
 extends until the next conditional block or ``--`` on a line by itself.
 
-.. code-block:: text
+.. code-block:: sby
 
    [options]
    task_1_or_2:
@@ -59,7 +63,7 @@ extends until the next conditional block or ``--`` on a line by itself.
 The tag ``~<taskname>:`` can be used for a line or block that should not be used when
 the given task is active:
 
-.. code-block:: text
+.. code-block:: sby
 
    [options]
    ~task3:
@@ -73,7 +77,7 @@ the given task is active:
 The following example demonstrates how to configure safety and liveness checks for all
 combinations of some host implementations A and B and device implementations X and Y:
 
-.. code-block:: text
+.. code-block:: sby
 
    [tasks]
    prove_hAdX prove hostA deviceX
@@ -101,7 +105,7 @@ combinations of some host implementations A and B and device implementations X a
    deviceY: read -sv deviceY.v
    ...
 
-The ``[tasks]`` section must appear in the ``.sby`` file before the first
+The :sby:`[tasks]` section must appear in the ``.sby`` file before the first
 ``<taskname>:`` or ``~<taskname>:`` tag.
 
 The command ``sby --dumptasks <sby_file>`` prints the list of all tasks defined in
@@ -110,7 +114,7 @@ a given ``.sby`` file.
 Options section
 ---------------
 
-The ``[options]`` section contains lines with key-value pairs. The ``mode``
+The :sby:`[options]` section contains lines with key-value pairs. The ``mode``
 option is mandatory. The possible values for the ``mode`` option are:
 
 ========= ===========
@@ -208,7 +212,7 @@ usually followed by a solver name and solver options.
 
 Example:
 
-.. code-block:: text
+.. code-block:: sby
 
    [engines]
    smtbmc --syn --nopresat z3 rewriter.cache_all=true opt.enable_sat=true
@@ -374,11 +378,11 @@ other engines. This makes it easier to use the same models outside of sby.
 Script section
 --------------
 
-The ``[script]`` section contains the Yosys script that reads and elaborates
+The :sby:`[script]` section contains the Yosys script that reads and elaborates
 the design under test. For example, for a simple project contained in a single
 design file ``mytest.sv`` with the top-module ``mytest``:
 
-.. code-block:: text
+.. code-block:: sby
 
    [script]
    read -sv mytest.sv
@@ -387,7 +391,7 @@ design file ``mytest.sv`` with the top-module ``mytest``:
 Or explicitly using the Verific SystemVerilog parser (default for ``read -sv``
 when Yosys is built with Verific support):
 
-.. code-block:: text
+.. code-block:: sby
 
    [script]
    verific -sv mytest.sv
@@ -397,7 +401,7 @@ when Yosys is built with Verific support):
 Or explicitly using the native Yosys Verilog parser (default for ``read -sv``
 when Yosys is not built with Verific support):
 
-.. code-block:: text
+.. code-block:: sby
 
    [script]
    read_verilog -sv mytest.sv
@@ -422,7 +426,7 @@ Yosys script for files not listed in the files section.)
 
 For example:
 
-.. code-block:: text
+.. code-block:: sby
 
    [files]
    top.sv
@@ -436,7 +440,7 @@ If the name of the file in ``<outdir>/src/`` should be different from the
 basename of the specified file, then the new file name can be specified before
 the source file name. For example:
 
-.. code-block:: text
+.. code-block:: sby
 
    [files]
    top.sv
@@ -447,10 +451,10 @@ File sections
 -------------
 
 File sections can be used to create additional files in ``<outdir>/src/`` from
-the literal content of the ``[file <filename>]`` section ("here document"). For
-example:
+the literal content of the :sby:`[file <filename>]` section ("here document").
+For example:
 
-.. code-block:: text
+.. code-block:: sby
 
    [file params.vh]
    `define RESET_LEN 42
@@ -465,7 +469,7 @@ file lines from the python code. The variable ``task`` contains the current task
 if any, and ``None`` otherwise. The variable ``tags`` contains a set of all tags
 associated with the current task.
 
-.. code-block:: text
+.. code-block:: sby
 
    [tasks]
    --pycode-begin--
