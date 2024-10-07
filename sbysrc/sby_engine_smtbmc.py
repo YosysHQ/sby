@@ -203,6 +203,11 @@ def run(mode, task, engine_idx, engine):
 
         smt2_trans = {'\\':'/', '|':'/'}
 
+        def parse_mod_path(path_string):
+            # Match a path with . as delimiter, allowing escaped tokens in
+            # verilog `\name ` format
+            return [m[1] or m[0] for m in re.findall(r"(\\([^ ]*) |[^\.]+)(?:\.|$)", path_string)]
+
         match = re.match(r"^## [0-9: ]+ .* in step ([0-9]+)\.\.", line)
         if match:
             current_step = int(match[1])
@@ -228,19 +233,21 @@ def run(mode, task, engine_idx, engine):
             proc_status = "ERROR"
             return line
 
-        match = re.match(r"^## [0-9: ]+ Assert failed in (\S+): (\S+)(?: \((\S+)\))?", line)
+        match = re.match(r"^## [0-9: ]+ Assert failed in ([^:]+): (\S+)(?: \((\S+)\))?", line)
         if match:
+            path = parse_mod_path(match[1])
             cell_name = match[3] or match[2]
-            prop = task.design.hierarchy.find_property_by_cellname(cell_name, trans_dict=smt2_trans)
+            prop = task.design.hierarchy.find_property(path, cell_name, trans_dict=smt2_trans)
             prop.status = "FAIL"
             task.status_db.set_task_property_status(prop, data=dict(source="smtbmc", engine=f"engine_{engine_idx}"))
             last_prop.append(prop)
             return line
 
-        match = re.match(r"^## [0-9: ]+ Reached cover statement at (\S+)(?: \((\S+)\))? in step \d+\.", line)
+        match = re.match(r"^## [0-9: ]+ Reached cover statement in step \d+ at ([^:]+): (\S+)(?: \((\S+)\))?", line)
         if match:
-            cell_name = match[2] or match[1]
-            prop = task.design.hierarchy.find_property_by_cellname(cell_name, trans_dict=smt2_trans)
+            path = parse_mod_path(match[1])
+            cell_name = match[3] or match[2]
+            prop = task.design.hierarchy.find_property(path, cell_name, trans_dict=smt2_trans)
             prop.status = "PASS"
             task.status_db.set_task_property_status(prop, data=dict(source="smtbmc", engine=f"engine_{engine_idx}"))
             last_prop.append(prop)
@@ -268,10 +275,11 @@ def run(mode, task, engine_idx, engine):
                 tracefile = match[1]
                 pending_sim = tracefile
 
-        match = re.match(r"^## [0-9: ]+ Unreached cover statement at (\S+) \((\S+)\)\.", line)
+        match = re.match(r"^## [0-9: ]+ Unreached cover statement at ([^:]+): (\S+)(?: \((\S+)\))?", line)
         if match:
-            cell_name = match[2]
-            prop = task.design.hierarchy.find_property_by_cellname(cell_name, trans_dict=smt2_trans)
+            path = parse_mod_path(match[1])
+            cell_name = match[3] or match[2]
+            prop = task.design.hierarchy.find_property(path, cell_name, trans_dict=smt2_trans)
             prop.status = "FAIL"
             task.status_db.set_task_property_status(prop, data=dict(source="smtbmc", engine=f"engine_{engine_idx}"))
 

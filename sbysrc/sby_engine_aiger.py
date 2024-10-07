@@ -202,6 +202,11 @@ def aigsmt_trace_callback(task, engine_idx, proc_status, *, run_aigsmt, smtbmc_v
 
             smt2_trans = {'\\':'/', '|':'/'}
 
+            def parse_mod_path(path_string):
+                # Match a path with . as delimiter, allowing escaped tokens in
+                # verilog `\name ` format
+                return [m[1] or m[0] for m in re.findall(r"(\\([^ ]*) |[^\.]+)(?:\.|$)", path_string)]
+
             match = re.match(r"^## [0-9: ]+ .* in step ([0-9]+)\.\.", line)
             if match:
                 current_step = int(match[1])
@@ -213,10 +218,11 @@ def aigsmt_trace_callback(task, engine_idx, proc_status, *, run_aigsmt, smtbmc_v
             match = re.match(r"^## [0-9: ]+ Status: PASSED", line)
             if match: proc2_status = "PASS"
 
-            match = re.match(r"^## [0-9: ]+ Assert failed in (\S+): (\S+)(?: \((\S+)\))?", line)
+            match = re.match(r"^## [0-9: ]+ Assert failed in ([^:]+): (\S+)(?: \((\S+)\))?", line)
             if match:
+                path = parse_mod_path(match[1])
                 cell_name = match[3] or match[2]
-                prop = task.design.hierarchy.find_property_by_cellname(cell_name, trans_dict=smt2_trans)
+                prop = task.design.hierarchy.find_property(path, cell_name, trans_dict=smt2_trans)
                 prop.status = "FAIL"
                 task.status_db.set_task_property_status(prop, data=dict(source="aigsmt", engine=f"engine_{engine_idx}"))
                 last_prop.append(prop)

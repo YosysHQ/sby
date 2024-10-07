@@ -139,32 +139,26 @@ class SbyModule:
     def get_property_list(self):
         return [p for p in self if p.type != p.Type.ASSUME]
 
-    def find_property(self, hierarchy, location):
-        # FIXME: use that RE that works with escaped paths from https://stackoverflow.com/questions/46207665/regex-pattern-to-split-verilog-path-in-different-instances-using-python
-        path = hierarchy.split('.')
-        mod = path.pop(0)
-        if self.name != mod:
-            raise ValueError(f"{self.name} is not the first module in hierarchical path {hierarchy}.")
-        try:
-            mod_hier = self
-            while path:
-                mod = path.pop(0)
-                mod_hier = mod_hier.submodules[mod]
-        except KeyError:
-            raise KeyError(f"Could not find {hierarchy} in design hierarchy!")
-        try:
-            prop = next(p for p in mod_hier.properties if location in p.location)
-        except StopIteration:
-            raise KeyError(f"Could not find assert at {location} in properties list!")
-        return prop
-
-    def find_property_by_cellname(self, cell_name, trans_dict=dict()):
+    def find_property(self, path, cell_name, trans_dict=dict()):
         # backends may need to mangle names irreversibly, so allow applying
         # the same transformation here
-        for prop in self:
-            if cell_name == prop.name.translate(str.maketrans(trans_dict)):
-                return prop
-        raise KeyError(f"No such property: {cell_name}")
+        trans = str.maketrans(trans_dict)
+        path_iter = iter(path)
+
+        mod = next(path_iter).translate(trans)
+        if self.name != mod:
+            raise ValueError(f"{self.name} is not the first module in hierarchical path {pretty_path(path)}.")
+
+        mod_hier = self
+        for mod in path_iter:
+            mod_hier = next((v for k, v in mod_hier.submodules.items() if mod == k.translate(trans)), None)
+            if not mod_hier:
+                raise KeyError(f"Could not find {pretty_path(path)} in design hierarchy!")
+
+        prop = next((p for p in mod_hier.properties if cell_name == p.name.translate(trans)), None)
+        if not prop:
+            raise KeyError(f"Could not find property {cell_name} at location {pretty_print(path)} in properties list!")
+        return prop
 
 
 @dataclass
