@@ -297,7 +297,14 @@ As verification properties become more complex and check longer sequences, the
 additional effort of hand-coding without SVA properties becomes much more
 difficult.  Using a parser such as Verific supports these checks *without*
 having to write out potentially complicated state machines. Verific is included
-for use in the *Tabby CAD Suite*.  
+for use in the *Tabby CAD Suite*.
+
+.. note::
+
+   The Verific frontend for Yosys requires the commercial `Tabby CAD Suite`_.
+   This is not the same as simply having a Verific license when using Yosys.
+
+.. _Tabby CAD Suite: https://www.yosyshq.com/tabby-cad-datasheet
 
 Further information
 *******************
