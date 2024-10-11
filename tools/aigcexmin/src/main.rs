@@ -41,6 +41,10 @@ pub struct Options {
     /// initialization but instead perform initialization using inputs in the first frame.
     #[clap(long)]
     latches: bool,
+
+    /// Require assumptions to stay satisfied during minimization
+    #[clap(long)]
+    satisfy_assumptions: bool
 }
 
 #[derive(Copy, Clone, ValueEnum)]
@@ -133,6 +137,7 @@ fn main() -> color_eyre::Result<()> {
         &mut writer_output,
         &care_graph::MinimizationOptions {
             fixed_init: !options.latches,
+            satisfy_assumptions: options.satisfy_assumptions,
             verify: match options.verify {
                 VerificationOption::Off => None,
                 VerificationOption::Cex => Some(care_graph::Verification::Cex),

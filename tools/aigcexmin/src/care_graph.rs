@@ -23,7 +23,15 @@ pub struct NodeRef {
 
 impl std::fmt::Debug for NodeRef {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_tuple("NodeRef::new").field(&self.index()).finish()
+        if self.is_const() {
+            if *self == Self::TRUE {
+                f.debug_struct("NodeRef::TRUE").finish()
+            } else {
+                f.debug_struct("NodeRef::FALSE").finish()
+            }
+        } else {
+            f.debug_tuple("NodeRef::new").field(&self.index()).finish()
+        }
     }
 }
 
@@ -47,6 +55,10 @@ impl NodeRef {
 
     pub fn index(self) -> usize {
         !(self.code.0.get()) as usize
+    }
+
+    pub fn is_const(self) -> bool {
+        self == Self::TRUE || self == Self::FALSE
     }
 }
 
@@ -348,7 +360,10 @@ impl AndOrGraph {
                         }
                     };
 
-                    if shuffle > 0 && output != NodeRef::FALSE && output != NodeRef::TRUE {
+                    if (shuffle > 0 || new_inputs != inputs)
+                        && output != NodeRef::FALSE
+                        && output != NodeRef::TRUE
+                    {
                         if let Ok((gate, inputs)) = self.nodes[output.index()].def.as_gate() {
                             let [a, b] = inputs.map(|input| self.nodes[input.index()].priority);
 
@@ -438,6 +453,7 @@ pub enum Verification {
 
 pub struct MinimizationOptions {
     pub fixed_init: bool,
+    pub satisfy_assumptions: bool,
     pub verify: Option<Verification>,
 }
 
@@ -509,6 +525,7 @@ pub fn minimize<L: Lit>(
     );
 
     let mut minimization_target = 'minimization_target: {
+        let mut invariant_failed = (Some(false), NodeRef::TRUE);
         for (t, inputs) in frame_inputs.iter().enumerate() {
             if t > 0 {
                 successor_frame(
@@ -527,18 +544,29 @@ pub fn minimize<L: Lit>(
                     &mut graph,
                 );
             }
+
+            if options.satisfy_assumptions {
+                for invariant in aig.invariant_constraints.iter() {
+                    let (var, polarity) = unpack_lit(*invariant);
+                    let inv_invariant = state[var].invert_if(!polarity, &mut graph);
+
+                    invariant_failed = invariant_failed.or(inv_invariant, &mut graph);
+                }
+            }
+
             let mut good_state = (Some(true), NodeRef::TRUE);
 
             for (i, bad) in aig.bad_state_properties.iter().enumerate() {
                 let (var, polarity) = unpack_lit(*bad);
                 let inv_bad = state[var].invert_if(!polarity, &mut graph);
 
-                if inv_bad.0 == Some(false) {
+                if inv_bad.0 == Some(false) && invariant_failed.0 == Some(false) {
                     println!("bad state property {i} active in frame {t}");
                 }
 
                 good_state = good_state.and(inv_bad, &mut graph);
             }
+            good_state = good_state.or(invariant_failed, &mut graph);
             if good_state.0 == Some(false) {
                 println!("bad state found in frame {t}");
 
@@ -689,6 +717,16 @@ pub fn minimize<L: Lit>(
                     },
                     &mut (),
                 );
+            }
+
+            if options.satisfy_assumptions {
+                for invariant in aig.invariant_constraints.iter() {
+                    let (var, polarity) = unpack_lit(*invariant);
+                    let invariant_output = check_state[var].invert_if(polarity, &mut ());
+                    if invariant_output != Some(true) {
+                        break 'frame;
+                    }
+                }
             }
 
             for bad in aig.bad_state_properties.iter() {
