@@ -12,6 +12,7 @@ verific -vhdl sub.vhd
 verific -vhdl top.vhd
 hierarchy -top top
 hierarchy -top \\sub(p=41)\(rtl)
+prep
 
 [file top.vhd]
 library ieee;
