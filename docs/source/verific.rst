@@ -132,3 +132,28 @@ multiple different clock domains are currently unsupported.
   * ``@(negedge`` *clock* ``iff`` *enable* ``)``
   * ``disable iff (`` *expression* ``)``
 
+SVA properties in a VHDL design
+-------------------------------
+
+The below code snippet, taken from an example SBY configuration included in
+|vhd_example|_, shows a VHDL design ``updowncount.vhd`` being loaded, followed
+by a SystemVerilog file ``formal_bind.sv``.
+
+.. |vhd_example| replace:: ``docs/examples/vhd``
+.. _vhd_example: https://github.com/YosysHQ/sby/tree/master/docs/examples/vhd
+
+.. literalinclude:: ../examples/vhd/formal_bind.sby
+  :language: yoscrypt
+  :start-after: [script]
+  :end-before: [files]
+  :caption: ``formal_bind.sby`` script section
+
+.. literalinclude:: ../examples/vhd/formal_bind.sv
+  :language: SystemVerilog
+  :caption: ``formal_bind.sv``
+
+As you can see, the ``formal_bind.sv`` file includes a ``formal_bind`` module
+and makes use of the ``bind`` keyword in SystemVerilog to create an instance of
+this module connecting the inputs to the signals of the same name in the VHDL
+design.  SVA properties can then be applied to those signals as if the whole
+design was in SystemVerilog.
