@@ -1,0 +1,27 @@
+[options]
+mode bmc
+depth 1
+expect fail
+
+[engines]
+smtbmc
+
+[script]
+read_verilog -formal sub.v
+read_verilog -formal top.v
+prep -top \\(foo)
+
+[file top.v]
+module \\(foo) (input a);
+    always @* begin
+        assert_foo: assert (a);
+    end
+    \\(bar) \\(bar)=i= (.a(a));
+endmodule
+
+[file sub.v]
+module \\(bar) (input a);
+    always @* begin
+        assert_bar: assert (a);
+    end
+endmodule

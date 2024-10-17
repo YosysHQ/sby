@@ -1,0 +1,97 @@
+[options]
+mode bmc
+depth 1
+expect fail
+
+[engines]
+smtbmc
+
+[script]
+verific -vhdl subsub.vhd
+verific -vhdl sub.vhd
+verific -vhdl top.vhd
+hierarchy -top top
+hierarchy -top \\sub(p=41)\(rtl)
+prep
+
+[file top.vhd]
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+
+entity top is
+  port (
+    a : in integer
+  );
+end entity;
+
+architecture rtl of top is
+component sub is
+  generic (
+    p : integer
+  );
+  port (
+    a : in integer
+  );
+end component;
+begin
+  sub_i: sub
+    generic map (
+      p => 41
+    )
+    port map (
+      a => a
+    );
+end architecture;
+
+[file sub.vhd]
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+
+entity sub is
+  generic (
+    p : integer := 99
+  );
+  port (
+    a : in integer
+  );
+end entity;
+
+architecture rtl of sub is
+component subsub is
+  generic (
+    p : integer
+  );
+  port (
+    a : in integer
+  );
+end component;
+begin
+  subsub_i: subsub
+    generic map (
+      p => p + 1
+    )
+    port map (
+      a => a
+    );
+end architecture;
+
+[file subsub.vhd]
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+
+entity subsub is
+  generic (
+    p : integer := 99
+  );
+  port (
+    a : in integer
+  );
+end entity;
+
+architecture rtl of subsub is
+begin
+  assert (p > a);
+end architecture;

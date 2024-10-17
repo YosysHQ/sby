@@ -146,12 +146,12 @@ class SbyModule:
         path_iter = iter(path)
 
         mod = next(path_iter).translate(trans)
-        if self.name != mod:
+        if self.name.translate(trans) != mod:
             raise ValueError(f"{self.name} is not the first module in hierarchical path {pretty_path(path)}.")
 
         mod_hier = self
         for mod in path_iter:
-            mod_hier = next((v for k, v in mod_hier.submodules.items() if mod == k.translate(trans)), None)
+            mod_hier = next((v for k, v in mod_hier.submodules.items() if mod.translate(trans) == k.translate(trans)), None)
             if not mod_hier:
                 raise KeyError(f"Could not find {pretty_path(path)} in design hierarchy!")
 
