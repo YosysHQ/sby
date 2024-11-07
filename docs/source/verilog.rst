@@ -20,10 +20,10 @@ within the core.
    `endif
    endmodule
 
-The ``bind()`` operator can also be used when using the Verific front end.
-This will provide an option to attach formal properties to a given piece
-of logic, without actually modifying the module in question to do so as
-we did in the example above.
+The ``bind()`` operator can also be used when using the Verific front end. This
+will provide an option to attach formal properties to a given piece of logic,
+without actually modifying the module in question to do so as we did in the
+example above. Refer to :doc:`verific` for more on the Verific front end.
 
 SystemVerilog Immediate Assertions
 ----------------------------------
