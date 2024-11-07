@@ -1004,7 +1004,7 @@ class SbyTask(SbyConfig):
         if model_name == "prep":
             with open(f"""{self.workdir}/model/design_prep.ys""", "w") as f:
                 print(f"# running in {self.workdir}/model/", file=f)
-                print(f"""read_ilang design.il""", file=f)
+                print(f"""read_rtlil design.il""", file=f)
                 if not self.opt_skip_prep:
                     print("scc -select; simplemap; select -clear", file=f)
                     print("memory_nordff", file=f)
@@ -1084,7 +1084,7 @@ class SbyTask(SbyConfig):
         if re.match(r"^smt2(_syn)?(_nomem)?(_stbv|_stdt)?$", model_name):
             with open(f"{self.workdir}/model/design_{model_name}.ys", "w") as f:
                 print(f"# running in {self.workdir}/model/", file=f)
-                print(f"""read_ilang design_prep.il""", file=f)
+                print(f"""read_rtlil design_prep.il""", file=f)
                 print("hierarchy -smtcheck", file=f)
                 print("delete */t:$print", file=f)
                 print("formalff -assume", file=f)
@@ -1118,7 +1118,7 @@ class SbyTask(SbyConfig):
         if re.match(r"^btor(_syn)?(_nomem)?$", model_name):
             with open(f"{self.workdir}/model/design_{model_name}.ys", "w") as f:
                 print(f"# running in {self.workdir}/model/", file=f)
-                print(f"""read_ilang design_prep.il""", file=f)
+                print(f"""read_rtlil design_prep.il""", file=f)
                 print("hierarchy -simcheck", file=f)
                 print("delete */t:$print", file=f)
                 print("formalff -assume", file=f)
@@ -1154,7 +1154,7 @@ class SbyTask(SbyConfig):
         if model_name == "aig":
             with open(f"{self.workdir}/model/design_aiger.ys", "w") as f:
                 print(f"# running in {self.workdir}/model/", file=f)
-                print("read_ilang design_prep.il", file=f)
+                print("read_rtlil design_prep.il", file=f)
                 print("delete */t:$print", file=f)
                 print("hierarchy -simcheck", file=f)
                 print("formalff -assume", file=f)

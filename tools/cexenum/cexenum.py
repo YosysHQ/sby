@@ -196,7 +196,7 @@ class AigModel(tl.process.Process):
         self[tl.LogContext].scope = "aiger"
         (App.cache_dir / "design_aiger.ys").write_text(
             lines(
-                "read_ilang ../model/design_prep.il",
+                "read_rtlil ../model/design_prep.il",
                 "hierarchy -simcheck",
                 "flatten",
                 "setundef -undriven -anyseq",
