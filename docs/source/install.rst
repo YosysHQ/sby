@@ -63,7 +63,7 @@ Note that this will install Yosys, Yosys-SMTBMC and ABC (as ``yosys-abc``):
 
 .. code-block:: text
 
-   git clone https://github.com/YosysHQ/yosys
+   git clone https://github.com/YosysHQ/yosys --recurse-submodules
    cd yosys
    make -j$(nproc)
    sudo make install
