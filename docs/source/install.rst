@@ -96,7 +96,7 @@ https://boolector.github.io
     ./configure.sh
     make -C build -j$(nproc)
     sudo cp build/bin/{boolector,btor*} /usr/local/bin/
-    sudo cp deps/btor2tools/bin/btorsim /usr/local/bin/
+    sudo cp deps/btor2tools/build/bin/btorsim /usr/local/bin/
 
 To use the ``btor`` engine you will need to install btor2tools from 
 `commit c35cf1c <https://github.com/Boolector/btor2tools/commit/c35cf1c>`_ or
