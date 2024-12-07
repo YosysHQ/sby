@@ -1,6 +1,7 @@
 [tasks]
 suprove
 avy
+rIC3
 
 [options]
 mode prove
@@ -8,6 +9,7 @@ mode prove
 [engines]
 suprove: aiger suprove
 avy: aiger avy
+rIC3: aiger rIC3
 
 [script]
 read_verilog -formal demo.v

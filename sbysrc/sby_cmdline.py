@@ -49,6 +49,8 @@ def parser_func(release_version='unknown SBY version'):
             action=DictAction, dest="exe_paths")
     parser.add_argument("--avy", metavar="<path_to_executable>",
             action=DictAction, dest="exe_paths")
+    parser.add_argument("--rIC3", metavar="<path_to_executable>",
+            action=DictAction, dest="exe_paths")
     parser.add_argument("--btormc", metavar="<path_to_executable>",
             action=DictAction, dest="exe_paths")
     parser.add_argument("--pono", metavar="<path_to_executable>",

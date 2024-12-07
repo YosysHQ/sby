@@ -46,6 +46,11 @@ def run(mode, task, engine_idx, engine):
         if mode != "prove":
             task.error("The aiger solver 'avy' is only supported in prove mode.")
         solver_cmd = " ".join([task.exe_paths["avy"], "--cex", "-"] + solver_args[1:])
+    
+    elif solver_args[0] == "rIC3":
+        if mode != "prove":
+            task.error("The aiger solver 'rIC3' is only supported in prove mode.")
+        solver_cmd = " ".join([task.exe_paths["rIC3"], "-v0", "--sby"] + solver_args[1:])
 
     elif solver_args[0] == "aigbmc":
         if mode != "bmc":
@@ -87,7 +92,7 @@ def run(mode, task, engine_idx, engine):
         f"cd {task.workdir}; {solver_cmd} model/design_aiger{model_variant}.aig",
         logfile=open(f"{task.workdir}/engine_{engine_idx}/logfile.txt", "w")
     )
-    if solver_args[0] not in ["avy"]:
+    if solver_args[0] not in ["avy", "rIC3"]:
         proc.checkretcode = True
 
     proc_status = None

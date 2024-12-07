@@ -849,6 +849,7 @@ class SbyTask(SbyConfig):
             "suprove": os.getenv("SUPROVE", "suprove"),
             "aigbmc": os.getenv("AIGBMC", "aigbmc"),
             "avy": os.getenv("AVY", "avy"),
+            "rIC3": os.getenv("RIC3", "rIC3"),
             "btormc": os.getenv("BTORMC", "btormc"),
             "pono": os.getenv("PONO", "pono"),
             "imctk-eqy-engine": os.getenv("IMCTK_EQY_ENGINE", "imctk-eqy-engine"),
