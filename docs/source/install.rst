@@ -133,3 +133,7 @@ super_prove
 Avy
 ^^^
   https://arieg.bitbucket.io/avy/
+
+rIC3
+^^^^
+  https://github.com/gipsyh/rIC3/
