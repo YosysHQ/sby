@@ -2,6 +2,14 @@
 SystemVerilog, VHDL, SVA
 ========================
 
+.. note::
+
+   This document describes features only available with the commercial `Tabby
+   CAD Suite`_ and the included Verific frontend. This is not the same as simply
+   having a Verific license when using Yosys.
+
+.. _Tabby CAD Suite: https://www.yosyshq.com/tabby-cad-datasheet
+
 Run ``verific -sv <files>`` in the ``[script]`` section of you ``.sby`` file
 to read a SystemVerilog source file, and ``verific -vhdl <files>`` to read a
 VHDL source file.
