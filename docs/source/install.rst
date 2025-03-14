@@ -133,3 +133,9 @@ super_prove
 Avy
 ^^^
   https://arieg.bitbucket.io/avy/
+
+rIC3
+^^^^
+  https://github.com/gipsyh/rIC3/
+
+The minimum required version is 1.3.5
