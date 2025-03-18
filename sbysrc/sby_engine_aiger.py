@@ -48,9 +48,13 @@ def run(mode, task, engine_idx, engine):
         solver_cmd = " ".join([task.exe_paths["avy"], "--cex", "-"] + solver_args[1:])
     
     elif solver_args[0] == "rIC3":
-        if mode != "prove":
-            task.error("The aiger solver 'rIC3' is only supported in prove mode.")
-        solver_cmd = " ".join([task.exe_paths["rIC3"], "--witness"] + solver_args[1:])
+        if mode not in ["bmc", "prove"]:
+            task.error("The aiger solver 'rIC3' is only supported in bmc and prove mode.")
+        if mode == "prove":
+            solver_cmd = " ".join([task.exe_paths["rIC3"], "--witness"] + solver_args[1:])
+        if mode == "bmc":
+            solver_cmd = " ".join([task.exe_paths["rIC3"], "--bmc-max-k {}".format(task.opt_depth - 1), "-e bmc", "-v 0", "--witness"] + solver_args[1:])
+            status_2 = "PASS"  # rIC3 outputs status 2 when BMC passes
 
     elif solver_args[0] == "aigbmc":
         if mode != "bmc":
