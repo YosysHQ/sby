@@ -6,6 +6,17 @@ pub trait AigValue<Context>: Copy {
     fn invert_if(self, en: bool, ctx: &mut Context) -> Self;
     fn and(self, other: Self, ctx: &mut Context) -> Self;
     fn constant(value: bool, ctx: &mut Context) -> Self;
+
+    fn invert(self, ctx: &mut Context) -> Self {
+        self.invert_if(true, ctx)
+    }
+
+    fn or(self, other: Self, ctx: &mut Context) -> Self {
+        let not_self = self.invert(ctx);
+        let not_other = other.invert(ctx);
+        let not_or = not_self.and(not_other, ctx);
+        not_or.invert(ctx)
+    }
 }
 
 pub fn initial_frame<L, V, Context>(
