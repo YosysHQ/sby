@@ -1,0 +1,62 @@
+[options]
+mode bmc
+depth 1
+expect error
+
+[engines]
+smtbmc
+
+[script]
+read_rtlil test.il
+cutpoint -blackbox
+
+[file test.il]
+autoidx 31
+attribute \keep 1
+attribute \top 1
+attribute \library "work"
+attribute \hdlname "top"
+module \top
+  wire $auto$rtlil.cc:2739:Not$26
+  wire $auto$rtlil.cc:2739:Not$28
+  wire width 8 $verific$n12$4
+  attribute \anyconst 1
+  wire width 8 \a
+  wire width 8 \b
+  cell $assert $auto$verificsva.cc:1732:import$24
+    connect \A $auto$rtlil.cc:2739:Not$28
+    connect \EN $auto$rtlil.cc:2739:Not$26
+  end
+  cell $not $auto$verificsva.cc:1745:import$25
+    parameter \A_SIGNED 0
+    parameter \A_WIDTH 1
+    parameter \Y_WIDTH 1
+    connect \A $auto$rtlil.cc:2739:Not$28
+    connect \Y $auto$rtlil.cc:2739:Not$26
+  end
+  cell $anyconst $verific$a$test.v:8$2
+    parameter \WIDTH 8
+    connect \Y \a
+  end
+  cell $eq $verific$equal_4$test.v:17$22
+    parameter \A_SIGNED 0
+    parameter \A_WIDTH 8
+    parameter \B_SIGNED 0
+    parameter \B_WIDTH 8
+    parameter \Y_WIDTH 1
+    connect \A $verific$n12$4
+    connect \B \b
+    connect \Y $auto$rtlil.cc:2739:Not$28
+  end
+  cell $not $verific$inv_3$test.v:17$21
+    parameter \A_SIGNED 0
+    parameter \A_WIDTH 8
+    parameter \Y_WIDTH 8
+    connect \A \a
+    connect \Y $verific$n12$4
+  end
+  cell \submod \submod
+    connect \a \a
+    connect \b \b
+  end
+end
