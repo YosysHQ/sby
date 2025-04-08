@@ -1,14 +1,15 @@
 [options]
 mode bmc
 depth 1
-expect error
+expect fail
 
 [engines]
 smtbmc
 
 [script]
-read_verilog -formal test.v
+read -formal test.v
 prep -top top
+cutpoint -blackbox
 
 [file test.v]
 (* blackbox *)
@@ -18,7 +19,8 @@ module submod(a, b);
 endmodule
 
 module top;
-	wire [7:0] a = $anyconst, b;
+	(*anyconst*) wire [7:0] a;
+	wire [7:0] b;
 
 	submod submod(
 		.a(a),

@@ -1,0 +1,72 @@
+[tasks]
+parameter_signed_unsigned: parameter port_signed
+parameter_signed_signed: parameter port_signed signal_signed
+parameter_unsigned_signed: parameter signal_signed
+parameter_unsigned_unsigned: parameter
+signed_unsigned: port_signed
+signed_signed: port_signed signal_signed
+unsigned_signed: signal_signed
+unsigned_unsigned:
+
+[options]
+mode bmc
+depth 1
+expect pass
+
+[engines]
+smtbmc
+
+[script]
+port_signed: read -define PORT_SIGNED
+parameter: read -define PARAMETER
+read -formal test.v
+prep -top top
+cutpoint -blackbox
+
+[file test.v]
+`ifdef PARAMETER
+`define DEF_PARAMETER #(parameter WIDTH = 24)
+`define USE_PARAMETER #(.WIDTH(8))
+`define PORT_WIDTH WIDTH
+`else
+`define DEF_PARAMETER
+`define USE_PARAMETER
+`define PORT_WIDTH 8
+`endif
+
+`ifdef PORT_SIGNED
+`define PORT_SIGNED_WORD signed
+`else
+`define PORT_SIGNED_WORD
+`endif
+
+`ifdef SIGNAL_SIGNED
+`define SIGNAL_SIGNED_WORD signed
+`else
+`define SIGNAL_SIGNED_WORD
+`endif
+
+
+(* blackbox *)
+module submod `DEF_PARAMETER (a, b);
+	input [`PORT_WIDTH - 1:0] a;
+	output `PORT_SIGNED_WORD [`PORT_WIDTH - 1:0] b;
+endmodule
+
+module top;
+	(*anyconst *) wire [7:0] a;
+    wire `SIGNAL_SIGNED_WORD [9:0] b;
+
+	submod `USE_PARAMETER submod(
+		.a(a),
+		.b(b)
+	);
+
+	always @* begin
+`ifdef PORT_SIGNED
+        assert(b[9] == b[7] && b[8] == b[7]);
+`else
+		assert(b[9:8] == 0);
+`endif
+	end
+endmodule
