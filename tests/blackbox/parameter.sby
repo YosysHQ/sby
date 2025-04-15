@@ -1,0 +1,31 @@
+[options]
+mode bmc
+depth 1
+expect fail
+
+[engines]
+smtbmc
+
+[script]
+read -formal test.v
+prep -top top
+cutpoint -blackbox
+
+[file test.v]
+(* blackbox *)
+module submod #(parameter WIDTH = 24) (input [WIDTH-1:0] a, output [WIDTH-1:0] b);
+endmodule
+
+module top;
+	(*anyconst *) wire [7:0] a;
+    wire [7:0] b;
+
+	submod #(.WIDTH(8)) submod(
+		.a(a),
+		.b(b)
+	);
+
+	always @* begin
+		assert(~a == b);
+	end
+endmodule
