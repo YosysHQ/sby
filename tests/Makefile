@@ -24,16 +24,28 @@ else
 SBY_MAIN := $(realpath $(dir $(firstword $(MAKEFILE_LIST)))/make/run_sby.py)
 endif
 
+ifeq ($(SBY_EXAMPLES),)
+EXAMPLE_DIR := ../docs/examples
+else
+EXAMPLE_DIR := $(SBY_EXAMPLES)
+endif
+
+CHECK_COLLECT := $(shell python3 make/collect_tests.py --check --output make/rules/collect.mk --examples $(EXAMPLE_DIR))
+ifneq (,$(CHECK_COLLECT))
+$(warning $(CHECK_COLLECT))
+endif
+
+
 ifeq (nt-unix-like,$(OS_NAME))
 SBY_MAIN := $(shell cygpath -w $(SBY_MAIN))
 endif
 export SBY_MAIN
 
 make/rules/collect.mk: make/collect_tests.py
-	python3 make/collect_tests.py
+	python3 make/collect_tests.py --output $@ --examples $(EXAMPLE_DIR)
 
 make/rules/test/%.mk:
-	python3 make/test_rules.py $<
+	python3 make/test_rules.py --rule $@ --source $<
 
 ifneq (help,$(MAKECMDGOALS))
 

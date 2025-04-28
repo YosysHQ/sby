@@ -3,16 +3,27 @@ import os
 import subprocess
 import json
 import shlex
+import argparse
 from pathlib import Path
 
 from required_tools import REQUIRED_TOOLS
 
+parser = argparse.ArgumentParser()
+parser.add_argument("--rule", required=True)
+parser.add_argument("--source", required=True)
+args = parser.parse_args()
+
 
 def unix_path(path):
-    return "/".join(path.parts)
+    source_path = "/".join(path.parts)
+    if source_path.startswith("//"):
+        source_path = source_path[1:]
+    return source_path
 
 
-sby_file = Path(sys.argv[1])
+sby_file = Path(args.source)
+rules_file = Path(args.rule)
+rules_base = rules_file.parent.parts[3:]
 sby_dir = sby_file.parent
 
 
@@ -33,17 +44,19 @@ def parse_engine(engine):
     return engine, default_solvers.get(engine)
 
 
-rules_file = Path("make/rules/test") / sby_dir / (sby_file.name + ".mk")
 rules_file.parent.mkdir(exist_ok=True, parents=True)
 
 with rules_file.open("w") as rules:
-    name = str(sby_dir / sby_file.stem)
+    name = unix_path(sby_dir / sby_file.stem)
+    rule_name = "/".join(rules_base) + f"/{sby_file.stem}"
 
     for task, info in taskinfo.items():
         target = name
+        rule_target = rule_name
         workdirname = sby_file.stem
         if task:
             target += f"_{task}"
+            rule_target += f"_{task}"
             workdirname += f"_{task}"
 
         engines = set()
@@ -71,8 +84,8 @@ with rules_file.open("w") as rules:
 
         required_tools = sorted(required_tools)
 
-        print(f".PHONY: {target}", file=rules)
-        print(f"{target}:", file=rules)
+        print(f".PHONY: {rule_target}", file=rules)
+        print(f"{rule_target}:", file=rules)
 
         shell_script = sby_dir / f"{sby_file.stem}.sh"
 
@@ -81,15 +94,17 @@ with rules_file.open("w") as rules:
         if shell_script.exists():
             command = f"cd {sby_dir_unix} && env SBY_FILE={sby_file.name} WORKDIR={workdirname} TASK={task} bash {shell_script.name}"
         else:
-            command = f"cd {sby_dir_unix} && python3 $(SBY_MAIN) -f {sby_file.name} {task}"
+            command = (
+                f"cd {sby_dir_unix} && python3 $(SBY_MAIN) -f {sby_file.name} {task}"
+            )
 
         print(
             f"\t+@python3 make/required_tools.py run {target} {shlex.quote(command)} {shlex.join(required_tools)}",
             file=rules,
         )
 
-        print(f".PHONY: clean-{target}", file=rules)
-        print(f"clean-{target}:", file=rules)
+        print(f".PHONY: clean-{rule_target}", file=rules)
+        print(f"clean-{rule_target}:", file=rules)
         print(f"\trm -rf {target}", file=rules)
 
         test_groups = []
@@ -112,18 +127,18 @@ with rules_file.open("w") as rules:
 
         prefix = ""
 
-        for part in [*sby_dir.parts, ""]:
+        for part in [*rules_base, ""]:
             print(f".PHONY: {prefix}clean {prefix}test", file=rules)
-            print(f"{prefix}clean: clean-{target}", file=rules)
-            print(f"{prefix}test: {target}", file=rules)
+            print(f"{prefix}clean: clean-{rule_target}", file=rules)
+            print(f"{prefix}test: {rule_target}", file=rules)
 
             for test_group in test_groups:
                 print(f".PHONY: {prefix}{test_group}", file=rules)
-                print(f"{prefix}{test_group}: {target}", file=rules)
+                print(f"{prefix}{test_group}: {rule_target}", file=rules)
             prefix += f"{part}/"
 
     tasks = [task for task in taskinfo.keys() if task]
 
     if tasks:
-        print(f".PHONY: {name}", file=rules)
-        print(f"{name}:", *(f"{name}_{task}" for task in tasks), file=rules)
+        print(f".PHONY: {rule_name}", file=rules)
+        print(f"{rule_name}:", *(f"{rule_name}_{task}" for task in tasks), file=rules)
