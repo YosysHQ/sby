@@ -20,6 +20,6 @@ read_verilog -formal axicheck.v
 prep -top testbench
 
 [files]
-picorv32.v ../../../extern/picorv32.v
-axicheck.v ../../../extern/axicheck.v
+picorv32.v
+axicheck.v
 
