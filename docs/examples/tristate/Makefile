@@ -1,3 +1,3 @@
-SUBDIR=../docs/examples/tristate
+SUBDIR=examples/tristate
 TESTDIR=../../../tests
 include $(TESTDIR)/make/subdir.mk

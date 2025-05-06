@@ -5,6 +5,9 @@ test:
 
 .PHONY: test refresh IMPLICIT_PHONY
 
+Makefile: IMPLICIT_PHONY
+%.mk: IMPLICIT_PHONY
+
 IMPLICIT_PHONY:
 
 refresh:
