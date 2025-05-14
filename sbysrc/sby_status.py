@@ -68,8 +68,8 @@ class SbyStatusDb:
 
         self.db = sqlite3.connect(path, isolation_level=None, timeout=timeout)
         self.db.row_factory = sqlite3.Row
-        self.db.execute("PRAGMA journal_mode=WAL")
-        self.db.execute("PRAGMA synchronous=0")
+        self.db.execute("PRAGMA journal_mode=WAL").fetchone()
+        self.db.execute("PRAGMA synchronous=0").fetchone()
 
         if setup:
             self._setup()
