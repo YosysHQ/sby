@@ -10,28 +10,28 @@ c: a
 
 [options]
 mode bmc
-depth 100
+depth 10000
 expect fail,cancelled
 
 [engines]
 btor btormc
 
 [script]
-a: read -define MAX=7
-b: read -define MAX=14
-c: read -define MAX=3
+a: read -define MAX=9600
+b: read -define MAX=1267
+c: read -define MAX=7200
 read -formal demo.sv
 prep -top demo
 
 [file demo.sv]
 module demo (
   input clk,
-  output reg [5:0] counter
+  output reg [31:0] counter
 );
   initial counter = 0;
 
   always @(posedge clk) begin
-    if (counter == 15)
+    if (counter[31] == 1'b1)
       counter <= 0;
     else
       counter <= counter + 1;
