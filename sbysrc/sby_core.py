@@ -876,7 +876,7 @@ class SbySummary:
 
 
 class SbyTask(SbyConfig):
-    def __init__(self, sbyconfig, workdir, early_logs, reusedir, status_cancels, taskloop=None, logfile=None, name=None):
+    def __init__(self, sbyconfig, workdir, early_logs, reusedir, status_cancels=False, taskloop=None, logfile=None, name=None):
         super().__init__()
         self.used_options = set()
         self.models = dict()
