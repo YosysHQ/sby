@@ -29,6 +29,8 @@ def parser_func(release_version='unknown SBY version'):
             help="maximum number of processes to run in parallel")
     parser.add_argument("--sequential", action="store_true", dest="sequential",
             help="run tasks in sequence, not in parallel")
+    parser.add_argument("--livecsv", action="store_true", dest="livecsv",
+            help="print live updates of property statuses during task execution in csv format")
 
     parser.add_argument("--autotune", action="store_true", dest="autotune",
             help="automatically find a well performing engine and engine configuration for each task")

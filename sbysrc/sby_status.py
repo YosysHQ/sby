@@ -4,6 +4,7 @@ import sqlite3
 import os
 import time
 import json
+import click
 import re
 from collections import defaultdict
 from functools import wraps
@@ -95,9 +96,10 @@ def transaction(method: Fn) -> Fn:
 
 
 class SbyStatusDb:
-    def __init__(self, path: Path, task, timeout: float = 5.0):
+    def __init__(self, path: Path, task, timeout: float = 5.0, live_csv = False):
         self.debug = False
         self.task = task
+        self.live_csv = live_csv
 
         setup = not os.path.exists(path)
 
@@ -225,7 +227,7 @@ class SbyStatusDb:
             ),
         )
 
-        if True:
+        if self.live_csv:
             csv = [
                 round(now - self.start_time, 2),
                 self.task.name,
@@ -236,7 +238,7 @@ class SbyStatusDb:
                 property.status,
                 data.get("step", "DEPTH?"),
             ]
-            self.task.log(f"csv: {','.join(str(v) for v in csv)}")
+            self.task.log(f"{click.style('csv', fg='yellow')}: {','.join(str(v) for v in csv)}")
 
     @transaction
     def add_task_property_data(self, property: SbyProperty, kind: str, data: Any):
