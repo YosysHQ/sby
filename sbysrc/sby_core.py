@@ -184,7 +184,7 @@ class SbyProc:
                 self.task.cancel()
                 return
 
-        if time.time() >= self.next_db:
+        if self.task.status_cancels and time.time() >= self.next_db:
             tasks_status = self.task.status_db.all_tasks_status()
             for task_status in tasks_status.values():
                 if (task_status["status"] in ["PASS", "FAIL", "CANCELLED"] and
@@ -876,12 +876,13 @@ class SbySummary:
 
 
 class SbyTask(SbyConfig):
-    def __init__(self, sbyconfig, workdir, early_logs, reusedir, taskloop=None, logfile=None, name=None):
+    def __init__(self, sbyconfig, workdir, early_logs, reusedir, status_cancels, taskloop=None, logfile=None, name=None):
         super().__init__()
         self.used_options = set()
         self.models = dict()
         self.workdir = workdir
         self.reusedir = reusedir
+        self.status_cancels = status_cancels
         self.name = name
         self.status = "UNKNOWN"
         self.total_time = 0

@@ -61,6 +61,7 @@ jobcount = args.jobcount
 init_config_file = args.init_config_file
 status_show = args.status
 status_reset = args.status_reset
+status_cancels = args.status_cancels
 
 if status_show or status_reset:
     target = workdir_prefix or workdir or sbyfile
@@ -468,7 +469,7 @@ def start_task(taskloop, taskname):
     else:
         junit_filename = "junit"
 
-    task = SbyTask(sbyconfig, my_workdir, early_logmsgs, reusedir, taskloop, name=taskname)
+    task = SbyTask(sbyconfig, my_workdir, early_logmsgs, reusedir, status_cancels, taskloop, name=taskname)
 
     for k, v in exe_paths.items():
         task.exe_paths[k] = v
