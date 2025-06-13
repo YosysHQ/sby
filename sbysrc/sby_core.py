@@ -825,12 +825,13 @@ class SbySummary:
 
 
 class SbyTask(SbyConfig):
-    def __init__(self, sbyconfig, workdir, early_logs, reusedir, taskloop=None, logfile=None):
+    def __init__(self, sbyconfig, workdir, early_logs, reusedir, taskloop=None, logfile=None, name=None):
         super().__init__()
         self.used_options = set()
         self.models = dict()
         self.workdir = workdir
         self.reusedir = reusedir
+        self.name = name
         self.status = "UNKNOWN"
         self.total_time = 0
         self.expect = list()
