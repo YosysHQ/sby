@@ -239,7 +239,7 @@ def run(mode, task, engine_idx, engine):
             cell_name = match[3] or match[2]
             prop = task.design.hierarchy.find_property(path, cell_name, trans_dict=smt2_trans)
             prop.status = "FAIL"
-            task.status_db.set_task_property_status(prop, data=dict(source="smtbmc", engine=f"engine_{engine_idx}"))
+            task.status_db.set_task_property_status(prop, data=dict(source="smtbmc", engine=f"engine_{engine_idx}", step=current_step))
             last_prop.append(prop)
             return line
 
@@ -249,7 +249,7 @@ def run(mode, task, engine_idx, engine):
             cell_name = match[3] or match[2]
             prop = task.design.hierarchy.find_property(path, cell_name, trans_dict=smt2_trans)
             prop.status = "PASS"
-            task.status_db.set_task_property_status(prop, data=dict(source="smtbmc", engine=f"engine_{engine_idx}"))
+            task.status_db.set_task_property_status(prop, data=dict(source="smtbmc", engine=f"engine_{engine_idx}", step=current_step))
             last_prop.append(prop)
             return line
 
@@ -281,7 +281,7 @@ def run(mode, task, engine_idx, engine):
             cell_name = match[3] or match[2]
             prop = task.design.hierarchy.find_property(path, cell_name, trans_dict=smt2_trans)
             prop.status = "FAIL"
-            task.status_db.set_task_property_status(prop, data=dict(source="smtbmc", engine=f"engine_{engine_idx}"))
+            task.status_db.set_task_property_status(prop, data=dict(source="smtbmc", engine=f"engine_{engine_idx}", step=current_step))
 
         return line
 
