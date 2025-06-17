@@ -69,6 +69,9 @@ def transaction(method: Fn) -> Fn:
             self.log_debug(f"failed {method.__name__!r} transaction {err}")
             if not isinstance(err, sqlite3.OperationalError):
                 raise
+            if re.match("table \w+ has no column named \w+", err.args[0]):
+                err.add_note("SBY status database can be reset with --statusreset")
+                raise
         else:
             self.log_debug(f"comitted {method.__name__!r} transaction")
             return result
