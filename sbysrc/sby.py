@@ -100,6 +100,10 @@ if status_show or status_reset or status_show_csv:
         status_db.print_status_summary_csv()
 
     status_db.db.close()
+
+    if status_live_csv:
+        print(f"WARNING: --livecsv flag found but not used.")
+
     sys.exit(0)
 
 
