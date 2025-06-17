@@ -52,7 +52,7 @@ def transaction(method: Fn) -> Fn:
 
 class SbyStatusDb:
     def __init__(self, path: Path, task, timeout: float = 5.0):
-        self.debug = True
+        self.debug = False
         self.task = task
 
         setup = not os.path.exists(path)
