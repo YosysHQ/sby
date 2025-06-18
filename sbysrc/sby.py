@@ -62,8 +62,9 @@ init_config_file = args.init_config_file
 status_show = args.status
 status_reset = args.status_reset
 status_cancels = args.status_cancels
+task_status = args.task_status
 
-if status_show or status_reset:
+if status_show or status_reset or task_status:
     target = workdir_prefix or workdir or sbyfile
     if target is None:
         print("ERROR: Specify a .sby config file or working directory to use --status.")
@@ -94,6 +95,9 @@ if status_show or status_reset:
 
     if status_show:
         status_db.print_status_summary()
+        
+    if task_status:
+        status_db.print_task_summary()
 
     status_db.db.close()
     sys.exit(0)
