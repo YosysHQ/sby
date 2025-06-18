@@ -103,9 +103,25 @@ class SbyStatusDb:
         self.con = sqlite3.connect(path, isolation_level=None, timeout=timeout)
         self.db = self.con.cursor()
         self.db.row_factory = sqlite3.Row
-        self.db.execute("PRAGMA journal_mode=WAL")
-        self.db.execute("PRAGMA synchronous=0")
-        self.db.execute("PRAGMA foreign_keys=ON")
+        err_count = 0
+        err_max = 3
+        while True:
+            try:
+                self.db.execute("PRAGMA journal_mode=WAL")
+                self.db.execute("PRAGMA synchronous=0")
+                self.db.execute("PRAGMA foreign_keys=ON")
+            except sqlite3.OperationalError as err:
+                if "database is locked" not in err.args[0]:
+                    raise
+                err_count += 1
+                if err_count > err_max:
+                    err.add_note(f"Failed to acquire lock after {err_count} attempts, aborting")
+                    raise
+                backoff = err_count / 10.0
+                self.log_debug(f"Database locked, retrying in {backoff}s")
+                time.sleep(backoff)
+            else:
+                break
 
         if setup:
             self._setup()
