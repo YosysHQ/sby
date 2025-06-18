@@ -90,7 +90,7 @@ if status_show or status_reset or task_status:
     if status_reset:
         status_db.reset()
     elif status_db.test_schema():
-        print(f"ERROR: Status database does not match expected formatted.  Use --statusreset to reset.")
+        print(f"ERROR: Status database does not match expected format.  Use --statusreset to reset.")
         sys.exit(1)
 
     if status_show:
