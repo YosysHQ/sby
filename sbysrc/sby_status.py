@@ -98,8 +98,6 @@ class SbyStatusDb:
         self.debug = False
         self.task = task
 
-        setup = not os.path.exists(path)
-
         self.con = sqlite3.connect(path, isolation_level=None, timeout=timeout)
         self.db = self.con.cursor()
         self.db.row_factory = sqlite3.Row
@@ -123,8 +121,7 @@ class SbyStatusDb:
             else:
                 break
 
-        if setup:
-            self._setup()
+        self._setup()
 
         if task is not None:
             self.task_id = self.create_task(workdir=task.workdir, mode=task.opt_mode)
@@ -139,7 +136,7 @@ class SbyStatusDb:
     @transaction
     def _setup(self):
         for statement in SQLSCRIPT.split(";\n"):
-            statement = statement.strip()
+            statement = statement.strip().replace("CREATE TABLE", "CREATE TABLE IF NOT EXISTS")
             if statement:
                 self.db.execute(statement)
 
