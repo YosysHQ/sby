@@ -103,9 +103,9 @@ class SbyStatusDb:
         self.con = sqlite3.connect(path, isolation_level=None, timeout=timeout)
         self.db = self.con.cursor()
         self.db.row_factory = sqlite3.Row
-        with self.con:
-            self.db.execute("PRAGMA journal_mode=WAL")
-            self.db.execute("PRAGMA synchronous=0")
+        self.db.execute("PRAGMA journal_mode=WAL")
+        self.db.execute("PRAGMA synchronous=0")
+        self.db.execute("PRAGMA foreign_keys=ON")
 
         if setup:
             self._setup()
@@ -126,7 +126,6 @@ class SbyStatusDb:
             statement = statement.strip()
             if statement:
                 self.db.execute(statement)
-        self.db.execute("""PRAGMA foreign_keys = ON;""")
 
     def test_schema(self) -> bool:
         schema = self.db.execute("SELECT sql FROM sqlite_master;").fetchall()
@@ -293,7 +292,7 @@ class SbyStatusDb:
         )
 
     @transaction
-    def reset(self):
+    def _reset(self):
         hard_reset = self.test_schema()
         # table names can't be parameters, so we need to use f-strings
         # but it is safe to use here because it comes from the regex "\w+"
@@ -306,6 +305,11 @@ class SbyStatusDb:
                 self.db.execute(f"DELETE FROM {table}")
         if hard_reset:
             self._setup()
+
+    def reset(self):
+        self.db.execute("PRAGMA foreign_keys=OFF")
+        self._reset()
+        self.db.execute("PRAGMA foreign_keys=ON")
 
     def print_status_summary(self):
         tasks, task_properties, task_property_statuses = self.all_status_data()
