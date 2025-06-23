@@ -70,6 +70,8 @@ def parser_func(release_version='unknown SBY version'):
             help="print the list of source files")
     parser.add_argument("--setup", action="store_true", dest="setupmode",
             help="set up the working directory and exit")
+    parser.add_argument("--link", action="store_true", dest="linkmode",
+            help="make symbolic links to source files instead of copying them")
 
     parser.add_argument("--status", action="store_true", dest="status",
             help="summarize the contents of the status database")

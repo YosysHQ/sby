@@ -947,7 +947,7 @@ class SbyTask(SbyConfig):
         if not os.path.isdir(path):
             os.makedirs(path)
 
-    def copy_src(self):
+    def copy_src(self, linkmode=False):
         self.makedirs(self.workdir + "/src")
 
         for dstfile, lines in self.verbatim_files.items():
@@ -969,8 +969,15 @@ class SbyTask(SbyConfig):
             if basedir != "" and not os.path.exists(basedir):
                 os.makedirs(basedir)
 
-            self.log(f"Copy '{os.path.abspath(srcfile)}' to '{os.path.abspath(dstfile)}'.")
-            if os.path.isdir(srcfile):
+            if linkmode:
+                verb = "Link"
+            else:
+                verb = "Copy"
+            self.log(f"{verb} '{os.path.abspath(srcfile)}' to '{os.path.abspath(dstfile)}'.")
+
+            if linkmode:
+                os.symlink(os.path.relpath(srcfile, basedir), dstfile)
+            elif os.path.isdir(srcfile):
                 copytree(srcfile, dstfile, dirs_exist_ok=True)
             else:
                 copyfile(srcfile, dstfile)
@@ -1308,7 +1315,7 @@ class SbyTask(SbyConfig):
 
         self.status_db = SbyStatusDb(status_path, self)
 
-    def setup_procs(self, setupmode):
+    def setup_procs(self, setupmode, linkmode=False):
         self.handle_non_engine_options()
         if self.opt_smtc is not None:
             for engine_idx, engine in self.engine_list():
@@ -1329,7 +1336,7 @@ class SbyTask(SbyConfig):
         if self.reusedir:
             rmtree(f"{self.workdir}/model", ignore_errors=True)
         else:
-            self.copy_src()
+            self.copy_src(linkmode)
 
         if setupmode:
             self.retcode = 0
