@@ -118,9 +118,12 @@ def run(mode, task, engine_idx, engine):
 
     def make_exit_callback(suffix):
         def exit_callback2(retcode):
-            vcdpath = f"engine_{engine_idx}/trace{suffix}.vcd"
-            if os.path.exists(f"{task.workdir}/{vcdpath}"):
-                task.summary.add_event(engine_idx=engine_idx, trace=f'trace{suffix}', path=vcdpath, type="$cover" if mode == "cover" else "$assert")
+            trace = f"trace{suffix}"
+            vcdpath = f"engine_{engine_idx}/{trace}.vcd"
+            trace_path = f"{task.workdir}/{vcdpath}"
+            if os.path.exists(trace_path):
+                task.summary.add_event(engine_idx=engine_idx, trace=trace, path=vcdpath, type="$cover" if mode == "cover" else "$assert")
+                task.status_db.add_task_trace(trace, trace_path)
 
             common_state.running_procs -= 1
             if (common_state.running_procs == 0):

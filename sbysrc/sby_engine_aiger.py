@@ -233,7 +233,6 @@ def aigsmt_trace_callback(task, engine_idx, proc_status, *, run_aigsmt, smtbmc_v
                 cell_name = match[3] or match[2]
                 prop = task.design.hierarchy.find_property(path, cell_name, trans_dict=smt2_trans)
                 prop.status = "FAIL"
-                task.status_db.set_task_property_status(prop, data=dict(source="aigsmt", engine=f"engine_{engine_idx}", step=current_step))
                 last_prop.append(prop)
                 return line
 
@@ -241,24 +240,30 @@ def aigsmt_trace_callback(task, engine_idx, proc_status, *, run_aigsmt, smtbmc_v
             if match:
                 tracefile = match[1]
                 trace = os.path.basename(tracefile)[:-4]
+                trace_path = f"{task.workdir}/{tracefile}"
                 task.summary.add_event(engine_idx=engine_idx, trace=trace, path=tracefile)
+                trace_id = task.status_db.add_task_trace(trace, trace_path)
 
             if match and last_prop:
                 for p in last_prop:
                     task.summary.add_event(
                         engine_idx=engine_idx, trace=trace,
                         type=p.celltype, hdlname=p.hdlname, src=p.location, step=current_step)
-                    p.tracefiles.append(tracefile)
+                    p.tracefiles.append(tracefile)                
+                    task.status_db.set_task_property_status(p, trace_id=trace_id, data=dict(source="aigsmt", engine=f"engine_{engine_idx}", step=current_step, trace_path=trace_path))
                 last_prop = []
                 return line
 
             return line
 
         def exit_callback2(retcode):
+            nonlocal last_prop
             if proc2_status is None:
                 task.error(f"engine_{engine_idx}: Could not determine aigsmt status.")
             if proc2_status != "FAIL":
                 task.error(f"engine_{engine_idx}: Unexpected aigsmt status.")
+            if len(last_prop):
+                task.error(f"engine_{engine_idx}: Found properties without trace.")
 
         proc2.output_callback = output_callback2
         proc2.register_exit_callback(exit_callback2)
