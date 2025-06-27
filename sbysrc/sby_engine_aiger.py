@@ -202,11 +202,13 @@ def aigsmt_trace_callback(task, engine_idx, proc_status, *, run_aigsmt, smtbmc_v
         proc2_status = None
 
         last_prop = []
+        recorded_last = False
         current_step = None
 
         def output_callback2(line):
             nonlocal proc2_status
             nonlocal last_prop
+            nonlocal recorded_last
             nonlocal current_step
 
             smt2_trans = {'\\':'/', '|':'/'}
@@ -218,6 +220,8 @@ def aigsmt_trace_callback(task, engine_idx, proc_status, *, run_aigsmt, smtbmc_v
 
             match = re.match(r"^## [0-9: ]+ .* in step ([0-9]+)\.\.", line)
             if match:
+                last_prop = []
+                recorded_last = False
                 current_step = int(match[1])
                 return line
 
@@ -236,33 +240,29 @@ def aigsmt_trace_callback(task, engine_idx, proc_status, *, run_aigsmt, smtbmc_v
                 last_prop.append(prop)
                 return line
 
-            match = re.match(r"^## [0-9: ]+ Writing trace to VCD file: (\S+)", line)
+            match = re.match(r"^## [0-9: ]+ Writing trace to (VCD|Yosys witness) file: (\S+)", line)
             if match:
-                tracefile = match[1]
-                trace = os.path.basename(tracefile)[:-4]
-                trace_path = f"{task.workdir}/{tracefile}"
+                tracefile = match[2]
+                trace, _ = os.path.splitext(os.path.basename(tracefile))
                 task.summary.add_event(engine_idx=engine_idx, trace=trace, path=tracefile)
-                trace_id = task.status_db.add_task_trace(trace, trace_path)
-
-            if match and last_prop:
                 for p in last_prop:
                     task.summary.add_event(
                         engine_idx=engine_idx, trace=trace,
-                        type=p.celltype, hdlname=p.hdlname, src=p.location, step=current_step)
-                    p.tracefiles.append(tracefile)                
-                    task.status_db.set_task_property_status(p, trace_id=trace_id, data=dict(source="aigsmt", engine=f"engine_{engine_idx}", step=current_step, trace_path=trace_path))
-                last_prop = []
+                        type=p.celltype, hdlname=p.hdlname, src=p.location,
+                        step=current_step, prop=p,
+                    )
+                recorded_last = True
                 return line
 
             return line
 
         def exit_callback2(retcode):
-            nonlocal last_prop
+            nonlocal last_prop, recorded_last
             if proc2_status is None:
                 task.error(f"engine_{engine_idx}: Could not determine aigsmt status.")
             if proc2_status != "FAIL":
                 task.error(f"engine_{engine_idx}: Unexpected aigsmt status.")
-            if len(last_prop):
+            if len(last_prop) and not recorded_last:
                 task.error(f"engine_{engine_idx}: Found properties without trace.")
 
         proc2.output_callback = output_callback2
