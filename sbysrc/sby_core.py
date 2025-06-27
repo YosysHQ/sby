@@ -702,7 +702,7 @@ class SbySummary:
             if event.path and add_trace:
                 event.prop.tracefiles.append(event.path)
 
-        trace_path = None
+        trace_id = None
         if event.trace:
             # get or create trace summary
             try:
@@ -724,7 +724,6 @@ class SbySummary:
                     trace_summary.trace_ids[trace_ext] = trace_id
             elif trace_summary.path:
                 # use existing tracefile for last extension
-                trace_path = Path(trace_summary.path)
                 trace_ext = trace_summary.last_ext
                 trace_id = trace_summary.trace_ids[trace_ext]
 
@@ -735,18 +734,11 @@ class SbySummary:
 
         if event.prop and update_status:
             # update property status in database
-            if trace_path:
-                self.task.status_db.set_task_property_status(
-                    event.prop,
-                    trace_id=trace_id,
-                    trace_path=Path(self.task.workdir, trace_path).with_suffix(trace_ext),
-                    data=status_metadata,
-                )
-            else:
-                self.task.status_db.set_task_property_status(
-                    event.prop,
-                    data=status_metadata,
-                )
+            self.task.status_db.set_task_property_status(
+                event.prop,
+                trace_id=trace_id,
+                data=status_metadata,
+            )
 
     def set_engine_status(self, engine_idx, status, case=None):
         engine_summary = self.engine_summary(engine_idx)
