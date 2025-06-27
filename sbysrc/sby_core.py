@@ -688,8 +688,8 @@ class SbySummary:
         if event.step:
             status_metadata["step"] = event.step
 
+        add_trace = False
         if event.prop:
-            add_trace = False
             if event.type is None:
                 event.type = event.prop.celltype
             elif event.type == "$assert":
@@ -699,10 +699,8 @@ class SbySummary:
                 event.prop.status = "PASS"
                 add_trace = True
 
-            if event.path and add_trace:
-                event.prop.tracefiles.append(event.path)
-
         trace_id = None
+        trace_path = None
         if event.trace:
             # get or create trace summary
             try:
@@ -724,6 +722,7 @@ class SbySummary:
                     trace_summary.trace_ids[trace_ext] = trace_id
             elif trace_summary.path:
                 # use existing tracefile for last extension
+                trace_path = Path(trace_summary.path)
                 trace_ext = trace_summary.last_ext
                 trace_id = trace_summary.trace_ids[trace_ext]
 
@@ -739,6 +738,9 @@ class SbySummary:
                 trace_id=trace_id,
                 data=status_metadata,
             )
+
+        if trace_path and add_trace:
+            event.prop.tracefiles.append(str(trace_path))
 
     def set_engine_status(self, engine_idx, status, case=None):
         engine_summary = self.engine_summary(engine_idx)
