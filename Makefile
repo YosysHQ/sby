@@ -61,6 +61,7 @@ ci: check_cad_suite
 run_ci:
 	$(MAKE) test NOSKIP=1
 	if yosys -qp 'read -verific' 2> /dev/null; then set -x; \
+		echo "recursing make run_ci"; \
 		YOSYS_NOVERIFIC=1 $(MAKE) run_ci; \
 	fi
 
