@@ -55,4 +55,4 @@ jobs:
 
       - name: Run SBY tests
         run: |
-          make run_ci
+          make run_ci -d
