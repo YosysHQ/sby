@@ -61,8 +61,10 @@ jobcount = args.jobcount
 init_config_file = args.init_config_file
 status_show = args.status
 status_reset = args.status_reset
+status_cancels = args.status_cancels
+task_status = args.task_status
 
-if status_show or status_reset:
+if status_show or status_reset or task_status:
     target = workdir_prefix or workdir or sbyfile
     if target is None:
         print("ERROR: Specify a .sby config file or working directory to use --status.")
@@ -85,12 +87,17 @@ if status_show or status_reset:
 
     status_db = SbyStatusDb(status_path, task=None)
 
-    if status_show:
-        status_db.print_status_summary()
-        sys.exit(0)
-
     if status_reset:
         status_db.reset()
+    elif status_db.test_schema():
+        print(f"ERROR: Status database does not match expected format.  Use --statusreset to reset.")
+        sys.exit(1)
+
+    if status_show:
+        status_db.print_status_summary()
+        
+    if task_status:
+        status_db.print_task_summary()
 
     status_db.db.close()
     sys.exit(0)
@@ -369,6 +376,7 @@ if dump_taskinfo:
             "mode": cfg.options.get("mode"),
             "engines": cfg.engines,
             "script": cfg.script,
+            "cancelledby": cfg.cancelledby,
         }
     print(json.dumps(taskinfo, indent=2))
     sys.exit(0)
@@ -465,7 +473,7 @@ def start_task(taskloop, taskname):
     else:
         junit_filename = "junit"
 
-    task = SbyTask(sbyconfig, my_workdir, early_logmsgs, reusedir, taskloop)
+    task = SbyTask(sbyconfig, my_workdir, early_logmsgs, reusedir, status_cancels, taskloop, name=taskname)
 
     for k, v in exe_paths.items():
         task.exe_paths[k] = v

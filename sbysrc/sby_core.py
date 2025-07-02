@@ -17,6 +17,7 @@
 #
 
 import os, re, sys, signal, platform, click
+import time
 if os.name == "posix":
     import resource, fcntl
 import subprocess
@@ -97,6 +98,7 @@ class SbyProc:
         self.silent = silent
         self.wait = False
         self.job_lease = None
+        self.next_db = 0.0
 
         self.task.update_proc_pending(self)
 
@@ -175,6 +177,36 @@ class SbyProc:
         if self.finished or self.terminated or self.exited:
             return
 
+        for task in self.task.taskloop.tasks_done:
+            if task.name in self.task.cancelledby:
+                if not self.silent:
+                    self.task.log(f"Cancelled by {task.name!r} task")
+                self.task.cancel()
+                return
+
+        if self.task.status_cancels and time.time() >= self.next_db:
+            tasks_status = self.task.status_db.all_tasks_status()
+            for task_status in tasks_status.values():
+                if (task_status["status"] in ["PASS", "FAIL", "CANCELLED"] and
+                    task_status["name"] in self.task.cancelledby):
+                    if not self.silent:
+                        status_time = time.localtime(task_status["status_created"])
+                        if status_time.tm_yday == time.localtime().tm_yday:
+                            # same day, format time only
+                            time_format = r"%H:%M:%S"
+                        else:
+                            time_format = r"%x %H:%M:%S"
+                        self.task.log(
+                            f'Cancelled by {task_status["name"]!r} task '
+                            f'with status {task_status["status"]!r} '
+                            f'at {time.strftime(time_format, status_time)} '
+                            '(consider calling sby with --statusreset if this seems wrong)'
+                        )
+                    self.task.cancel()
+                    return
+            # don't hit the database every poll
+            self.next_db = time.time() + 10
+
         if not self.running:
             for dep in self.deps:
                 if not dep.finished:
@@ -217,6 +249,10 @@ class SbyProc:
 
             if self.job_lease:
                 self.job_lease.done()
+
+            if self.terminated:
+                # task already terminated, do not finish
+                return
 
             if not self.silent:
                 self.task.log(f"{click.style(self.info, fg='magenta')}: finished (returncode={self.p.returncode})")
@@ -282,6 +318,7 @@ class SbyConfig:
         self.autotune_config = None
         self.files = dict()
         self.verbatim_files = dict()
+        self.cancelledby = list()
         pass
 
     def parse_config(self, f):
@@ -402,6 +439,12 @@ class SbyConfig:
                     import sby_autotune
                     self.autotune_config = sby_autotune.SbyAutotuneConfig()
                     continue
+                
+                if section == "cancelledby":
+                    mode = "cancelledby"
+                    if args is not None:
+                        self.error(f"sby file syntax error: '[cancelledby]' section does not accept any arguments. got {args}")
+                    continue
 
                 if section == "file":
                     mode = "file"
@@ -435,6 +478,12 @@ class SbyConfig:
 
             if mode == "autotune":
                 self.autotune_config.config_line(self, line)
+                continue
+            
+            if mode == "cancelledby":
+                taskname = line.strip()
+                if taskname:
+                    self.cancelledby.append(taskname)
                 continue
 
             if mode == "engines":
@@ -553,6 +602,7 @@ class SbyTaskloop:
         self.procs_pending = []
         self.procs_running = []
         self.tasks = []
+        self.tasks_done = []
         self.poll_now = False
         self.jobclient = jobclient
 
@@ -605,6 +655,7 @@ class SbyTaskloop:
                     self.tasks.append(task)
                 else:
                     task.exit_callback()
+                    self.tasks_done.append(task)
 
         for task in self.tasks:
             task.exit_callback()
@@ -825,12 +876,14 @@ class SbySummary:
 
 
 class SbyTask(SbyConfig):
-    def __init__(self, sbyconfig, workdir, early_logs, reusedir, taskloop=None, logfile=None):
+    def __init__(self, sbyconfig, workdir, early_logs, reusedir, status_cancels=False, taskloop=None, logfile=None, name=None):
         super().__init__()
         self.used_options = set()
         self.models = dict()
         self.workdir = workdir
         self.reusedir = reusedir
+        self.status_cancels = status_cancels
+        self.name = name
         self.status = "UNKNOWN"
         self.total_time = 0
         self.expect = list()
@@ -1212,6 +1265,10 @@ class SbyTask(SbyConfig):
             proc.terminate(timeout=timeout)
         for proc in list(self.procs_pending):
             proc.terminate(timeout=timeout)
+            
+    def cancel(self):
+        self.terminate(True)
+        self.update_status("CANCELLED")
 
     def proc_failed(self, proc):
         # proc parameter used by autotune override
@@ -1223,7 +1280,7 @@ class SbyTask(SbyConfig):
             self.status_db.set_task_property_status(prop, data=data)
 
     def update_status(self, new_status):
-        assert new_status in ["PASS", "FAIL", "UNKNOWN", "ERROR"]
+        assert new_status in ["PASS", "FAIL", "UNKNOWN", "ERROR", "CANCELLED"]
         self.status_db.set_task_status(new_status)
 
         if new_status == "UNKNOWN":
@@ -1245,6 +1302,9 @@ class SbyTask(SbyConfig):
         elif new_status == "ERROR":
             self.status = "ERROR"
 
+        elif new_status == "CANCELLED":
+            self.status = "CANCELLED"
+
         else:
             assert 0
 
@@ -1263,7 +1323,7 @@ class SbyTask(SbyConfig):
             self.used_options.add("expect")
 
         for s in self.expect:
-            if s not in ["PASS", "FAIL", "UNKNOWN", "ERROR", "TIMEOUT"]:
+            if s not in ["PASS", "FAIL", "UNKNOWN", "ERROR", "TIMEOUT", "CANCELLED"]:
                 self.error(f"Invalid expect value: {s}")
 
         if self.opt_mode != "live":
@@ -1400,7 +1460,7 @@ class SbyTask(SbyConfig):
             else:
                 self.log("summary: " + click.style(line, fg="green" if self.status in self.expect else "red", bold=True))
 
-        assert self.status in ["PASS", "FAIL", "UNKNOWN", "ERROR", "TIMEOUT"]
+        assert self.status in ["PASS", "FAIL", "UNKNOWN", "ERROR", "TIMEOUT", "CANCELLED"]
 
         if self.status in self.expect:
             self.retcode = 0
@@ -1410,6 +1470,7 @@ class SbyTask(SbyConfig):
             if self.status == "UNKNOWN": self.retcode = 4
             if self.status == "TIMEOUT": self.retcode = 8
             if self.status == "ERROR": self.retcode = 16
+            if self.status == "CANCELLED": self.retcode = 32
 
     def write_summary_file(self):
         with open(f"{self.workdir}/{self.status}", "w") as f:

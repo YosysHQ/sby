@@ -1,0 +1,47 @@
+[tasks]
+c
+b
+a
+
+[cancelledby]
+a: b
+b: c
+c: a
+
+[options]
+mode bmc
+depth 20
+a: expect pass,cancelled
+b: expect fail,cancelled
+c: expect fail,cancelled
+
+[engines]
+btor btormc
+
+[script]
+a: read -define MAX=32
+b: read -define MAX=12
+c: read -define MAX=3
+read -formal demo.sv
+prep -top demo
+
+[file demo.sv]
+module demo (
+  input clk,
+  output reg [5:0] counter
+);
+  initial counter = 0;
+
+  always @(posedge clk) begin
+    if (counter == 15)
+      counter <= 0;
+    else
+      counter <= counter + 1;
+  end
+
+`ifdef FORMAL
+  always @(posedge clk) begin
+    assert (counter < `MAX);
+  end
+`endif
+endmodule
