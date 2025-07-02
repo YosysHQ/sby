@@ -92,6 +92,10 @@ def transaction(method: Fn) -> Fn:
 
     return wrapper  # type: ignore
 
+class FileInUseError(Exception):
+    def __init__(self, *args, file: Path|str = "file"):
+        super().__init__(f"Found {file}, try again later", *args)
+
 
 class SbyStatusDb:
     def __init__(self, path: Path, task, timeout: float = 5.0):
@@ -365,3 +369,11 @@ def combine_statuses(statuses):
         statuses.discard("UNKNOWN")
 
     return ",".join(sorted(statuses))
+
+def remove_db(path):
+    path = Path(path)
+    lock_exts = [".sqlite-wal", ".sqlite-shm"]
+    for lock_file in [path.with_suffix(ext) for ext in lock_exts]:
+        if lock_file.exists():
+            raise FileInUseError(file=lock_file)
+    os.remove(path)
