@@ -3,7 +3,7 @@ module test (input CP, CN, input A, B, output reg XP, XN);
 	always @* begin
 		assume (A || B);
 		assume (!A || !B);
-		assert (A != B);
+		assert (A == B);
 		cover (counter == 3 && A);
 		cover (counter == 3 && B);
 	end
