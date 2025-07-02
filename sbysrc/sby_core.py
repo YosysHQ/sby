@@ -1020,7 +1020,7 @@ class SbyTask(SbyConfig):
                     if self.opt_mode in ["bmc", "prove"]:
                         print("chformal -live -fair -cover -remove", file=f)
                     if self.opt_mode == "cover":
-                        print("chformal -live -fair -assert -remove", file=f)
+                        print("chformal -live -fair -remove", file=f)
                     if self.opt_mode == "live":
                         print("chformal -assert2assume", file=f)
                         print("chformal -cover -remove", file=f)
