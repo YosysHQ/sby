@@ -198,6 +198,9 @@ options are:
 |                   |            | indicated in SBY's log output).                         |
 |                   |            | Values: ``on``, ``off``. Default: ``on``                |
 +-------------------+------------+---------------------------------------------------------+
+| ``cover_assert``  | ``cover``  | Check for assertion properties during ``cover`` mode.   |
+|                   |            | Values: ``on``, ``off``. Default: ``on``                |
++-------------------+------------+---------------------------------------------------------+
 
 Engines section
 ---------------
