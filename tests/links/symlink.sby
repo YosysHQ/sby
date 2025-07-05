@@ -16,3 +16,6 @@ script dir/script.ys
 ../../docs/examples/demos/picorv32.v
 prv32fmcmp.v
 dir
+
+[file heredoc]
+log foo
