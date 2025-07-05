@@ -77,6 +77,7 @@ def run(mode, task, engine_idx, engine):
     common_state.wit_file = None
     common_state.assert_fail = False
     common_state.running_procs = 0
+    common_state.current_step = None
 
     def print_traces_and_terminate():
         if mode == "cover":
@@ -100,7 +101,7 @@ def run(mode, task, engine_idx, engine):
             else:
                 task.error(f"engine_{engine_idx}: Engine terminated without status.")
 
-        task.update_status(proc_status.upper())
+        task.update_status(proc_status.upper(), common_state.current_step)
         task.summary.set_engine_status(engine_idx, proc_status)
 
         task.terminate()
@@ -117,9 +118,11 @@ def run(mode, task, engine_idx, engine):
 
     def make_exit_callback(suffix):
         def exit_callback2(retcode):
-            vcdpath = f"engine_{engine_idx}/trace{suffix}.vcd"
-            if os.path.exists(f"{task.workdir}/{vcdpath}"):
-                task.summary.add_event(engine_idx=engine_idx, trace=f'trace{suffix}', path=vcdpath, type="$cover" if mode == "cover" else "$assert")
+            trace = f"trace{suffix}"
+            vcdpath = f"engine_{engine_idx}/{trace}.vcd"
+            trace_path = f"{task.workdir}/{vcdpath}"
+            if os.path.exists(trace_path):
+                task.summary.add_event(engine_idx=engine_idx, trace=trace, path=vcdpath, type="$cover" if mode == "cover" else "$assert")
 
             common_state.running_procs -= 1
             if (common_state.running_procs == 0):
@@ -205,6 +208,9 @@ def run(mode, task, engine_idx, engine):
             if solver_args[0] == "btormc":
                 if "calling BMC on" in line:
                     return line
+                match = re.match(r".*at bound k = (\d+).*", line)
+                if match:
+                    common_state.current_step = int(match[1])
                 if "SATISFIABLE" in line:
                     return line
                 if "bad state properties at bound" in line:
@@ -215,6 +221,9 @@ def run(mode, task, engine_idx, engine):
                     return line
 
             elif solver_args[0] == "pono":
+                match = re.match(r".*at bound (\d+).*", line)
+                if match:
+                    common_state.current_step = int(match[1])
                 if line == "unknown":
                     if common_state.solver_status is None:
                         common_state.solver_status = "unsat"
