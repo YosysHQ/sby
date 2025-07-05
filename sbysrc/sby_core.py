@@ -1020,7 +1020,10 @@ class SbyTask(SbyConfig):
                     if self.opt_mode in ["bmc", "prove"]:
                         print("chformal -live -fair -cover -remove", file=f)
                     if self.opt_mode == "cover":
-                        print("chformal -live -fair -remove", file=f)
+                        if self.opt_cover_assert:
+                            print("chformal -live -fair -remove", file=f)
+                        else:
+                            print("chformal -live -fair -assert -remove", file=f)
                     if self.opt_mode == "live":
                         print("chformal -assert2assume", file=f)
                         print("chformal -cover -remove", file=f)
@@ -1294,6 +1297,9 @@ class SbyTask(SbyConfig):
         self.handle_bool_option("skip_prep", False)
 
         self.handle_bool_option("assume_early", True)
+        
+        if self.opt_mode == "cover":
+            self.handle_bool_option("cover_assert", False)
 
     def setup_status_db(self, status_path=None):
         if hasattr(self, 'status_db'):

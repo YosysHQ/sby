@@ -8,6 +8,9 @@ cover: mode cover
 bmc: mode bmc
 bmc: depth 1
 
+cover: expect pass
+~cover: expect fail
+
 [engines]
 cover: btor btormc
 btormc: btor btormc
