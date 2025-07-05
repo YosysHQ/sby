@@ -52,6 +52,8 @@ def collect(path):
             continue
         tests.append(entry)
     for entry in path.glob("*"):
+        if entry.with_suffix(".sby").exists():
+            continue
         if entry.is_dir():
             collect(entry)
 
