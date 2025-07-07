@@ -1142,14 +1142,29 @@ class SbyTask(SbyConfig):
                 print("delete -output", file=f)
                 print("dffunmap", file=f)
                 print("stat", file=f)
-                print("write_btor {}-i design_{m}.info -ywmap design_btor.ywb design_{m}.btor".format("-c " if self.opt_mode == "cover" else "", m=model_name), file=f)
-                print("write_btor -s {}-i design_{m}_single.info -ywmap design_btor_single.ywb design_{m}_single.btor".format("-c " if self.opt_mode == "cover" else "", m=model_name), file=f)
+                btor_flags = ""
+                if self.opt_mode == "cover": btor_flags += "-c "
+                if self.opt_btor_aig: btor_flags += "-x "
+                print("write_btor {}-i design_{m}.info -ywmap design_btor.ywb design_{m}.btor".format(btor_flags, m=model_name), file=f)
+                print("write_btor -s {}-i design_{m}_single.info -ywmap design_btor_single.ywb design_{m}_single.btor".format(btor_flags, m=model_name), file=f)
 
             proc = SbyProc(
                 self,
                 model_name,
                 self.model("prep"),
                 "cd {}/model; {} -ql design_{s}.log design_{s}.ys".format(self.workdir, self.exe_paths["yosys"], s=model_name)
+            )
+            proc.checkretcode = True
+
+            return [proc]
+
+        if model_name == "aig" and self.opt_btor_aig:
+            btor_model = "btor_nomem"
+            proc = SbyProc(
+                self,
+                "btor_aig",
+                self.model(btor_model),
+                f"cd {self.workdir}/model; btor2aig_yw design_{btor_model}.btor design_btor.ywb"
             )
             proc.checkretcode = True
 
@@ -1284,6 +1299,7 @@ class SbyTask(SbyConfig):
         self.handle_bool_option("aigfolds", False)
         self.handle_bool_option("aigvmap", False)
         self.handle_bool_option("aigsyms", False)
+        self.handle_bool_option("btor_aig", False)
 
         self.handle_str_option("smtc", None)
         self.handle_int_option("skip", None)

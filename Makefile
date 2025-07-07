@@ -52,6 +52,8 @@ else
 		-e "s|##yosys-release-version##|release_version = '$(YOSYS_RELEASE_VERSION)'|;" < sbysrc/sby.py > $(DESTDIR)$(PREFIX)/bin/sby
 	chmod +x $(DESTDIR)$(PREFIX)/bin/sby
 endif
+	cp tools/btor2aig_yw/btor2aig_yw.py $(DESTDIR)$(PREFIX)/bin/btor2aig_yw
+	chmod +x $(DESTDIR)$(PREFIX)/bin/btor2aig_yw
 
 .PHONY: check_cad_suite run_ci
 
