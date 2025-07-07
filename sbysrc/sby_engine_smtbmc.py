@@ -187,6 +187,7 @@ def run(mode, task, engine_idx, engine):
     pending_sim = None
     current_step = None
     procs_running = 1
+    failed_assert = False
 
     def output_callback(line):
         nonlocal proc_status
@@ -194,6 +195,7 @@ def run(mode, task, engine_idx, engine):
         nonlocal pending_sim
         nonlocal current_step
         nonlocal procs_running
+        nonlocal failed_assert
 
         if pending_sim:
             sim_proc = sim_witness_trace(procname, task, engine_idx, pending_sim, append=sim_append, inductive=mode == "prove_induction")
@@ -235,6 +237,7 @@ def run(mode, task, engine_idx, engine):
 
         match = re.match(r"^## [0-9: ]+ Assert failed in ([^:]+): (\S+)(?: \((\S+)\))?", line)
         if match:
+            failed_assert = not keep_going
             path = parse_mod_path(match[1])
             cell_name = match[3] or match[2]
             prop = task.design.hierarchy.find_property(path, cell_name, trans_dict=smt2_trans)
@@ -276,7 +279,7 @@ def run(mode, task, engine_idx, engine):
                 pending_sim = tracefile
 
         match = re.match(r"^## [0-9: ]+ Unreached cover statement at ([^:]+): (\S+)(?: \((\S+)\))?", line)
-        if match:
+        if match and not failed_assert:
             path = parse_mod_path(match[1])
             cell_name = match[3] or match[2]
             prop = task.design.hierarchy.find_property(path, cell_name, trans_dict=smt2_trans)

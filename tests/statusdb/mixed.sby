@@ -1,0 +1,24 @@
+[tasks]
+no_assert cover
+assert cover
+bmc
+
+[options]
+cover: mode cover
+bmc: mode bmc
+bmc: depth 1
+
+assert: cover_assert on
+no_assert: expect pass
+~no_assert: expect fail
+
+[engines]
+cover: smtbmc boolector
+bmc: smtbmc boolector
+
+[script]
+read -formal mixed.v
+prep -top test
+
+[files]
+mixed.v
