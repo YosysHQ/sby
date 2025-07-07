@@ -199,7 +199,7 @@ options are:
 |                   |            | Values: ``on``, ``off``. Default: ``on``                |
 +-------------------+------------+---------------------------------------------------------+
 | ``cover_assert``  | ``cover``  | Check for assertion properties during ``cover`` mode.   |
-|                   |            | Values: ``on``, ``off``. Default: ``on``                |
+|                   |            | Values: ``on``, ``off``. Default: ``off``                |
 +-------------------+------------+---------------------------------------------------------+
 
 Engines section
