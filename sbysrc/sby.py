@@ -85,12 +85,14 @@ if status_show or status_reset:
 
     status_db = SbyStatusDb(status_path, task=None)
 
-    if status_show:
-        status_db.print_status_summary()
-        sys.exit(0)
-
     if status_reset:
         status_db.reset()
+    elif status_db.test_schema():
+        print(f"ERROR: Status database does not match expected formatted.  Use --statusreset to reset.")
+        sys.exit(1)
+
+    if status_show:
+        status_db.print_status_summary()
 
     status_db.db.close()
     sys.exit(0)
