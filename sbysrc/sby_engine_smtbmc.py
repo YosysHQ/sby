@@ -216,6 +216,8 @@ def run(mode, task, engine_idx, engine):
         if match:
             last_prop = []
             recorded_last = False
+            if mode == "prove_induction":
+                return line
             last_step = current_step
             current_step = int(match[1])
             if current_step != last_step and last_step is not None:
