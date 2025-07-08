@@ -381,7 +381,7 @@ class SbyStatusDb:
         rows = self.db.execute(
             """
                 SELECT task.name as 'task_name', task.mode, task.created,
-                task_property.src as 'location', task_property.hdlname, task_property_status.status,
+                task_property.src as 'location', task_property.name, task_property.hdlname, task_property_status.status,
                 task_property_status.data, task_property_status.created as 'status_created',
                 task_property_status.id
                 FROM task
@@ -392,6 +392,7 @@ class SbyStatusDb:
         
         def get_result(row):
             row = dict(row)
+            row["name"] = json.loads(row.get("name", "null"))
             row["data"] = json.loads(row.get("data", "null"))
             return row
 
@@ -434,7 +435,7 @@ class SbyStatusDb:
 
         for prop in prop_map.values():
             # ignore UNKNOWNs if there are other statuses
-            if len(prop) > 1:
+            if len(prop) > 1 and "UNKNOWN" in prop:
                 del prop["UNKNOWN"]
 
             for status, (depth, row) in prop.items():
@@ -442,19 +443,19 @@ class SbyStatusDb:
                 engine = prop_status['data'].get('engine', prop_status['data']['source'])
                 time = prop_status['status_created'] - prop_status['created']
                 name = prop_status['hdlname']
-                
+
                 # print as csv
                 csv_line = [
                     round(time, 2),
                     prop_status['task_name'],
                     prop_status['mode'],
                     engine,
-                    name,
+                    name or pretty_path(prop_status['name']),
                     prop_status['location'],
                     status,
                     depth,
                 ]
-                print(','.join(str(v) for v in csv_line))
+                print(','.join("N/A" if v is None else str(v) for v in csv_line))
 
 
 def combine_statuses(statuses):
