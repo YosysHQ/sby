@@ -5,7 +5,7 @@ import sys
 def get_prop_type(prop: str):
     prop = json.loads(prop or "[]")
     name_parts = prop[-1].split("_")
-    if name_parts[0] == "\check":
+    if name_parts[0] == "\\check":
         # read_verilog style
         # \check_cover_mixed_v...
         return name_parts[1]
@@ -24,22 +24,28 @@ def main():
     # custom sql to get all task property statuses for the current workdir
     rows = db.execute(
         """
-            SELECT task.id, task_property.name, task_property.src, task_property_status.status
+            SELECT task.id, task_property.id, task_property.name, task_property.src, task_property_status.status
             FROM task
             LEFT JOIN task_property ON task_property.task=task.id
             LEFT JOIN task_property_status ON task_property_status.task_property=task_property.id
-            WHERE task.workdir=:workdir;
+            WHERE task.workdir=:workdir
+            ORDER BY task_property_status.id DESC;
         """,
         {"workdir": workdir}
     ).fetchall()
     # only check the most recent iteration of the test
     last_id = 0
-    for row_id, _, _, _ in rows:
+    for row_id, _, _, _, _ in rows:
         if row_id > last_id:
             last_id = row_id
-    for row_id, prop, src, status in rows:
+    # only check the last status of a property
+    checked_props = set()
+    for row_id, prop_id, prop, src, status in rows:
         if row_id != last_id:
             continue
+        if prop_id in checked_props:
+            continue
+        checked_props.add(prop_id)
         prop_type = get_prop_type(prop)
         valid_status: list[None|str] = []
         if workdir in ["mixed_bmc", "mixed_assert"] and prop_type == "assert":

@@ -184,6 +184,7 @@ def run(mode, task, engine_idx, engine):
 
     proc_status = None
     last_prop = []
+    recorded_last = False
     pending_sim = None
     current_step = None
     procs_running = 1
@@ -192,6 +193,7 @@ def run(mode, task, engine_idx, engine):
     def output_callback(line):
         nonlocal proc_status
         nonlocal last_prop
+        nonlocal recorded_last
         nonlocal pending_sim
         nonlocal current_step
         nonlocal procs_running
@@ -212,7 +214,14 @@ def run(mode, task, engine_idx, engine):
 
         match = re.match(r"^## [0-9: ]+ .* in step ([0-9]+)\.\.", line)
         if match:
+            last_prop = []
+            recorded_last = False
+            if mode == "prove_induction":
+                return line
+            last_step = current_step
             current_step = int(match[1])
+            if current_step != last_step and last_step is not None:
+                task.update_unknown_props(dict(source="smtbmc", engine=f"engine_{engine_idx}", step=last_step))
             return line
 
         match = re.match(r"^## [0-9: ]+ Status: FAILED", line)
@@ -242,7 +251,6 @@ def run(mode, task, engine_idx, engine):
             cell_name = match[3] or match[2]
             prop = task.design.hierarchy.find_property(path, cell_name, trans_dict=smt2_trans)
             prop.status = "FAIL"
-            task.status_db.set_task_property_status(prop, data=dict(source="smtbmc", engine=f"engine_{engine_idx}"))
             last_prop.append(prop)
             return line
 
@@ -252,31 +260,25 @@ def run(mode, task, engine_idx, engine):
             cell_name = match[3] or match[2]
             prop = task.design.hierarchy.find_property(path, cell_name, trans_dict=smt2_trans)
             prop.status = "PASS"
-            task.status_db.set_task_property_status(prop, data=dict(source="smtbmc", engine=f"engine_{engine_idx}"))
             last_prop.append(prop)
             return line
 
-        if smtbmc_vcd and not task.opt_fst:
-            match = re.match(r"^## [0-9: ]+ Writing trace to VCD file: (\S+)", line)
-            if match:
-                tracefile = match[1]
-                trace = os.path.basename(tracefile)[:-4]
-                engine_case = mode.split('_')[1] if '_' in mode else None
-                task.summary.add_event(engine_idx=engine_idx, trace=trace, path=tracefile, engine_case=engine_case)
-
-            if match and last_prop:
-                for p in last_prop:
-                    task.summary.add_event(
-                        engine_idx=engine_idx, trace=trace,
-                        type=p.celltype, hdlname=p.hdlname, src=p.location, step=current_step)
-                    p.tracefiles.append(tracefile)
-                last_prop = []
-                return line
-        else:
-            match = re.match(r"^## [0-9: ]+ Writing trace to Yosys witness file: (\S+)", line)
-            if match:
-                tracefile = match[1]
+        match = re.match(r"^## [0-9: ]+ Writing trace to (VCD|Yosys witness) file: (\S+)", line)
+        if match:
+            tracefile = match[2]
+            if match[1] == "Yosys witness" and (task.opt_fst or task.opt_vcd_sim):
                 pending_sim = tracefile
+            trace, _ = os.path.splitext(os.path.basename(tracefile))
+            engine_case = mode.split('_')[1] if '_' in mode else None
+            task.summary.add_event(engine_idx=engine_idx, trace=trace, path=tracefile, engine_case=engine_case)
+            for p in last_prop:
+                task.summary.add_event(
+                    engine_idx=engine_idx, trace=trace,
+                    type=p.celltype, hdlname=p.hdlname, src=p.location,
+                    step=current_step, prop=p,
+                )
+            recorded_last = True
+            return line
 
         match = re.match(r"^## [0-9: ]+ Unreached cover statement at ([^:]+): (\S+)(?: \((\S+)\))?", line)
         if match and not failed_assert:
@@ -284,7 +286,11 @@ def run(mode, task, engine_idx, engine):
             cell_name = match[3] or match[2]
             prop = task.design.hierarchy.find_property(path, cell_name, trans_dict=smt2_trans)
             prop.status = "FAIL"
-            task.status_db.set_task_property_status(prop, data=dict(source="smtbmc", engine=f"engine_{engine_idx}"))
+            task.summary.add_event(
+                engine_idx=engine_idx, trace=None,
+                hdlname=prop.hdlname, src=prop.location,
+                step=current_step, prop=prop,
+            )
 
         return line
 
@@ -295,15 +301,19 @@ def run(mode, task, engine_idx, engine):
             last_exit_callback()
 
     def exit_callback(retcode):
+        nonlocal last_prop, recorded_last
         if proc_status is None:
             task.error(f"engine_{engine_idx}: Engine terminated without status.")
+        if len(last_prop) and not recorded_last:
+            task.error(f"engine_{engine_idx}: Found properties without trace.")
         simple_exit_callback(retcode)
 
     def last_exit_callback():
+        nonlocal current_step
         if mode == "bmc" or mode == "cover":
-            task.update_status(proc_status)
+            task.update_status(proc_status, current_step)
             if proc_status == "FAIL" and mode == "bmc" and keep_going:
-                task.pass_unknown_asserts(dict(source="smtbmc", keep_going=True, engine=f"engine_{engine_idx}"))
+                task.pass_unknown_asserts(dict(source="smtbmc", keep_going=True, engine=f"engine_{engine_idx}", step=current_step))
             proc_status_lower = proc_status.lower() if proc_status == "PASS" else proc_status
             task.summary.set_engine_status(engine_idx, proc_status_lower)
             if not keep_going:
@@ -335,7 +345,7 @@ def run(mode, task, engine_idx, engine):
                 assert False
 
             if task.basecase_pass and task.induction_pass:
-                task.update_status("PASS")
+                task.update_status("PASS", current_step)
                 task.summary.append("successful proof by k-induction.")
                 if not keep_going:
                     task.terminate()

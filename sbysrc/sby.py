@@ -61,8 +61,11 @@ jobcount = args.jobcount
 init_config_file = args.init_config_file
 status_show = args.status
 status_reset = args.status_reset
+status_live_csv = args.livecsv
+status_show_csv = args.statuscsv
+status_latest = args.status_latest
 
-if status_show or status_reset:
+if status_show or status_reset or status_show_csv:
     target = workdir_prefix or workdir or sbyfile
     if target is None:
         print("ERROR: Specify a .sby config file or working directory to use --status.")
@@ -85,15 +88,26 @@ if status_show or status_reset:
 
     status_db = SbyStatusDb(status_path, task=None)
 
-    if status_show:
-        status_db.print_status_summary()
-        sys.exit(0)
-
     if status_reset:
         status_db.reset()
+    elif status_db.test_schema():
+        print(f"ERROR: Status database does not match expected formatted.  Use --statusreset to reset.")
+        sys.exit(1)
+
+    if status_show:
+        status_db.print_status_summary(status_latest)
+
+    if status_show_csv:
+        status_db.print_status_summary_csv(tasknames, status_latest)
 
     status_db.db.close()
+
+    if status_live_csv:
+        print(f"WARNING: --livecsv flag found but not used.")
+
     sys.exit(0)
+elif status_latest:
+    print(f"WARNING: --latest flag found but not used.")
 
 
 if sbyfile is not None:
@@ -465,7 +479,7 @@ def start_task(taskloop, taskname):
     else:
         junit_filename = "junit"
 
-    task = SbyTask(sbyconfig, my_workdir, early_logmsgs, reusedir, taskloop)
+    task = SbyTask(sbyconfig, my_workdir, early_logmsgs, reusedir, taskloop, name=taskname, live_csv=status_live_csv)
 
     for k, v in exe_paths.items():
         task.exe_paths[k] = v
