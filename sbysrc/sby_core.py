@@ -913,7 +913,7 @@ class SbySummary:
 
 
 class SbyTask(SbyConfig):
-    def __init__(self, sbyconfig, workdir, early_logs, reusedir, status_cancels, taskloop=None, logfile=None, name=None, live_csv=False):
+    def __init__(self, sbyconfig, workdir, early_logs, reusedir, status_cancels=False, taskloop=None, logfile=None, name=None, live_csv=False):
         super().__init__()
         self.used_options = set()
         self.models = dict()
