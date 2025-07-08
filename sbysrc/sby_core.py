@@ -151,8 +151,8 @@ class SbyProc:
         if self.error_callback is not None:
             self.error_callback(retcode)
 
-    def terminate(self, timeout=False):
-        if (self.task.opt_wait or self.wait) and not timeout:
+    def terminate(self, force=False):
+        if (self.task.opt_wait or self.wait) and not force:
             return
         if self.running:
             if not self.silent:
@@ -1306,18 +1306,18 @@ class SbyTask(SbyConfig):
             self.models[model_name] = self.make_model(model_name)
         return self.models[model_name]
 
-    def terminate(self, timeout=False):
+    def terminate(self, timeout=False, cancel=False):
         if timeout:
             self.timeout_reached = True
         for proc in list(self.procs_running):
-            proc.terminate(timeout=timeout)
+            proc.terminate(timeout or cancel)
         for proc in list(self.procs_pending):
-            proc.terminate(timeout=timeout)
+            proc.terminate(timeout or cancel)
         if timeout:
             self.update_unknown_props(dict(source="timeout"))
             
     def cancel(self):
-        self.terminate(True)
+        self.terminate(cancel=True)
         self.update_status("CANCELLED")
 
     def proc_failed(self, proc):
