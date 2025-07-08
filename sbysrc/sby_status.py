@@ -413,7 +413,7 @@ class SbyStatusDb:
 
         return {row["id"]: parse_status_data_row(row) for row in rows}
 
-    def print_status_summary_csv(self):
+    def print_status_summary_csv(self, tasknames):
         # get all statuses
         all_properties = self.all_status_data_joined()
         
@@ -424,6 +424,8 @@ class SbyStatusDb:
         # find summary for each task/property combo
         prop_map: dict[(str, str), dict[str, (int, int)]] = {}
         for row, prop_status in all_properties.items():
+            if tasknames and prop_status['task_name'] not in tasknames:
+                continue
             status = prop_status['status']
             this_depth = prop_status['data'].get('step')
             this_kind = prop_status['trace_kind']
@@ -471,7 +473,7 @@ def combine_statuses(statuses):
 def parse_status_data_row(raw: sqlite3.Row):
     row_dict = dict(raw)    
     row_dict["name"] = json.loads(row_dict.get("name", "null"))
-    row_dict["data"] = json.loads(row_dict.get("data", "null"))
+    row_dict["data"] = json.loads(row_dict.get("data") or "{}")
     return row_dict
 
 def format_status_data_csvline(row: dict|None) -> str:
@@ -490,8 +492,11 @@ def format_status_data_csvline(row: dict|None) -> str:
         ]
         return ','.join(csv_header)
     else:
-        engine = row['data'].get('engine', row['data']['source'])
-        time = row['status_created'] - row['created']
+        engine = row['data'].get('engine', row['data'].get('source'))
+        try:
+            time = row['status_created'] - row['created']
+        except TypeError:
+            time = 0
         name = row['hdlname']
         depth = row['data'].get('step')
         try:
@@ -507,7 +512,7 @@ def format_status_data_csvline(row: dict|None) -> str:
             name or pretty_path(row['name']),
             row['location'],
             row['kind'],
-            row['status'],
+            row['status'] or "UNKNOWN",
             trace_path,
             depth,
         ]

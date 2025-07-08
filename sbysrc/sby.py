@@ -97,7 +97,7 @@ if status_show or status_reset or status_show_csv:
         status_db.print_status_summary()
 
     if status_show_csv:
-        status_db.print_status_summary_csv()
+        status_db.print_status_summary_csv(tasknames)
 
     status_db.db.close()
 
