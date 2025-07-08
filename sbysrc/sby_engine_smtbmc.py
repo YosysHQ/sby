@@ -245,7 +245,6 @@ def run(mode, task, engine_idx, engine):
             cell_name = match[3] or match[2]
             prop = task.design.hierarchy.find_property(path, cell_name, trans_dict=smt2_trans)
             prop.status = "FAIL"
-            task.status_db.set_task_property_status(prop, data=dict(source="smtbmc", engine=f"engine_{engine_idx}", step=current_step))
             last_prop.append(prop)
             return line
 
@@ -255,7 +254,6 @@ def run(mode, task, engine_idx, engine):
             cell_name = match[3] or match[2]
             prop = task.design.hierarchy.find_property(path, cell_name, trans_dict=smt2_trans)
             prop.status = "PASS"
-            task.status_db.set_task_property_status(prop, data=dict(source="smtbmc", engine=f"engine_{engine_idx}", step=current_step))
             last_prop.append(prop)
             return line
 
@@ -264,8 +262,10 @@ def run(mode, task, engine_idx, engine):
             if match:
                 tracefile = match[1]
                 trace = os.path.basename(tracefile)[:-4]
+                trace_path = f"{task.workdir}/{tracefile}"
                 engine_case = mode.split('_')[1] if '_' in mode else None
                 task.summary.add_event(engine_idx=engine_idx, trace=trace, path=tracefile, engine_case=engine_case)
+                trace_id = task.status_db.add_task_trace(trace, trace_path, engine_case)
 
             if match and last_prop:
                 for p in last_prop:
@@ -273,6 +273,7 @@ def run(mode, task, engine_idx, engine):
                         engine_idx=engine_idx, trace=trace,
                         type=p.celltype, hdlname=p.hdlname, src=p.location, step=current_step)
                     p.tracefiles.append(tracefile)
+                    task.status_db.set_task_property_status(p, trace_id=trace_id, data=dict(source="smtbmc", engine=f"engine_{engine_idx}", step=current_step, trace_path=trace_path))
                 last_prop = []
                 return line
         else:
@@ -298,8 +299,11 @@ def run(mode, task, engine_idx, engine):
             last_exit_callback()
 
     def exit_callback(retcode):
+        nonlocal last_prop
         if proc_status is None:
             task.error(f"engine_{engine_idx}: Engine terminated without status.")
+        if len(last_prop):
+            task.error(f"engine_{engine_idx}: Found properties without trace.")
         simple_exit_callback(retcode)
 
     def last_exit_callback():

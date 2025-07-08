@@ -44,10 +44,12 @@ CREATE TABLE task_property (
 CREATE TABLE task_property_status (
     id INTEGER PRIMARY KEY,
     task_property INTEGER,
+    task_trace INTEGER,
     status TEXT,
     data TEXT,
     created REAL,
-    FOREIGN KEY(task_property) REFERENCES task_property(id)
+    FOREIGN KEY(task_property) REFERENCES task_property(id),
+    FOREIGN KEY(task_trace) REFERENCES task_trace(id)
 );
 CREATE TABLE task_property_data (
     id INTEGER PRIMARY KEY,
@@ -56,6 +58,13 @@ CREATE TABLE task_property_data (
     data TEXT,
     created REAL,
     FOREIGN KEY(task_property) REFERENCES task_property(id)
+);
+CREATE TABLE task_trace (
+    id INTEGER PRIMARY KEY,
+    trace TEXT,
+    path TEXT,
+    engine_case TEXT,
+    created REAL
 );"""
 
 def transaction(method: Fn) -> Fn:
@@ -219,6 +228,7 @@ class SbyStatusDb:
         self,
         property: SbyProperty,
         status: Optional[str] = None,
+        trace_id: Optional[int] = None,
         data: Any = None,
     ):
         if status is None:
@@ -228,15 +238,16 @@ class SbyStatusDb:
         self.db.execute(
             """
                 INSERT INTO task_property_status (
-                    task_property, status, data, created
+                    task_property, task_trace, status, data, created
                 )
                 VALUES (
                     (SELECT id FROM task_property WHERE task = :task AND name = :name),
-                    :status, :data, :now
+                    :trace_id, :status, :data, :now
                 )
             """,
             dict(
                 task=self.task_id,
+                trace_id=trace_id,
                 name=json.dumps(property.path),
                 status=status,
                 data=json.dumps(data),
@@ -254,6 +265,7 @@ class SbyStatusDb:
                 property.location,
                 property.kind,
                 property.status,
+                data.get("trace_path", ""),
                 data.get("step", ""),
             ]
             self.task.log(f"{click.style('csv', fg='yellow')}: {','.join(str(v) for v in csv)}")
@@ -279,6 +291,26 @@ class SbyStatusDb:
                 now=now,
             ),
         )
+        
+    @transaction
+    def add_task_trace(self, trace: str, path: str, engine_case: Optional[str] = None):
+        now = time.time()
+        return self.db.execute(
+            """
+                INSERT INTO task_trace (
+                    trace, path, engine_case, created
+                )
+                VALUES (
+                    :trace, :path, :engine_case, :now
+                )
+            """,
+            dict(
+                trace=trace,
+                path=path,
+                engine_case=engine_case,
+                now=now
+            )
+        ).lastrowid
 
     def all_tasks(self):
         rows = self.db.execute(
@@ -385,10 +417,11 @@ class SbyStatusDb:
                 SELECT task.name as 'task_name', task.mode, task.created, task_property.kind,
                 task_property.src as 'location', task_property.name, task_property.hdlname, task_property_status.status,
                 task_property_status.data, task_property_status.created as 'status_created',
-                task_property_status.id
+                task_property_status.id, task_trace.path as 'trace_path'
                 FROM task
                 INNER JOIN task_property ON task_property.task=task.id
-                INNER JOIN task_property_status ON task_property_status.task_property=task_property.id;
+                INNER JOIN task_property_status ON task_property_status.task_property=task_property.id
+                INNER JOIN task_trace ON task_property_status.task_trace=task_trace.id;
             """
         ).fetchall()
         
@@ -414,6 +447,7 @@ class SbyStatusDb:
             "location",
             "kind",
             "status",
+            "trace",
             "depth",
         ]
         print(','.join(csv_header))
@@ -457,6 +491,7 @@ class SbyStatusDb:
                     prop_status['location'],
                     prop_status['kind'],
                     status,
+                    prop_status['trace_path'],
                     depth,
                 ]
                 print(','.join("" if v is None else str(v) for v in csv_line))
