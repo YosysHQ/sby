@@ -177,7 +177,7 @@ class SbyProc:
             return
 
         for task in self.task.taskloop.tasks_done:
-            if task.name == "killer":
+            if task.name in self.task.cancelledby:
                 if not self.silent:
                     self.task.log(f"Cancelled by {task.name!r} task")
                 self.task.cancel()
@@ -290,6 +290,7 @@ class SbyConfig:
         self.autotune_config = None
         self.files = dict()
         self.verbatim_files = dict()
+        self.cancelledby = list()
         pass
 
     def parse_config(self, f):
@@ -410,6 +411,12 @@ class SbyConfig:
                     import sby_autotune
                     self.autotune_config = sby_autotune.SbyAutotuneConfig()
                     continue
+                
+                if section == "cancelledby":
+                    mode = "cancelledby"
+                    if args is not None:
+                        self.error(f"sby file syntax error: '[cancelledby]' section does not accept any arguments. got {args}")
+                    continue
 
                 if section == "file":
                     mode = "file"
@@ -443,6 +450,12 @@ class SbyConfig:
 
             if mode == "autotune":
                 self.autotune_config.config_line(self, line)
+                continue
+            
+            if mode == "cancelledby":
+                taskname = line.strip()
+                if taskname:
+                    self.cancelledby.append(taskname)
                 continue
 
             if mode == "engines":

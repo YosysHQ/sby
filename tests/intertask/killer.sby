@@ -1,6 +1,12 @@
 [tasks]
-killer
-aborted
+c
+b
+a
+
+[cancelledby]
+a: b
+b: c
+c: a
 
 [options]
 mode bmc
@@ -8,12 +14,12 @@ depth 100
 expect fail,cancelled
 
 [engines]
-killer: btor btormc
-aborted: smtbmc boolector
+btor btormc
 
 [script]
-killer: read -define MAX=7
-aborted: read -define MAX=14
+a: read -define MAX=7
+b: read -define MAX=14
+c: read -define MAX=3
 read -formal demo.sv
 prep -top demo
 

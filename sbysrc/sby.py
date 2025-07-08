@@ -388,6 +388,7 @@ if dump_taskinfo:
             "mode": cfg.options.get("mode"),
             "engines": cfg.engines,
             "script": cfg.script,
+            "cancelledby": cfg.cancelledby,
         }
     print(json.dumps(taskinfo, indent=2))
     sys.exit(0)
