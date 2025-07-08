@@ -649,7 +649,7 @@ class SbyAutotuneTask(SbyTask):
     def engine_list(self):
         return [(self.candidate.engine_idx, self.candidate.engine)]
 
-    def copy_src(self):
+    def copy_src(self, _):
         pass
 
     def model(self, model_name):

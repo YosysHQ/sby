@@ -1,0 +1,21 @@
+[tasks]
+link
+copy
+
+[options]
+mode prep
+
+[engines]
+btor btormc
+
+[script]
+read -noverific
+script dir/script.ys
+
+[files]
+../../docs/examples/demos/picorv32.v
+prv32fmcmp.v
+dir
+
+[file heredoc]
+log foo

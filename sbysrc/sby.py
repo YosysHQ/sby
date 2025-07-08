@@ -54,6 +54,7 @@ dump_taskinfo = args.dump_taskinfo
 dump_files = args.dump_files
 reusedir = False
 setupmode = args.setupmode
+linkmode = args.linkmode
 autotune = args.autotune
 autotune_config = args.autotune_config
 sequential = args.sequential
@@ -64,6 +65,10 @@ status_reset = args.status_reset
 status_live_csv = args.livecsv
 status_show_csv = args.statuscsv
 status_latest = args.status_latest
+
+if autotune and linkmode:
+    print("ERROR: --link flag currently not available with --autotune")
+    sys.exit(1)
 
 if status_show or status_reset or status_show_csv:
     target = workdir_prefix or workdir or sbyfile
@@ -515,7 +520,7 @@ def start_task(taskloop, taskname):
     task.exit_callback = exit_callback
 
     if not autotune:
-        task.setup_procs(setupmode)
+        task.setup_procs(setupmode, linkmode)
         task.task_local_abort = not throw_err
 
     return task

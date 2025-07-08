@@ -1,0 +1,3 @@
+read -sv picorv32.v
+read -sv prv32fmcmp.v
+prep -top prv32fmcmp
