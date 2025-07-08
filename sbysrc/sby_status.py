@@ -587,5 +587,4 @@ def remove_db(path):
         # no other connections, delete all tables
         drop_script = cur.execute("SELECT name FROM sqlite_master WHERE type = 'table';").fetchall()
         for table in drop_script:
-            print(table)
             cur.execute(f"DROP TABLE {table}")
