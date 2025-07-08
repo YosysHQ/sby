@@ -112,6 +112,10 @@ class SbyProperty:
         return f"${str(self.type).lower()}"
 
     @property
+    def kind(self):
+        return str(self.type)
+
+    @property
     def hdlname(self):
         return pretty_path(self.path).rstrip()
 

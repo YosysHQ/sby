@@ -37,6 +37,7 @@ CREATE TABLE task_property (
     src TEXT,
     name TEXT,
     hdlname TEXT,
+    kind TEXT,
     created REAL,
     FOREIGN KEY(task) REFERENCES task(id)
 );
@@ -170,8 +171,8 @@ class SbyStatusDb:
         now = time.time()
         self.db.executemany(
             """
-                INSERT INTO task_property (name, src, hdlname, task, created)
-                VALUES (:name, :src, :hdlname, :task, :now)
+                INSERT INTO task_property (name, src, hdlname, task, kind, created)
+                VALUES (:name, :src, :hdlname, :task, :kind, :now)
             """,
             [
                 dict(
@@ -179,6 +180,7 @@ class SbyStatusDb:
                     src=prop.location or "",
                     hdlname=prop.hdlname,
                     task=task_id,
+                    kind=prop.kind,
                     now=now,
                 )
                 for prop in properties
@@ -250,8 +252,9 @@ class SbyStatusDb:
                 data.get("engine", data["source"]),
                 property.hdlname,
                 property.location,
+                property.kind,
                 property.status,
-                data.get("step", "DEPTH?"),
+                data.get("step", ""),
             ]
             self.task.log(f"{click.style('csv', fg='yellow')}: {','.join(str(v) for v in csv)}")
 
@@ -296,7 +299,6 @@ class SbyStatusDb:
         def get_result(row):
             row = dict(row)
             row["name"] = tuple(json.loads(row.get("name", "[]")))
-            row["data"] = json.loads(row.get("data", "null"))
             return row
 
         return {row["id"]: get_result(row) for row in rows}
@@ -380,7 +382,7 @@ class SbyStatusDb:
     def all_status_data_joined(self):
         rows = self.db.execute(
             """
-                SELECT task.name as 'task_name', task.mode, task.created,
+                SELECT task.name as 'task_name', task.mode, task.created, task_property.kind,
                 task_property.src as 'location', task_property.name, task_property.hdlname, task_property_status.status,
                 task_property_status.data, task_property_status.created as 'status_created',
                 task_property_status.id
@@ -410,6 +412,7 @@ class SbyStatusDb:
             "engine",
             "name",
             "location",
+            "kind",
             "status",
             "depth",
         ]
@@ -452,10 +455,11 @@ class SbyStatusDb:
                     engine,
                     name or pretty_path(prop_status['name']),
                     prop_status['location'],
+                    prop_status['kind'],
                     status,
                     depth,
                 ]
-                print(','.join("N/A" if v is None else str(v) for v in csv_line))
+                print(','.join("" if v is None else str(v) for v in csv_line))
 
 
 def combine_statuses(statuses):
