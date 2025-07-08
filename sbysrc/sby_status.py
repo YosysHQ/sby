@@ -125,7 +125,8 @@ class SbyStatusDb:
         self._setup()
 
         if task is not None:
-            self.task_id = self.create_task(workdir=task.workdir, name=task.name, mode=task.opt_mode)
+            self.start_time = time.time()
+            self.task_id = self.create_task(workdir=task.workdir, name=task.name, mode=task.opt_mode, now=self.start_time)
 
     def log_debug(self, *args):
         if self.debug:
@@ -148,13 +149,13 @@ class SbyStatusDb:
         return schema_script != SQLSCRIPT
 
     @transaction
-    def create_task(self, workdir: str, name: str, mode: str) -> int:
+    def create_task(self, workdir: str, name: str, mode: str, now:float) -> int:
         return self.db.execute(
             """
                 INSERT INTO task (workdir, name, mode, created)
                 VALUES (:workdir, :name, :mode, :now)
             """,
-            dict(workdir=workdir, name=name, mode=mode, now=time.time()),
+            dict(workdir=workdir, name=name, mode=mode, now=now),
         ).lastrowid
 
     @transaction
@@ -236,6 +237,19 @@ class SbyStatusDb:
                 now=now,
             ),
         )
+
+        if True:
+            csv = [
+                round(now - self.start_time, 2),
+                self.task.name,
+                self.task.opt_mode,
+                data.get("engine", "ENGINE?"),
+                property.hdlname,
+                property.location,
+                property.status,
+                data.get("step", "DEPTH?"),
+            ]
+            self.task.log(f"csv: {','.join(str(v) for v in csv)}")
 
     @transaction
     def add_task_property_data(self, property: SbyProperty, kind: str, data: Any):
