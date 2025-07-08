@@ -301,7 +301,7 @@ class SbyStatusDb:
                 SELECT task.id, task.name, task.created,
                 task_status.status, task_status.created as 'status_created'
                 FROM task
-                INNER JOIN task_status ON task_status.task=task.id
+                LEFT JOIN task_status ON task_status.task=task.id
             """
         ).fetchall()
 
@@ -398,6 +398,14 @@ class SbyStatusDb:
 
         for display_name, statuses in sorted(properties.items()):
             print(pretty_path(display_name), combine_statuses(statuses))
+
+    def print_task_summary(self):
+        tasks = self.all_tasks_status()
+        task_status = defaultdict(set)
+        for task in tasks.values():
+            task_status[task["name"]].add(task["status"] or "UNKNOWN")
+        for task_name, statuses in sorted(task_status.items()):
+            print(task_name, combine_statuses(statuses))
 
     def get_status_data_joined(self, status_id: int):
         row = self.db.execute(

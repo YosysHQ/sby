@@ -63,6 +63,7 @@ init_config_file = args.init_config_file
 status_show = args.status
 status_reset = args.status_reset
 status_cancels = args.status_cancels
+task_status = args.task_status
 status_live_csv = args.livecsv
 status_show_csv = args.statuscsv
 status_latest = args.status_latest
@@ -71,7 +72,7 @@ if autotune and linkmode:
     print("ERROR: --link flag currently not available with --autotune")
     sys.exit(1)
 
-if status_show or status_reset or status_show_csv:
+if status_show or status_reset or task_status or status_show_csv:
     target = workdir_prefix or workdir or sbyfile
     if target is None:
         print("ERROR: Specify a .sby config file or working directory to use --status.")
@@ -105,6 +106,9 @@ if status_show or status_reset or status_show_csv:
 
     if status_show_csv:
         status_db.print_status_summary_csv(tasknames, status_latest)
+        
+    if task_status:
+        status_db.print_task_summary()
 
     status_db.db.close()
 
