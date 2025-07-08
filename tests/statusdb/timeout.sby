@@ -1,45 +1,64 @@
 [tasks]
 btor_bmc: btor bmc
-pono_bmc: bmc
+btor_fin_bmc: btor bmc fin
+pono_bmc: pono bmc
+pono_fin_bmc: pono bmc fin
 btor_cover: btor cover
+btor_fin_cover: btor cover fin
 smt_bmc: smt bmc
+smt_fin_bmc: smt bmc fin
 smt_cover: smt cover
+smt_fin_cover: smt cover fin
 smt_prove: smt prove
-smt_fail: bmc fail
-aig_bmc: bmc
-aig_prove: prove
-abc_bmc: bmc
-abc_prove: prove
-abc_fail: prove fail
+smt_fin_prove: smt prove fin
+smt_fail: smtfail bmc fail
+smt_fin_fail: smtfail bmc fail fin
+aig_bmc: aigbmc bmc
+aig_fin_bmc: aigbmc bmc fin
+aig_prove: aiger prove
+aig_fin_prove: aiger prove fin
+abc_bmc: abcbmc bmc
+abc_fin_bmc: abcbmc bmc fin
+abc_prove: abc prove
+abc_fin_prove: abc prove fin
+abc_fail: abcfail prove fail
+abc_fin_fail: abcfail prove fail fin
 
 [options]
 bmc: mode bmc
 cover: mode cover
 prove: mode prove
+fin:
+expect PASS,FAIL,UNKNOWN
+depth 10
+--
+~fin:
 expect TIMEOUT
 depth 40000
 timeout 1
-vcd_sim off
+--
 
 [engines]
 btor: btor btormc
-pono_bmc: btor pono
+pono: btor pono
 smt: smtbmc bitwuzla
-smt_fail: smtbmc --keep-going bitwuzla
-aig_bmc: aiger aigbmc
-aig_prove: aiger suprove
-abc_bmc: abc bmc3
-abc_prove: abc pdr
-abc_fail: abc --keep-going pdr
+smtfail: smtbmc --keep-going bitwuzla
+aigbmc: aiger aigbmc
+aiger: aiger suprove
+abcbmc: abc bmc3
+abc: abc pdr
+abcfail: abc --keep-going pdr
 
 [script]
+fin: read -define WIDTH=4
+~fin: read -define WIDTH=8
 fail: read -define FAIL=1
 read -sv timeout.sv
 prep -top top
 
 [file timeout.sv]
 module top #(
-    parameter WIDTH = 8
+    parameter WIDTH = `WIDTH
 ) (
     input clk,
     input load,
