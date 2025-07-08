@@ -176,6 +176,13 @@ class SbyProc:
         if self.finished or self.terminated or self.exited:
             return
 
+        for task in self.task.taskloop.tasks_done:
+            if task.name == "killer":
+                if not self.silent:
+                    self.task.log(f"Cancelled by {task.name!r} task")
+                self.task.cancel()
+                return
+
         if not self.running:
             for dep in self.deps:
                 if not dep.finished:
@@ -554,6 +561,7 @@ class SbyTaskloop:
         self.procs_pending = []
         self.procs_running = []
         self.tasks = []
+        self.tasks_done = []
         self.poll_now = False
         self.jobclient = jobclient
 
@@ -606,6 +614,7 @@ class SbyTaskloop:
                     self.tasks.append(task)
                 else:
                     task.exit_callback()
+                    self.tasks_done.append(task)
 
         for task in self.tasks:
             task.exit_callback()
@@ -1263,6 +1272,10 @@ class SbyTask(SbyConfig):
             proc.terminate(timeout=timeout)
         if timeout:
             self.update_unknown_props(dict(source="timeout"))
+            
+    def cancel(self):
+        self.terminate(True)
+        self.update_status("CANCELLED")
 
     def proc_failed(self, proc):
         # proc parameter used by autotune override
@@ -1282,7 +1295,7 @@ class SbyTask(SbyConfig):
             self.status_db.set_task_property_status(prop, data=data)
 
     def update_status(self, new_status, step = None):
-        assert new_status in ["PASS", "FAIL", "UNKNOWN", "ERROR"]
+        assert new_status in ["PASS", "FAIL", "UNKNOWN", "ERROR", "CANCELLED"]
         self.status_db.set_task_status(new_status)
 
         if new_status == "UNKNOWN":
@@ -1307,6 +1320,9 @@ class SbyTask(SbyConfig):
         elif new_status == "ERROR":
             self.status = "ERROR"
 
+        elif new_status == "CANCELLED":
+            self.status = "CANCELLED"
+
         else:
             assert 0
 
@@ -1325,7 +1341,7 @@ class SbyTask(SbyConfig):
             self.used_options.add("expect")
 
         for s in self.expect:
-            if s not in ["PASS", "FAIL", "UNKNOWN", "ERROR", "TIMEOUT"]:
+            if s not in ["PASS", "FAIL", "UNKNOWN", "ERROR", "TIMEOUT", "CANCELLED"]:
                 self.error(f"Invalid expect value: {s}")
 
         if self.opt_mode != "live":
@@ -1465,7 +1481,7 @@ class SbyTask(SbyConfig):
             else:
                 self.log("summary: " + click.style(line, fg="green" if self.status in self.expect else "red", bold=True))
 
-        assert self.status in ["PASS", "FAIL", "UNKNOWN", "ERROR", "TIMEOUT"]
+        assert self.status in ["PASS", "FAIL", "UNKNOWN", "ERROR", "TIMEOUT", "CANCELLED"]
 
         if self.status in self.expect:
             self.retcode = 0
@@ -1475,6 +1491,7 @@ class SbyTask(SbyConfig):
             if self.status == "UNKNOWN": self.retcode = 4
             if self.status == "TIMEOUT": self.retcode = 8
             if self.status == "ERROR": self.retcode = 16
+            if self.status == "CANCELLED": self.retcode = 32
 
     def write_summary_file(self):
         with open(f"{self.workdir}/{self.status}", "w") as f:
