@@ -243,7 +243,7 @@ class SbyStatusDb:
                 round(now - self.start_time, 2),
                 self.task.name,
                 self.task.opt_mode,
-                data.get("engine", "ENGINE?"),
+                data.get("engine", data["source"]),
                 property.hdlname,
                 property.location,
                 property.status,

@@ -300,10 +300,11 @@ def run(mode, task, engine_idx, engine):
         simple_exit_callback(retcode)
 
     def last_exit_callback():
+        nonlocal current_step
         if mode == "bmc" or mode == "cover":
-            task.update_status(proc_status)
+            task.update_status(proc_status, current_step)
             if proc_status == "FAIL" and mode == "bmc" and keep_going:
-                task.pass_unknown_asserts(dict(source="smtbmc", keep_going=True, engine=f"engine_{engine_idx}"))
+                task.pass_unknown_asserts(dict(source="smtbmc", keep_going=True, engine=f"engine_{engine_idx}", step=current_step))
             proc_status_lower = proc_status.lower() if proc_status == "PASS" else proc_status
             task.summary.set_engine_status(engine_idx, proc_status_lower)
             if not keep_going:
@@ -335,7 +336,7 @@ def run(mode, task, engine_idx, engine):
                 assert False
 
             if task.basecase_pass and task.induction_pass:
-                task.update_status("PASS")
+                task.update_status("PASS", current_step)
                 task.summary.append("successful proof by k-induction.")
                 if not keep_going:
                     task.terminate()

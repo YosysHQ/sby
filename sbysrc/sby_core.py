@@ -1226,7 +1226,7 @@ class SbyTask(SbyConfig):
         for prop in self.design.pass_unknown_asserts():
             self.status_db.set_task_property_status(prop, data=data)
 
-    def update_status(self, new_status):
+    def update_status(self, new_status, step = None):
         assert new_status in ["PASS", "FAIL", "UNKNOWN", "ERROR"]
         self.status_db.set_task_status(new_status)
 
@@ -1240,7 +1240,10 @@ class SbyTask(SbyConfig):
             assert self.status != "FAIL"
             self.status = "PASS"
             if self.opt_mode in ("bmc", "prove") and self.design:
-                self.pass_unknown_asserts(dict(source="task_status"))
+                data = {"source": "task_status"}
+                if step:
+                    data["step"] = step
+                self.pass_unknown_asserts(data)
 
         elif new_status == "FAIL":
             assert self.status != "PASS"
