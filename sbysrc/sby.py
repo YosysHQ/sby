@@ -62,6 +62,7 @@ jobcount = args.jobcount
 init_config_file = args.init_config_file
 status_show = args.status
 status_reset = args.status_reset
+status_cancels = args.status_cancels
 status_live_csv = args.livecsv
 status_show_csv = args.statuscsv
 status_latest = args.status_latest
@@ -491,7 +492,7 @@ def start_task(taskloop, taskname):
     else:
         junit_filename = "junit"
 
-    task = SbyTask(sbyconfig, my_workdir, early_logmsgs, reusedir, taskloop, name=taskname, live_csv=status_live_csv)
+    task = SbyTask(sbyconfig, my_workdir, early_logmsgs, reusedir, status_cancels, taskloop, name=taskname, live_csv=status_live_csv)
 
     for k, v in exe_paths.items():
         task.exe_paths[k] = v

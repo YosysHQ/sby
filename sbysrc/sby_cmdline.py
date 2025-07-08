@@ -83,6 +83,8 @@ def parser_func(release_version='unknown SBY version'):
             help="only check statuses from the most recent run of a task")
     parser.add_argument("--statusreset", action="store_true", dest="status_reset",
             help="reset the contents of the status database")
+    parser.add_argument("--statuscancels", action="store_true", dest="status_cancels",
+            help="intertask cancellations can be triggered by the status database")
 
     parser.add_argument("--init-config-file", dest="init_config_file",
             help="create a default .sby config file")
