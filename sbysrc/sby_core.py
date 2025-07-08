@@ -1222,6 +1222,11 @@ class SbyTask(SbyConfig):
         self.status = "ERROR"
         self.terminate()
 
+    def update_unknown_asserts(self, data):
+        for prop in self.design.hierarchy:
+            if prop.type == prop.Type.ASSERT and prop.status == "UNKNOWN":
+                self.status_db.set_task_property_status(prop, data=data)
+
     def pass_unknown_asserts(self, data):
         for prop in self.design.pass_unknown_asserts():
             self.status_db.set_task_property_status(prop, data=data)
