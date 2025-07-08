@@ -347,13 +347,16 @@ class SbyStatusDb:
         self._reset()
         self.db.execute("PRAGMA foreign_keys=ON")
 
-    def print_status_summary(self):
+    def print_status_summary(self, latest: bool):
         tasks, task_properties, task_property_statuses = self.all_status_data()
+        latest_task_ids = filter_latest_task_ids(tasks)
         properties = defaultdict(set)
 
         uniquify_paths = defaultdict(dict)
 
         def add_status(task_property, status):
+            if latest and task_property["task"] not in latest_task_ids:
+                return
 
             display_name = task_property["name"]
             if display_name[-1].startswith("$"):
@@ -400,7 +403,7 @@ class SbyStatusDb:
     def all_status_data_joined(self):
         rows = self.db.execute(
             """
-                SELECT task.name as 'task_name', task.mode, task.workdir, task.created, task_property.kind,
+                SELECT task.id as 'task_id', task.name as 'task_name', task.mode, task.workdir, task.created, task_property.kind,
                 task_property.src as 'location', task_property.name, task_property.hdlname, task_property_status.status,
                 task_property_status.data, task_property_status.created as 'status_created',
                 task_property_status.id, task_trace.path, task_trace.kind as trace_kind
@@ -413,9 +416,10 @@ class SbyStatusDb:
 
         return {row["id"]: parse_status_data_row(row) for row in rows}
 
-    def print_status_summary_csv(self, tasknames):
+    def print_status_summary_csv(self, tasknames: list[str], latest: bool):
         # get all statuses
         all_properties = self.all_status_data_joined()
+        latest_task_ids = filter_latest_task_ids(self.all_tasks())
         
         # print csv header
         csvheader = format_status_data_csvline(None)
@@ -425,6 +429,8 @@ class SbyStatusDb:
         prop_map: dict[(str, str), dict[str, (int, int)]] = {}
         for row, prop_status in all_properties.items():
             if tasknames and prop_status['task_name'] not in tasknames:
+                continue
+            if latest and prop_status['task_id'] not in latest_task_ids:
                 continue
             status = prop_status['status']
             this_depth = prop_status['data'].get('step')
@@ -517,3 +523,9 @@ def format_status_data_csvline(row: dict|None) -> str:
             depth,
         ]
         return ','.join("" if v is None else str(v) for v in csv_line)
+
+def filter_latest_task_ids(all_tasks: dict[int, dict[str]]):
+    latest: dict[str, int] = {}
+    for task_id, task_dict in all_tasks.items():
+        latest[task_dict["workdir"]] = task_id
+    return list(latest.values())

@@ -63,6 +63,7 @@ status_show = args.status
 status_reset = args.status_reset
 status_live_csv = args.livecsv
 status_show_csv = args.statuscsv
+status_latest = args.status_latest
 
 if status_show or status_reset or status_show_csv:
     target = workdir_prefix or workdir or sbyfile
@@ -94,10 +95,10 @@ if status_show or status_reset or status_show_csv:
         sys.exit(1)
 
     if status_show:
-        status_db.print_status_summary()
+        status_db.print_status_summary(status_latest)
 
     if status_show_csv:
-        status_db.print_status_summary_csv(tasknames)
+        status_db.print_status_summary_csv(tasknames, status_latest)
 
     status_db.db.close()
 
@@ -105,6 +106,8 @@ if status_show or status_reset or status_show_csv:
         print(f"WARNING: --livecsv flag found but not used.")
 
     sys.exit(0)
+elif status_latest:
+    print(f"WARNING: --latest flag found but not used.")
 
 
 if sbyfile is not None:
