@@ -100,6 +100,10 @@ def transaction(method: Fn) -> Fn:
 
     return wrapper  # type: ignore
 
+class FileInUseError(Exception):
+    def __init__(self, *args, file: Path|str = "file"):
+        super().__init__(f"Found {file}, try again later", *args)
+
 
 class SbyStatusDb:
     def __init__(self, path: Path, task, timeout: float = 5.0, live_csv = False):
@@ -529,3 +533,11 @@ def filter_latest_task_ids(all_tasks: dict[int, dict[str]]):
     for task_id, task_dict in all_tasks.items():
         latest[task_dict["workdir"]] = task_id
     return list(latest.values())
+
+def remove_db(path):
+    path = Path(path)
+    lock_exts = [".sqlite-wal", ".sqlite-shm"]
+    for lock_file in [path.with_suffix(ext) for ext in lock_exts]:
+        if lock_file.exists():
+            raise FileInUseError(file=lock_file)
+    os.remove(path)
