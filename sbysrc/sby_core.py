@@ -17,6 +17,7 @@
 #
 
 import os, re, sys, signal, platform, click
+import time
 if os.name == "posix":
     import resource, fcntl
 import subprocess
@@ -98,6 +99,7 @@ class SbyProc:
         self.silent = silent
         self.wait = False
         self.job_lease = None
+        self.next_db = 0.0
 
         self.task.update_proc_pending(self)
 
@@ -183,6 +185,29 @@ class SbyProc:
                 self.task.cancel()
                 return
 
+        if time.time() >= self.next_db:
+            tasks_status = self.task.status_db.all_tasks_status()
+            for task_status in tasks_status.values():
+                if (task_status["status"] in ["PASS", "FAIL", "CANCELLED"] and
+                    task_status["name"] in self.task.cancelledby):
+                    if not self.silent:
+                        status_time = time.localtime(task_status["status_created"])
+                        if status_time.tm_yday == time.localtime().tm_yday:
+                            # same day, format time only
+                            time_format = r"%H:%M:%S"
+                        else:
+                            time_format = r"%x %H:%M:%S"
+                        self.task.log(
+                            f'Cancelled by {task_status["name"]!r} task '
+                            f'with status {task_status["status"]!r} '
+                            f'at {time.strftime(time_format, status_time)} '
+                            '(consider calling sby with --statusreset if this seems wrong)'
+                        )
+                    self.task.cancel()
+                    return
+            # don't hit the database every poll
+            self.next_db = time.time() + 10
+
         if not self.running:
             for dep in self.deps:
                 if not dep.finished:
@@ -225,6 +250,10 @@ class SbyProc:
 
             if self.job_lease:
                 self.job_lease.done()
+
+            if self.terminated:
+                # task already terminated, do not finish
+                return
 
             if not self.silent:
                 self.task.log(f"{click.style(self.info, fg='magenta')}: finished (returncode={self.p.returncode})")

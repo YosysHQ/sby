@@ -295,6 +295,18 @@ class SbyStatusDb:
 
         return {row["id"]: dict(row) for row in rows}
 
+    def all_tasks_status(self):
+        rows = self.db.execute(
+            """
+                SELECT task.id, task.name, task.created,
+                task_status.status, task_status.created as 'status_created'
+                FROM task
+                INNER JOIN task_status ON task_status.task=task.id
+            """
+        ).fetchall()
+
+        return {row["id"]: dict(row) for row in rows}
+
     def all_task_properties(self):
         rows = self.db.execute(
             """
