@@ -222,14 +222,9 @@ class SbyStatusDb:
     def set_task_property_status(
         self,
         property: SbyProperty,
-        status: Optional[str] = None,
         trace_id: Optional[int] = None,
-        trace_path: str = "",
         data: Any = None,
     ):
-        if status is None:
-            status = property.status
-
         now = time.time()
         self.db.execute(
             """
@@ -245,26 +240,16 @@ class SbyStatusDb:
                 task=self.task_id,
                 trace_id=trace_id,
                 name=json.dumps(property.path),
-                status=status,
+                status=property.status,
                 data=json.dumps(data),
                 now=now,
             ),
         )
 
         if self.live_csv:
-            csv = [
-                round(now - self.start_time, 2),
-                self.task.name,
-                self.task.opt_mode,
-                data.get("engine", data["source"]),
-                property.hdlname,
-                property.location,
-                property.kind,
-                property.status,
-                trace_path,
-                data.get("step", ""),
-            ]
-            self.task.log(f"{click.style('csv', fg='yellow')}: {','.join(str(v) for v in csv)}")
+            row = self.get_status_data_joined(self.db.lastrowid)
+            csvline = format_status_data_csvline(row)
+            self.task.log(f"{click.style('csv', fg='yellow')}: {csvline}")
         
     @transaction
     def add_task_trace(
@@ -395,34 +380,102 @@ class SbyStatusDb:
         for display_name, statuses in sorted(properties.items()):
             print(pretty_path(display_name), combine_statuses(statuses))
 
-    @transaction
+    def get_status_data_joined(self, status_id: int):
+        row = self.db.execute(
+            """
+                SELECT task.name as 'task_name', task.mode, task.workdir, task.created, task_property.kind,
+                task_property.src as 'location', task_property.name, task_property.hdlname, task_property_status.status,
+                task_property_status.data, task_property_status.created as 'status_created',
+                task_property_status.id, task_trace.path, task_trace.kind as trace_kind
+                FROM task
+                INNER JOIN task_property ON task_property.task=task.id
+                INNER JOIN task_property_status ON task_property_status.task_property=task_property.id
+                LEFT JOIN task_trace ON task_property_status.task_trace=task_trace.id
+                WHERE task_property_status.id=:status_id;
+            """,
+            dict(status_id=status_id)
+        ).fetchone()
+        return parse_status_data_row(row)
+
     def all_status_data_joined(self):
         rows = self.db.execute(
             """
                 SELECT task.name as 'task_name', task.mode, task.workdir, task.created, task_property.kind,
                 task_property.src as 'location', task_property.name, task_property.hdlname, task_property_status.status,
                 task_property_status.data, task_property_status.created as 'status_created',
-                task_property_status.id, task_trace.path as 'path'
+                task_property_status.id, task_trace.path, task_trace.kind as trace_kind
                 FROM task
                 INNER JOIN task_property ON task_property.task=task.id
                 INNER JOIN task_property_status ON task_property_status.task_property=task_property.id
                 LEFT JOIN task_trace ON task_property_status.task_trace=task_trace.id;
             """
         ).fetchall()
-        
-        def get_result(row):
-            row = dict(row)
-            row["name"] = json.loads(row.get("name", "null"))
-            row["data"] = json.loads(row.get("data", "null"))
-            return row
 
-        return {row["id"]: get_result(row) for row in rows}
+        return {row["id"]: parse_status_data_row(row) for row in rows}
 
     def print_status_summary_csv(self):
         # get all statuses
         all_properties = self.all_status_data_joined()
         
         # print csv header
+        csvheader = format_status_data_csvline(None)
+        print(csvheader)
+
+        # find summary for each task/property combo
+        prop_map: dict[(str, str), dict[str, (int, int)]] = {}
+        for row, prop_status in all_properties.items():
+            status = prop_status['status']
+            this_depth = prop_status['data'].get('step')
+            this_kind = prop_status['trace_kind']
+            key = (prop_status['task_name'], prop_status['hdlname'])
+            try:
+                prop_status_map = prop_map[key]
+            except KeyError:
+                prop_map[key] = prop_status_map = {}
+
+            current_depth, _ = prop_status_map.get(status, (None, None))
+            update_map = False
+            if current_depth is None:
+                update_map = True
+            elif this_depth is not None:
+                if status == 'FAIL' and this_depth < current_depth:
+                    # earliest fail
+                    update_map = True
+                elif status != 'FAIL' and this_depth > current_depth:
+                    # latest non-FAIL
+                    update_map = True
+                elif this_depth == current_depth and this_kind in ['fst', 'vcd']:
+                        # prefer traces over witness files
+                        update_map = True
+            if update_map:
+                prop_status_map[status] = (this_depth, row)
+
+        for prop in prop_map.values():
+            # ignore UNKNOWNs if there are other statuses
+            if len(prop) > 1 and "UNKNOWN" in prop:
+                del prop["UNKNOWN"]
+
+            for _, row in prop.values():
+                csvline = format_status_data_csvline(all_properties[row])
+                print(csvline)
+
+
+def combine_statuses(statuses):
+    statuses = set(statuses)
+
+    if len(statuses) > 1:
+        statuses.discard("UNKNOWN")
+
+    return ",".join(sorted(statuses))
+
+def parse_status_data_row(raw: sqlite3.Row):
+    row_dict = dict(raw)    
+    row_dict["name"] = json.loads(row_dict.get("name", "null"))
+    row_dict["data"] = json.loads(row_dict.get("data", "null"))
+    return row_dict
+
+def format_status_data_csvline(row: dict|None) -> str:
+    if row is None:
         csv_header = [
             "time",
             "task_name",
@@ -435,61 +488,27 @@ class SbyStatusDb:
             "trace",
             "depth",
         ]
-        print(','.join(csv_header))
+        return ','.join(csv_header)
+    else:
+        engine = row['data'].get('engine', row['data']['source'])
+        time = row['status_created'] - row['created']
+        name = row['hdlname']
+        depth = row['data'].get('step')
+        try:
+            trace_path = Path(row['workdir']) / row['path']
+        except TypeError:
+            trace_path = None
 
-        # find summary for each task/property combo
-        prop_map: dict[(str, str), dict[str, (int, int)]] = {}
-        for row, prop_status in all_properties.items():
-            status = prop_status['status']
-            this_depth = prop_status['data'].get('step')
-            key = (prop_status['task_name'], prop_status['hdlname'])
-            try:
-                prop_status_map = prop_map[key]
-            except KeyError:
-                prop_map[key] = prop_status_map = {}
-
-            # get earliest FAIL, or latest non-FAIL
-            current_depth = prop_status_map.get(status, (None,))[0]
-            if (current_depth is None or this_depth is not None and
-                ((status == 'FAIL' and this_depth < current_depth) or
-                 (status != 'FAIL' and this_depth > current_depth))):
-                prop_status_map[status] = (this_depth, row)
-
-        for prop in prop_map.values():
-            # ignore UNKNOWNs if there are other statuses
-            if len(prop) > 1 and "UNKNOWN" in prop:
-                del prop["UNKNOWN"]
-
-            for status, (depth, row) in prop.items():
-                prop_status = all_properties[row]
-                engine = prop_status['data'].get('engine', prop_status['data']['source'])
-                time = prop_status['status_created'] - prop_status['created']
-                name = prop_status['hdlname']
-                try:
-                    trace_path = f"{prop_status['workdir']}/{prop_status['path']}"
-                except KeyError:
-                    trace_path = None
-
-                # print as csv
-                csv_line = [
-                    round(time, 2),
-                    prop_status['task_name'],
-                    prop_status['mode'],
-                    engine,
-                    name or pretty_path(prop_status['name']),
-                    prop_status['location'],
-                    prop_status['kind'],
-                    status,
-                    trace_path,
-                    depth,
-                ]
-                print(','.join("" if v is None else str(v) for v in csv_line))
-
-
-def combine_statuses(statuses):
-    statuses = set(statuses)
-
-    if len(statuses) > 1:
-        statuses.discard("UNKNOWN")
-
-    return ",".join(sorted(statuses))
+        csv_line = [
+            round(time, 2),
+            row['task_name'],
+            row['mode'],
+            engine,
+            name or pretty_path(row['name']),
+            row['location'],
+            row['kind'],
+            row['status'],
+            trace_path,
+            depth,
+        ]
+        return ','.join("" if v is None else str(v) for v in csv_line)
