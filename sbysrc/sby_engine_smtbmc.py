@@ -221,7 +221,7 @@ def run(mode, task, engine_idx, engine):
             last_step = current_step
             current_step = int(match[1])
             if current_step != last_step and last_step is not None:
-                task.update_unknown_asserts(dict(source="smtbmc", engine=f"engine_{engine_idx}", step=last_step))
+                task.update_unknown_props(dict(source="smtbmc", engine=f"engine_{engine_idx}", step=last_step))
             return line
 
         match = re.match(r"^## [0-9: ]+ Status: FAILED", line)

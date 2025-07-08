@@ -1260,9 +1260,12 @@ class SbyTask(SbyConfig):
         self.status = "ERROR"
         self.terminate()
 
-    def update_unknown_asserts(self, data):
+    def update_unknown_props(self, data):
         for prop in self.design.hierarchy:
-            if prop.type == prop.Type.ASSERT and prop.status == "UNKNOWN":
+            if prop.status != "UNKNOWN":
+                continue
+            if ((prop.type == prop.Type.ASSERT and self.opt_mode in ["bmc", "prove"]) or
+                (prop.type == prop.Type.COVER and self.opt_mode == "cover")):
                 self.status_db.set_task_property_status(prop, data=data)
 
     def pass_unknown_asserts(self, data):
