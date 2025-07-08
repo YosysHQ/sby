@@ -18,6 +18,7 @@ SQLSCRIPT = """\
 CREATE TABLE task (
     id INTEGER PRIMARY KEY,
     workdir TEXT,
+    name TEXT,
     mode TEXT,
     created REAL
 );
@@ -124,7 +125,7 @@ class SbyStatusDb:
         self._setup()
 
         if task is not None:
-            self.task_id = self.create_task(workdir=task.workdir, mode=task.opt_mode)
+            self.task_id = self.create_task(workdir=task.workdir, name=task.name, mode=task.opt_mode)
 
     def log_debug(self, *args):
         if self.debug:
@@ -147,13 +148,13 @@ class SbyStatusDb:
         return schema_script != SQLSCRIPT
 
     @transaction
-    def create_task(self, workdir: str, mode: str) -> int:
+    def create_task(self, workdir: str, name: str, mode: str) -> int:
         return self.db.execute(
             """
-                INSERT INTO task (workdir, mode, created)
-                VALUES (:workdir, :mode, :now)
+                INSERT INTO task (workdir, name, mode, created)
+                VALUES (:workdir, :name, :mode, :now)
             """,
-            dict(workdir=workdir, mode=mode, now=time.time()),
+            dict(workdir=workdir, name=name, mode=mode, now=time.time()),
         ).lastrowid
 
     @transaction
