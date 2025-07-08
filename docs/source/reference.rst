@@ -202,6 +202,57 @@ options are:
 |                   |            | Values: ``on``, ``off``. Default: ``off``                |
 +-------------------+------------+---------------------------------------------------------+
 
+Cancelledby section
+-------------------
+
+At times it may be desirable for one task to be able to stop another task early,
+such as when a ``prove`` task and a ``bmc`` task are testing the same properties
+and the ``prove`` task finishes first, making the ``bmc`` task redundant.  This
+is where the optional ``[cancelledby]`` section comes in.  Each line corresponds
+to the name of a task which, if finished, will cancel the current task.  No
+distinction is made for whether the task finished successfully, only that
+it is finished.  Remember that tags can be used to control which tasks contain a
+given configuration line.
+
+Example:
+
+.. code-block:: sby
+
+   [cancelledby]
+   task1:
+   task2
+   task3
+
+   task2:
+   task3
+   task4
+
+In this example, ``task1`` can be cancelled by ``task2`` or ``task3``, while
+``task2`` can be cancelled by ``task3`` or ``task4``.  If ``task4`` is the first
+to finish, then ``task2`` will be cancelled, which in turn leads to ``task1``
+being cancelled.  A task can only be cancelled if it has not yet finished, and
+will check the finished tasks before starting and periodically while the
+attached engines are running.
+
+Normally, only the current taskloop is checked for finished tasks.  This means
+that intertask cancellations are not possible across separate SBY invocations or
+when using the ``--sequential`` flag.  By providing SBY with the
+``--statuscancels`` flag however the status database will be used, allowing
+tasks to be cancelled independently of taskloop.  Note that this also means that
+a task may be cancelled by a previous invocation unless ``--statusreset`` is
+called first.
+
+Example:
+
+.. code-block:: shell
+
+   sby $sbyfile --statusreset
+   sby $sbyfile a b &
+   sby $sbyfile c d --statuscancels
+
+In this example, the ``a`` and ``b`` tasks can only be cancelled by each other,
+while the ``c`` and ``d`` tasks can be cancelled by any task.
+
 Engines section
 ---------------
 

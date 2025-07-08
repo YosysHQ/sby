@@ -295,6 +295,18 @@ class SbyStatusDb:
 
         return {row["id"]: dict(row) for row in rows}
 
+    def all_tasks_status(self):
+        rows = self.db.execute(
+            """
+                SELECT task.id, task.name, task.created,
+                task_status.status, task_status.created as 'status_created'
+                FROM task
+                LEFT JOIN task_status ON task_status.task=task.id
+            """
+        ).fetchall()
+
+        return {row["id"]: dict(row) for row in rows}
+
     def all_task_properties(self):
         rows = self.db.execute(
             """
@@ -386,6 +398,14 @@ class SbyStatusDb:
 
         for display_name, statuses in sorted(properties.items()):
             print(pretty_path(display_name), combine_statuses(statuses))
+
+    def print_task_summary(self):
+        tasks = self.all_tasks_status()
+        task_status = defaultdict(set)
+        for task in tasks.values():
+            task_status[task["name"]].add(task["status"] or "UNKNOWN")
+        for task_name, statuses in sorted(task_status.items()):
+            print(task_name, combine_statuses(statuses))
 
     def get_status_data_joined(self, status_id: int):
         row = self.db.execute(
@@ -567,5 +587,4 @@ def remove_db(path):
         # no other connections, delete all tables
         drop_script = cur.execute("SELECT name FROM sqlite_master WHERE type = 'table';").fetchall()
         for table in drop_script:
-            print(table)
             cur.execute(f"DROP TABLE {table}")
