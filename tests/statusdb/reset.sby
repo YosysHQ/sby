@@ -1,0 +1,14 @@
+[options]
+mode bmc
+depth 100
+expect fail
+
+[engines]
+smtbmc --keep-going boolector
+
+[script]
+read -formal reset.sv
+prep -top demo
+
+[files]
+reset.sv
