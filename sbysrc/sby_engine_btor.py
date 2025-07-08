@@ -123,7 +123,6 @@ def run(mode, task, engine_idx, engine):
             trace_path = f"{task.workdir}/{vcdpath}"
             if os.path.exists(trace_path):
                 task.summary.add_event(engine_idx=engine_idx, trace=trace, path=vcdpath, type="$cover" if mode == "cover" else "$assert")
-                task.status_db.add_task_trace(trace, trace_path)
 
             common_state.running_procs -= 1
             if (common_state.running_procs == 0):

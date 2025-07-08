@@ -20,6 +20,7 @@ import os, re, sys, signal, platform, click
 if os.name == "posix":
     import resource, fcntl
 import subprocess
+from pathlib import Path
 from dataclasses import dataclass, field
 from collections import defaultdict
 from typing import Optional
@@ -631,6 +632,8 @@ class SbyTraceSummary:
     path: Optional[str] = field(default=None)
     engine_case: Optional[str] = field(default=None)
     events: dict = field(default_factory=lambda: defaultdict(lambda: defaultdict(list)))
+    trace_ids: dict[str, int] = field(default_factory=lambda: dict())
+    last_ext: Optional[str] = field(default=None)
 
     @property
     def kind(self):
@@ -682,42 +685,68 @@ class SbySummary:
 
         if update_status:
             status_metadata = dict(source="summary_event", engine=engine.engine)
+        if event.step:
+            status_metadata["step"] = event.step
 
         if event.prop:
-            if event.type == "$assert":
+            add_trace = False
+            if event.type is None:
+                event.type = event.prop.celltype
+            elif event.type == "$assert":
                 event.prop.status = "FAIL"
-                if event.path:
-                    event.prop.tracefiles.append(event.path)
-                    if update_status:
-                        self.task.status_db.add_task_property_data(
-                            event.prop,
-                            "trace",
-                            data=dict(path=event.path, step=event.step, **status_metadata),
-                        )
-        if event.prop:
-            if event.type == "$cover":
+                add_trace = True
+            elif event.type == "$cover":
                 event.prop.status = "PASS"
-                if event.path:
-                    event.prop.tracefiles.append(event.path)
-                    if update_status:
-                        self.task.status_db.add_task_property_data(
-                            event.prop,
-                            "trace",
-                            data=dict(path=event.path, step=event.step, **status_metadata),
-                        )
+                add_trace = True
+
+            if event.path and add_trace:
+                event.prop.tracefiles.append(event.path)
+
+        trace_path = None
+        if event.trace:
+            # get or create trace summary
+            try:
+                trace_summary = engine.traces[event.trace]
+            except KeyError:
+                trace_summary = SbyTraceSummary(event.trace, path=event.path, engine_case=event.engine_case)
+                engine.traces[event.trace] = trace_summary
+
+            if event.path:
+                trace_path = Path(event.path)
+                trace_ext = trace_path.suffix
+                trace_summary.last_ext = trace_ext
+                try:
+                    # use existing tracefile for this extension
+                    trace_id = trace_summary.trace_ids[trace_ext]
+                except KeyError:
+                    # add tracefile to database
+                    trace_id = self.task.status_db.add_task_trace(event.trace, event.path, trace_ext[1:], event.engine_case)
+                    trace_summary.trace_ids[trace_ext] = trace_id
+            elif trace_summary.path:
+                # use existing tracefile for last extension
+                trace_path = Path(trace_summary.path)
+                trace_ext = trace_summary.last_ext
+                trace_id = trace_summary.trace_ids[trace_ext]
+
+            if event.type:
+                by_type = trace_summary.events[event.type]
+                if event.hdlname:
+                    by_type[event.hdlname].append(event)
+
         if event.prop and update_status:
-            self.task.status_db.set_task_property_status(
-                event.prop,
-                data=status_metadata
-            )
-
-        if event.trace not in engine.traces:
-            engine.traces[event.trace] = SbyTraceSummary(event.trace, path=event.path, engine_case=event.engine_case)
-
-        if event.type:
-            by_type = engine.traces[event.trace].events[event.type]
-            if event.hdlname:
-                by_type[event.hdlname].append(event)
+            # update property status in database
+            if trace_path:
+                self.task.status_db.set_task_property_status(
+                    event.prop,
+                    trace_id=trace_id,
+                    trace_path=Path(self.task.workdir, trace_path).with_suffix(trace_ext),
+                    data=status_metadata,
+                )
+            else:
+                self.task.status_db.set_task_property_status(
+                    event.prop,
+                    data=status_metadata,
+                )
 
     def set_engine_status(self, engine_idx, status, case=None):
         engine_summary = self.engine_summary(engine_idx)
@@ -759,10 +788,21 @@ class SbySummary:
                     break
                 case_suffix = f" [{trace.engine_case}]" if trace.engine_case else ""
                 if trace.path:
-                    if short:
-                        yield f"{trace.kind}{case_suffix}: {self.task.workdir}/{trace.path}"
-                    else:
-                        yield f"{trace.kind}{case_suffix}: {trace.path}"
+                    # print single preferred trace
+                    preferred_exts = [".fst", ".vcd"]
+                    if trace.last_ext not in preferred_exts: preferred_exts.append(trace.last_ext)
+                    for ext in trace.trace_ids.keys():
+                        if ext not in preferred_exts: preferred_exts.append(ext)
+                    for ext in preferred_exts:
+                        if ext not in trace.trace_ids:
+                            continue
+                        if short:
+                            path = Path(self.task.workdir) / trace.path
+                        else:
+                            path = Path(trace.path)
+                        yield f"{trace.kind}{case_suffix}: {path.with_suffix(ext)}"
+                        if short:
+                            break
                 else:
                     yield f"{trace.kind}{case_suffix}: <{trace.trace}>"
                 produced_traces = True
@@ -785,15 +825,18 @@ class SbySummary:
                             break
 
                         event = same_events[0]
-                        steps = sorted(e.step for e in same_events)
+                        # uniquify steps and ignore events with missing steps
+                        steps = sorted(set(e.step for e in same_events if e.step))
                         if short and len(steps) > step_limit:
                             excess = len(steps) - step_limit
                             steps = [str(step) for step in steps[:step_limit]]
                             omitted_excess = True
                             steps[-1] += f" and {excess} further step{'s' if excess != 1 else ''}"
 
-                        steps = f"step{'s' if len(steps) > 1 else ''} {', '.join(map(str, steps))}"
-                        yield f"  {desc} {event.hdlname} at {event.src} in {steps}"
+                        event_string = f"  {desc} {hdlname} at {event.src}"
+                        if steps:
+                            event_string += f" step{'s' if len(steps) > 1 else ''} {', '.join(map(str, steps))}"
+                        yield event_string
 
             if not produced_traces:
                 yield f"{engine.engine} did not produce any traces"
@@ -801,7 +844,7 @@ class SbySummary:
         if self.unreached_covers is None and self.task.opt_mode == 'cover' and self.task.status != "PASS" and self.task.design:
             self.unreached_covers = []
             for prop in self.task.design.hierarchy:
-                if prop.type == prop.Type.COVER and prop.status == "UNKNOWN":
+                if prop.type == prop.Type.COVER and prop.status in ["UNKNOWN", "FAIL"]:
                     self.unreached_covers.append(prop)
 
         if self.unreached_covers:
