@@ -17,7 +17,7 @@ bmc: mode bmc
 cover: mode cover
 prove: mode prove
 expect TIMEOUT
-depth 10000
+depth 40000
 timeout 1
 vcd_sim off
 
