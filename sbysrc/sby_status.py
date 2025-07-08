@@ -537,7 +537,35 @@ def filter_latest_task_ids(all_tasks: dict[int, dict[str]]):
 def remove_db(path):
     path = Path(path)
     lock_exts = [".sqlite-wal", ".sqlite-shm"]
+    maybe_locked = False
     for lock_file in [path.with_suffix(ext) for ext in lock_exts]:
         if lock_file.exists():
-            raise FileInUseError(file=lock_file)
-    os.remove(path)
+            # lock file may be a false positive if it wasn't cleaned up
+            maybe_locked = True
+            break
+
+    if not maybe_locked:
+        # safe to delete
+        os.remove(path)
+        return
+
+    # test database directly
+    with sqlite3.connect(path, isolation_level="EXCLUSIVE", timeout=1) as con:
+        cur = con.cursor()
+        # single result rows
+        cur.row_factory = lambda _, r: r[0]
+
+        # changing journal_mode is disallowed if there are multiple connections
+        try:
+            cur.execute("PRAGMA journal_mode=DELETE")
+        except sqlite3.OperationalError as err:
+            if "database is locked" in err.args[0]:
+                raise FileInUseError(file=path)
+            else:
+                raise
+
+        # no other connections, delete all tables
+        drop_script = cur.execute("SELECT name FROM sqlite_master WHERE type = 'table';").fetchall()
+        for table in drop_script:
+            print(table)
+            cur.execute(f"DROP TABLE {table}")
