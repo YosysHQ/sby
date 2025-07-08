@@ -36,6 +36,7 @@ CREATE TABLE task_property (
     task INTEGER,
     src TEXT,
     name TEXT,
+    hdlname TEXT,
     created REAL,
     FOREIGN KEY(task) REFERENCES task(id)
 );
@@ -169,13 +170,14 @@ class SbyStatusDb:
         now = time.time()
         self.db.executemany(
             """
-                INSERT INTO task_property (name, src, task, created)
-                VALUES (:name, :src, :task, :now)
+                INSERT INTO task_property (name, src, hdlname, task, created)
+                VALUES (:name, :src, :hdlname, :task, :now)
             """,
             [
                 dict(
                     name=json.dumps(prop.path),
                     src=prop.location or "",
+                    hdlname=prop.hdlname,
                     task=task_id,
                     now=now,
                 )
@@ -373,6 +375,86 @@ class SbyStatusDb:
 
         for display_name, statuses in sorted(properties.items()):
             print(pretty_path(display_name), combine_statuses(statuses))
+
+    @transaction
+    def all_status_data_joined(self):
+        rows = self.db.execute(
+            """
+                SELECT task.name as 'task_name', task.mode, task.created,
+                task_property.src as 'location', task_property.hdlname, task_property_status.status,
+                task_property_status.data, task_property_status.created as 'status_created',
+                task_property_status.id
+                FROM task
+                INNER JOIN task_property ON task_property.task=task.id
+                INNER JOIN task_property_status ON task_property_status.task_property=task_property.id;
+            """
+        ).fetchall()
+        
+        def get_result(row):
+            row = dict(row)
+            row["data"] = json.loads(row.get("data", "null"))
+            return row
+
+        return {row["id"]: get_result(row) for row in rows}
+
+    def print_status_summary_csv(self):
+        # get all statuses
+        all_properties = self.all_status_data_joined()
+        
+        # print csv header
+        csv_header = [
+            "time",
+            "task_name",
+            "mode",
+            "engine",
+            "name",
+            "location",
+            "status",
+            "depth",
+        ]
+        print(','.join(csv_header))
+
+        # find summary for each task/property combo
+        prop_map: dict[(str, str), dict[str, (int, int)]] = {}
+        for row, prop_status in all_properties.items():
+            status = prop_status['status']
+            this_depth = prop_status['data'].get('step')
+            key = (prop_status['task_name'], prop_status['hdlname'])
+            try:
+                prop_status_map = prop_map[key]
+            except KeyError:
+                prop_map[key] = prop_status_map = {}
+
+            # get earliest FAIL, or latest non-FAIL
+            current_depth = prop_status_map.get(status, (None,))[0]
+            if (current_depth is None or this_depth is not None and
+                ((status == 'FAIL' and this_depth < current_depth) or
+                 (status != 'FAIL' and this_depth > current_depth))):
+                prop_status_map[status] = (this_depth, row)
+
+        for prop in prop_map.values():
+            # ignore UNKNOWNs if there are other statuses
+            if len(prop) > 1:
+                del prop["UNKNOWN"]
+
+            for status, (depth, row) in prop.items():
+                prop_status = all_properties[row]
+                engine = prop_status['data'].get('engine', prop_status['data']['source'])
+                time = prop_status['status_created'] - prop_status['created']
+                name = prop_status['hdlname']
+                
+                # print as csv
+                csv_line = [
+                    round(time, 2),
+                    prop_status['task_name'],
+                    prop_status['mode'],
+                    engine,
+                    name,
+                    prop_status['location'],
+                    status,
+                    depth,
+                ]
+                print(','.join(str(v) for v in csv_line))
 
 
 def combine_statuses(statuses):

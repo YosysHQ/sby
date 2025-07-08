@@ -75,6 +75,8 @@ def parser_func(release_version='unknown SBY version'):
 
     parser.add_argument("--status", action="store_true", dest="status",
             help="summarize the contents of the status database")
+    parser.add_argument("--statuscsv", action="store_true", dest="statuscsv",
+            help="print the most recent status for each property in csv format")
     parser.add_argument("--statusreset", action="store_true", dest="status_reset",
             help="reset the contents of the status database")
 
