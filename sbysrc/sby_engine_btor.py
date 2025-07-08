@@ -91,6 +91,7 @@ def run(mode, task, engine_idx, engine):
                 proc_status = "FAIL"
             else:
                 task.error(f"engine_{engine_idx}: Engine terminated without status.")
+            task.update_unknown_props(dict(source="btor", engine=f"engine_{engine_idx}"))
         else:
             if common_state.expected_cex == 0:
                 proc_status = "pass"
@@ -143,6 +144,7 @@ def run(mode, task, engine_idx, engine):
                     common_state.expected_cex = int(match[1])
                     if common_state.produced_cex != 0:
                         task.error(f"engine_{engine_idx}: Unexpected engine output (property count).")
+                    task.update_unknown_props(dict(source="btor_init", engine=f"engine_{engine_idx}"))
 
             else:
                 task.error(f"engine_{engine_idx}: BTOR solver '{solver_args[0]}' is currently not supported in cover mode.")
