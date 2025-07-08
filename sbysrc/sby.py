@@ -22,7 +22,7 @@ import json, os, sys, shutil, tempfile, re
 from sby_cmdline import parser_func
 from sby_core import SbyConfig, SbyTask, SbyAbort, SbyTaskloop, process_filename, dress_message
 from sby_jobserver import SbyJobClient, process_jobserver_environment
-from sby_status import SbyStatusDb
+from sby_status import SbyStatusDb, remove_db, FileInUseError
 import time, platform, click
 
 release_version = 'unknown SBY version'
@@ -464,6 +464,12 @@ def start_task(taskloop, taskname):
                 print("*", file=gitignore)
         with open(f"{my_workdir}/status.path", "w") as status_path:
             print(my_status_db, file=status_path)
+        if os.path.exists(f"{my_workdir}/{my_status_db}") and opt_force:
+            try:
+                remove_db(f"{my_workdir}/{my_status_db}")
+            except FileInUseError:
+                # don't delete an open database
+                pass
 
     junit_ts_name = os.path.basename(sbyfile[:-4]) if sbyfile is not None else workdir if workdir is not None else "stdin"
     junit_tc_name = taskname if taskname is not None else "default"
