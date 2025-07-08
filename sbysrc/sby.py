@@ -22,7 +22,7 @@ import json, os, sys, shutil, tempfile, re
 from sby_cmdline import parser_func
 from sby_core import SbyConfig, SbyTask, SbyAbort, SbyTaskloop, process_filename, dress_message
 from sby_jobserver import SbyJobClient, process_jobserver_environment
-from sby_status import SbyStatusDb
+from sby_status import SbyStatusDb, remove_db, FileInUseError
 import time, platform, click
 
 release_version = 'unknown SBY version'
@@ -62,12 +62,15 @@ jobcount = args.jobcount
 init_config_file = args.init_config_file
 status_show = args.status
 status_reset = args.status_reset
+status_live_csv = args.livecsv
+status_show_csv = args.statuscsv
+status_latest = args.status_latest
 
 if autotune and linkmode:
     print("ERROR: --link flag currently not available with --autotune")
     sys.exit(1)
 
-if status_show or status_reset:
+if status_show or status_reset or status_show_csv:
     target = workdir_prefix or workdir or sbyfile
     if target is None:
         print("ERROR: Specify a .sby config file or working directory to use --status.")
@@ -90,15 +93,26 @@ if status_show or status_reset:
 
     status_db = SbyStatusDb(status_path, task=None)
 
-    if status_show:
-        status_db.print_status_summary()
-        sys.exit(0)
-
     if status_reset:
         status_db.reset()
+    elif status_db.test_schema():
+        print(f"ERROR: Status database does not match expected formatted.  Use --statusreset to reset.")
+        sys.exit(1)
+
+    if status_show:
+        status_db.print_status_summary(status_latest)
+
+    if status_show_csv:
+        status_db.print_status_summary_csv(tasknames, status_latest)
 
     status_db.db.close()
+
+    if status_live_csv:
+        print(f"WARNING: --livecsv flag found but not used.")
+
     sys.exit(0)
+elif status_latest:
+    print(f"WARNING: --latest flag found but not used.")
 
 
 if sbyfile is not None:
@@ -455,6 +469,12 @@ def start_task(taskloop, taskname):
                 print("*", file=gitignore)
         with open(f"{my_workdir}/status.path", "w") as status_path:
             print(my_status_db, file=status_path)
+        if os.path.exists(f"{my_workdir}/{my_status_db}") and opt_force:
+            try:
+                remove_db(f"{my_workdir}/{my_status_db}")
+            except FileInUseError:
+                # don't delete an open database
+                pass
 
     junit_ts_name = os.path.basename(sbyfile[:-4]) if sbyfile is not None else workdir if workdir is not None else "stdin"
     junit_tc_name = taskname if taskname is not None else "default"
@@ -470,7 +490,7 @@ def start_task(taskloop, taskname):
     else:
         junit_filename = "junit"
 
-    task = SbyTask(sbyconfig, my_workdir, early_logmsgs, reusedir, taskloop)
+    task = SbyTask(sbyconfig, my_workdir, early_logmsgs, reusedir, taskloop, name=taskname, live_csv=status_live_csv)
 
     for k, v in exe_paths.items():
         task.exe_paths[k] = v

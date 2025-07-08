@@ -18,6 +18,7 @@
 
 import re, getopt
 import json
+import os
 from sby_core import SbyProc
 from sby_engine_aiger import aigsmt_exit_callback, aigsmt_trace_callback
 
@@ -173,18 +174,25 @@ def run(mode, task, engine_idx, engine):
                     aiger_props.append(task.design.properties_by_path.get(tuple(path)))
 
         if keep_going:
-            match = re.match(r"Writing CEX for output ([0-9]+) to engine_[0-9]+/(.*)\.aiw", line)
+            match = re.match(r"Writing CEX for output ([0-9]+) to (engine_[0-9]+/(.*)\.aiw)", line)
             if match:
                 output = int(match[1])
+                tracefile = match[2]
+                name = match[3]
+                trace, _ = os.path.splitext(name)
+                task.summary.add_event(engine_idx=engine_idx, trace=trace, path=tracefile)
                 prop = aiger_props[output]
                 if prop:
                     prop.status = "FAIL"
-                    task.status_db.set_task_property_status(prop, data=dict(source="abc pdr",  engine=f"engine_{engine_idx}"))
+                    task.summary.add_event(
+                        engine_idx=engine_idx, trace=trace,
+                        hdlname=prop.hdlname, src=prop.location, prop=prop,
+                    )
                 disproved.add(output)
                 proc_status = "FAIL"
                 proc = aigsmt_trace_callback(task, engine_idx, proc_status,
                     run_aigsmt=run_aigsmt, smtbmc_vcd=smtbmc_vcd, smtbmc_append=smtbmc_append, sim_append=sim_append,
-                    name=match[2],
+                    name=name,
                 )
                 proc.register_exit_callback(exit_callback)
                 procs_running += 1
@@ -198,7 +206,10 @@ def run(mode, task, engine_idx, engine):
             prop = aiger_props[output]
             if prop:
                 prop.status = "PASS"
-                task.status_db.set_task_property_status(prop, data=dict(source="abc pdr",  engine=f"engine_{engine_idx}"))
+                task.summary.add_event(
+                    engine_idx=engine_idx, trace=None,
+                    hdlname=prop.hdlname, src=prop.location, prop=prop,
+                )
             proved.add(output)
 
         match = re.match(r"^Simulation of [0-9]+ frames for [0-9]+ rounds with [0-9]+ restarts did not assert POs.", line)

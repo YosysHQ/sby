@@ -1,0 +1,130 @@
+[tasks]
+btor_bmc: btor bmc
+btor_fin_bmc: btor bmc fin
+pono_bmc: pono bmc
+pono_fin_bmc: pono bmc fin
+btor_cover: btor cover
+btor_fin_cover: btor cover fin
+smt_bmc: smt bmc
+smt_fin_bmc: smt bmc fin
+smt_cover: smt cover
+smt_fin_cover: smt cover fin
+smt_prove: smt prove
+smt_fin_prove: smt prove fin
+smt_fail: smtfail bmc fail
+smt_fin_fail: smtfail bmc fail fin
+aig_bmc: aigbmc bmc
+aig_fin_bmc: aigbmc bmc fin
+aig_prove: aiger prove
+aig_fin_prove: aiger prove fin
+abc_bmc: abcbmc bmc
+abc_fin_bmc: abcbmc bmc fin
+abc_prove: abc prove
+abc_fin_prove: abc prove fin
+abc_fail: abcfail prove fail
+abc_fin_fail: abcfail prove fail fin
+
+[options]
+bmc: mode bmc
+cover: mode cover
+prove: mode prove
+fin:
+expect PASS,FAIL,UNKNOWN
+depth 10
+--
+~fin:
+expect TIMEOUT
+depth 40000
+timeout 1
+--
+
+[engines]
+btor: btor btormc
+pono: btor pono
+smt: smtbmc bitwuzla
+smtfail: smtbmc --keep-going bitwuzla
+aigbmc: aiger aigbmc
+aiger: aiger suprove
+abcbmc: abc bmc3
+abc: abc pdr
+abcfail: abc --keep-going pdr
+
+[script]
+fin: read -define WIDTH=4
+~fin: read -define WIDTH=8
+fail: read -define FAIL=1
+read -sv timeout.sv
+prep -top top
+
+[file timeout.sv]
+module top #(
+    parameter WIDTH = `WIDTH
+) (
+    input clk,
+    input load,
+    input [WIDTH-1:0] a,
+    input [WIDTH-1:0] b,
+    output reg [WIDTH-1:0] q,
+    output reg [WIDTH-1:0] r,
+    output reg done
+);
+
+    reg [WIDTH-1:0] a_reg = 0;
+    reg [WIDTH-1:0] b_reg = 1;
+
+    initial begin
+        q <= 0;
+        r <= 0;
+        done <= 1;
+    end
+
+    reg [WIDTH-1:0] q_step = 1;
+    reg [WIDTH-1:0] r_step = 1;
+
+    // This is not how you design a good divider circuit!
+    always @(posedge clk) begin
+        if (load) begin
+            a_reg <= a;
+            b_reg <= b;
+            q <= 0;
+            r <= a;
+            q_step <= 1;
+            r_step <= b;
+            done <= b == 0;
+        end else begin
+            if (r_step <= r) begin
+                q <= q + q_step;
+                r <= r - r_step;
+
+                if (!r_step[WIDTH-1]) begin
+                    r_step <= r_step << 1;
+                    q_step <= q_step << 1;
+                end
+            end else begin
+                if (!q_step[0]) begin
+                    r_step <= r_step >> 1;
+                    q_step <= q_step >> 1;
+                end else begin
+                    done <= 1;
+                end
+            end
+        end
+    end
+
+    always @(posedge clk) begin
+        assert (1); // trivial
+    `ifdef FAIL
+        assert (0);
+    `endif
+        assert (r_step == b_reg * q_step); // Helper invariant
+
+        assert (q * b_reg + r == a_reg); // Main invariant & correct output relationship
+        if (done) assert (r <= b_reg - 1); // Output range
+
+        cover (done);
+        cover (done && b_reg == 0);
+        cover (r != a_reg);
+        cover (r == a_reg);
+        cover (0); // unreachable
+    end
+endmodule
