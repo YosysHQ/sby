@@ -1254,6 +1254,8 @@ class SbyTask(SbyConfig):
             proc.terminate(timeout=timeout)
         for proc in list(self.procs_pending):
             proc.terminate(timeout=timeout)
+        if timeout:
+            self.update_unknown_props(dict(source="timeout"))
 
     def proc_failed(self, proc):
         # proc parameter used by autotune override
