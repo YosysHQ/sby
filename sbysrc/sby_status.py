@@ -520,7 +520,7 @@ def format_status_data_csvline(row: dict|None) -> str:
             "trace",
             "depth",
         ]
-        return ','.join(csv_header)
+        return '\t'.join(csv_header)
     else:
         engine = row['data'].get('engine', row['data'].get('source'))
         try:
@@ -546,7 +546,13 @@ def format_status_data_csvline(row: dict|None) -> str:
             trace_path,
             depth,
         ]
-        return ','.join("" if v is None else str(v) for v in csv_line)
+        def escape_str(v):
+            if v is None:
+                return ""
+            v_str = str(v)
+            # this shouldn't ever happen, but just in case
+            return v_str.replace('\t', "\\t")
+        return '\t'.join(escape_str(v) for v in csv_line)
 
 def filter_latest_task_ids(all_tasks: dict[int, dict[str]]):
     latest: dict[str, int] = {}
