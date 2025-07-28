@@ -450,7 +450,7 @@ class SbyStatusDb:
         print(csvheader)
 
         # find summary for each task/property combo
-        prop_map: dict[(str, str), dict[str, (int, int)]] = {}
+        prop_map: dict[(str, str, str), dict[str, (int, int)]] = {}
         for row, prop_status in all_properties.items():
             if tasknames and prop_status['task_name'] not in tasknames:
                 continue
@@ -465,10 +465,14 @@ class SbyStatusDb:
             except KeyError:
                 prop_map[key] = prop_status_map = {}
 
-            current_depth, _ = prop_status_map.get(status, (None, None))
+            current_depth, _, current_kind = prop_status_map.get(status, (None, None, None))
             update_map = False
             if current_depth is None:
-                update_map = True
+                if current_kind is None:
+                    update_map = True
+                elif this_kind in ['fst', 'vcd']:
+                    # prefer traces over witness files
+                    update_map = True
             elif this_depth is not None:
                 if status == 'FAIL' and this_depth < current_depth:
                     # earliest fail
@@ -477,17 +481,17 @@ class SbyStatusDb:
                     # latest non-FAIL
                     update_map = True
                 elif this_depth == current_depth and this_kind in ['fst', 'vcd']:
-                        # prefer traces over witness files
-                        update_map = True
+                    # prefer traces over witness files
+                    update_map = True
             if update_map:
-                prop_status_map[status] = (this_depth, row)
+                prop_status_map[status] = (this_depth, row, this_kind)
 
         for prop in prop_map.values():
             # ignore UNKNOWNs if there are other statuses
             if len(prop) > 1 and "UNKNOWN" in prop:
                 del prop["UNKNOWN"]
 
-            for _, row in prop.values():
+            for _, row, _ in prop.values():
                 csvline = format_status_data_csvline(all_properties[row])
                 print(csvline)
 
