@@ -476,7 +476,10 @@ class SbyStatusDb:
                 # no depth or kind to compare, just take latest data
                 update_map = True
             elif this_depth is not None and this_depth != current_depth:
-                if status == 'FAIL' and this_depth < current_depth:
+                if current_depth is None:
+                    # always prefer a known depth to an unknown
+                    update_map = True
+                elif status == 'FAIL' and this_depth < current_depth:
                     # earliest fail
                     update_map = True
                 elif status != 'FAIL' and this_depth > current_depth:
