@@ -64,15 +64,15 @@ status_show = args.status
 status_reset = args.status_reset
 status_cancels = args.status_cancels
 task_status = args.task_status
-status_live_csv = args.livecsv
-status_show_csv = args.statuscsv
+status_live_formats = args.live_formats
+status_format = args.status_format
 status_latest = args.status_latest
 
 if autotune and linkmode:
     print("ERROR: --link flag currently not available with --autotune")
     sys.exit(1)
 
-if status_show or status_reset or task_status or status_show_csv:
+if status_show or status_reset or task_status:
     target = workdir_prefix or workdir or sbyfile
     if target is None:
         print("ERROR: Specify a .sby config file or working directory to use --status.")
@@ -104,16 +104,16 @@ if status_show or status_reset or task_status or status_show_csv:
     if status_show:
         status_db.print_status_summary(status_latest)
 
-    if status_show_csv:
-        status_db.print_status_summary_csv(tasknames, status_latest)
+    if status_format:
+        status_db.print_status_summary_fmt(tasknames, status_format, status_latest)
         
     if task_status:
         status_db.print_task_summary()
 
     status_db.db.close()
 
-    if status_live_csv:
-        print(f"WARNING: --livecsv flag found but not used.")
+    if status_live_formats:
+        print(f"WARNING: --live option found but not used.")
 
     sys.exit(0)
 elif status_latest:
@@ -496,7 +496,7 @@ def start_task(taskloop, taskname):
     else:
         junit_filename = "junit"
 
-    task = SbyTask(sbyconfig, my_workdir, early_logmsgs, reusedir, status_cancels, taskloop, name=taskname, live_csv=status_live_csv)
+    task = SbyTask(sbyconfig, my_workdir, early_logmsgs, reusedir, status_cancels, taskloop, name=taskname, live_formats=status_live_formats)
 
     for k, v in exe_paths.items():
         task.exe_paths[k] = v

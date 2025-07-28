@@ -913,7 +913,7 @@ class SbySummary:
 
 
 class SbyTask(SbyConfig):
-    def __init__(self, sbyconfig, workdir, early_logs, reusedir, status_cancels=False, taskloop=None, logfile=None, name=None, live_csv=False):
+    def __init__(self, sbyconfig, workdir, early_logs, reusedir, status_cancels=False, taskloop=None, logfile=None, name=None, live_formats=[]):
         super().__init__()
         self.used_options = set()
         self.models = dict()
@@ -921,7 +921,7 @@ class SbyTask(SbyConfig):
         self.reusedir = reusedir
         self.status_cancels = status_cancels
         self.name = name
-        self.live_csv = live_csv
+        self.live_formats = live_formats
         self.status = "UNKNOWN"
         self.total_time = 0
         self.expect = list()
@@ -1430,7 +1430,7 @@ class SbyTask(SbyConfig):
             except FileNotFoundError:
                 status_path = f"{self.workdir}/status.sqlite"
 
-        self.status_db = SbyStatusDb(status_path, self, live_csv=self.live_csv)
+        self.status_db = SbyStatusDb(status_path, self, live_formats=self.live_formats)
 
     def setup_procs(self, setupmode, linkmode=False):
         self.handle_non_engine_options()
