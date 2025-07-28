@@ -72,7 +72,7 @@ if autotune and linkmode:
     print("ERROR: --link flag currently not available with --autotune")
     sys.exit(1)
 
-if status_show or status_reset or task_status:
+if status_show or status_reset or task_status or status_format:
     target = workdir_prefix or workdir or sbyfile
     if target is None:
         print("ERROR: Specify a .sby config file or working directory to use --status.")
