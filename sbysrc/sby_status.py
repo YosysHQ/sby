@@ -525,19 +525,10 @@ def format_status_data_fmtline(row: dict|None, fmt: str = "csv") -> str:
         data = None
     else:
         engine = row['data'].get('engine', row['data'].get('source'))
-        try:
-            time = row['status_created'] - row['created']
-        except TypeError:
-            time = 0
         name = row['hdlname']
         depth = row['data'].get('step')
-        try:
-            trace_path = Path(row['workdir']) / row['path']
-        except TypeError:
-            trace_path = None
 
         data = {
-            "time": round(time, 2),
             "task_name": row['task_name'],
             "mode": row['mode'],
             "engine": engine,
@@ -545,14 +536,21 @@ def format_status_data_fmtline(row: dict|None, fmt: str = "csv") -> str:
             "location": row['location'],
             "kind": row['kind'],
             "status": row['status'] or "UNKNOWN",
-            "trace": trace_path,
             "depth": depth,
         }
+        try:
+            data["trace"] = str(Path(row['workdir']) / row['path'])
+        except TypeError:
+            pass
+        try:
+            data['time'] = round(row['status_created'] - row['created'], 2)
+        except TypeError:
+            pass
     if fmt == "csv":
         if data is None:
             csv_line = fmtline_columns
         else:
-            csv_line = [data[column] for column in fmtline_columns]
+            csv_line = [data.get(column) for column in fmtline_columns]
         def csv_field(value):
             if value is None:
                 return ""
@@ -564,6 +562,8 @@ def format_status_data_fmtline(row: dict|None, fmt: str = "csv") -> str:
     elif fmt == "jsonl":
         if data is None:
             return ""
+        # field order
+        data = {column: data[column] for column in fmtline_columns if column in data}
         return json.dumps(data)
 
 def filter_latest_task_ids(all_tasks: dict[int, dict[str]]):
