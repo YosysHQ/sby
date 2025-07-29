@@ -448,7 +448,8 @@ class SbyStatusDb:
 
         # print header
         header = format_status_data_fmtline(None, status_format)
-        print(header)
+        if header:
+            print(header)
 
         # find summary for each task/property combo
         prop_map: dict[(str, str), dict[str, (int, int)]] = {}
@@ -506,20 +507,22 @@ def parse_status_data_row(raw: sqlite3.Row):
     row_dict["data"] = json.loads(row_dict.get("data") or "{}")
     return row_dict
 
+fmtline_columns = [
+    "time",
+    "task_name",
+    "mode",
+    "engine",
+    "name",
+    "location",
+    "kind",
+    "status",
+    "trace",
+    "depth",
+]
+
 def format_status_data_fmtline(row: dict|None, fmt: str = "csv") -> str:
     if row is None:
-        data = [
-            "time",
-            "task_name",
-            "mode",
-            "engine",
-            "name",
-            "location",
-            "kind",
-            "status",
-            "trace",
-            "depth",
-        ]
+        data = None
     else:
         engine = row['data'].get('engine', row['data'].get('source'))
         try:
@@ -533,22 +536,34 @@ def format_status_data_fmtline(row: dict|None, fmt: str = "csv") -> str:
         except TypeError:
             trace_path = None
 
-        csv_line = [
-            round(time, 2),
-            row['task_name'],
-            row['mode'],
-            engine,
-            name or pretty_path(row['name']),
-            row['location'],
-            row['kind'],
-            row['status'] or "UNKNOWN",
-            trace_path,
-            depth,
-        ]
-        data = ["" if v is None else str(v) for v in csv_line]
+        data = {
+            "time": round(time, 2),
+            "task_name": row['task_name'],
+            "mode": row['mode'],
+            "engine": engine,
+            "name": name or pretty_path(row['name']),
+            "location": row['location'],
+            "kind": row['kind'],
+            "status": row['status'] or "UNKNOWN",
+            "trace": trace_path,
+            "depth": depth,
+        }
     if fmt == "csv":
-        return ','.join(data)
+        if data is None:
+            csv_line = fmtline_columns
+        else:
+            csv_line = [data[column] for column in fmtline_columns]
+        def csv_field(value):
+            if value is None:
+                return ""
+            value = str(value).replace('"', '""')
+            if any(c in value for c in '",\n'):
+                value = f'"{value}"'
+            return value
+        return ','.join(map(csv_field, csv_line))
     elif fmt == "jsonl":
+        if data is None:
+            return ""
         return json.dumps(data)
 
 def filter_latest_task_ids(all_tasks: dict[int, dict[str]]):
