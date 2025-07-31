@@ -563,7 +563,7 @@ def format_status_data_fmtline(row: dict|None, fmt: str = "csv") -> str:
         if data is None:
             return ""
         # field order
-        data = {column: data[column] for column in fmtline_columns if column in data}
+        data = {column: data[column] for column in fmtline_columns if data.get(column)}
         return json.dumps(data)
 
 def filter_latest_task_ids(all_tasks: dict[int, dict[str]]):
