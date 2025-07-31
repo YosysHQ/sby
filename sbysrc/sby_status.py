@@ -106,10 +106,10 @@ class FileInUseError(Exception):
 
 
 class SbyStatusDb:
-    def __init__(self, path: Path, task, timeout: float = 5.0, live_csv = False):
+    def __init__(self, path: Path, task, timeout: float = 5.0, live_formats = []):
         self.debug = False
         self.task = task
-        self.live_csv = live_csv
+        self.live_formats = live_formats
 
         self.con = sqlite3.connect(path, isolation_level=None, timeout=timeout)
         self.db = self.con.cursor()
@@ -250,10 +250,11 @@ class SbyStatusDb:
             ),
         )
 
-        if self.live_csv:
+        if self.live_formats:
             row = self.get_status_data_joined(self.db.lastrowid)
-            csvline = format_status_data_csvline(row)
-            self.task.log(f"{click.style('csv', fg='yellow')}: {csvline}")
+            for fmt in self.live_formats:
+                fmtline = format_status_data_fmtline(row, fmt)
+                self.task.log(f"{click.style(fmt, fg='yellow')}: {fmtline}")
         
     @transaction
     def add_task_trace(
@@ -440,14 +441,15 @@ class SbyStatusDb:
 
         return {row["id"]: parse_status_data_row(row) for row in rows}
 
-    def print_status_summary_csv(self, tasknames: list[str], latest: bool):
+    def print_status_summary_fmt(self, tasknames: list[str], status_format: str, latest: bool):
         # get all statuses
         all_properties = self.all_status_data_joined()
         latest_task_ids = filter_latest_task_ids(self.all_tasks())
-        
-        # print csv header
-        csvheader = format_status_data_csvline(None)
-        print(csvheader)
+
+        # print header
+        header = format_status_data_fmtline(None, status_format)
+        if header:
+            print(header)
 
         # find summary for each task/property combo
         prop_map: dict[(str, str), dict[str, (int, int)]] = {}
@@ -488,9 +490,8 @@ class SbyStatusDb:
                 del prop["UNKNOWN"]
 
             for _, row in prop.values():
-                csvline = format_status_data_csvline(all_properties[row])
-                print(csvline)
-
+                line = format_status_data_fmtline(all_properties[row], status_format)
+                print(line)
 
 def combine_statuses(statuses):
     statuses = set(statuses)
@@ -506,47 +507,64 @@ def parse_status_data_row(raw: sqlite3.Row):
     row_dict["data"] = json.loads(row_dict.get("data") or "{}")
     return row_dict
 
-def format_status_data_csvline(row: dict|None) -> str:
+fmtline_columns = [
+    "time",
+    "task_name",
+    "mode",
+    "engine",
+    "name",
+    "location",
+    "kind",
+    "status",
+    "trace",
+    "depth",
+]
+
+def format_status_data_fmtline(row: dict|None, fmt: str = "csv") -> str:
     if row is None:
-        csv_header = [
-            "time",
-            "task_name",
-            "mode",
-            "engine",
-            "name",
-            "location",
-            "kind",
-            "status",
-            "trace",
-            "depth",
-        ]
-        return ','.join(csv_header)
+        data = None
     else:
         engine = row['data'].get('engine', row['data'].get('source'))
-        try:
-            time = row['status_created'] - row['created']
-        except TypeError:
-            time = 0
         name = row['hdlname']
         depth = row['data'].get('step')
-        try:
-            trace_path = Path(row['workdir']) / row['path']
-        except TypeError:
-            trace_path = None
 
-        csv_line = [
-            round(time, 2),
-            row['task_name'],
-            row['mode'],
-            engine,
-            name or pretty_path(row['name']),
-            row['location'],
-            row['kind'],
-            row['status'] or "UNKNOWN",
-            trace_path,
-            depth,
-        ]
-        return ','.join("" if v is None else str(v) for v in csv_line)
+        data = {
+            "task_name": row['task_name'],
+            "mode": row['mode'],
+            "engine": engine,
+            "name": name or pretty_path(row['name']),
+            "location": row['location'],
+            "kind": row['kind'],
+            "status": row['status'] or "UNKNOWN",
+            "depth": depth,
+        }
+        try:
+            data["trace"] = str(Path(row['workdir']) / row['path'])
+        except TypeError:
+            pass
+        try:
+            data['time'] = round(row['status_created'] - row['created'], 2)
+        except TypeError:
+            pass
+    if fmt == "csv":
+        if data is None:
+            csv_line = fmtline_columns
+        else:
+            csv_line = [data.get(column) for column in fmtline_columns]
+        def csv_field(value):
+            if value is None:
+                return ""
+            value = str(value).replace('"', '""')
+            if any(c in value for c in '",\n'):
+                value = f'"{value}"'
+            return value
+        return ','.join(map(csv_field, csv_line))
+    elif fmt == "jsonl":
+        if data is None:
+            return ""
+        # field order
+        data = {column: data[column] for column in fmtline_columns if data.get(column)}
+        return json.dumps(data)
 
 def filter_latest_task_ids(all_tasks: dict[int, dict[str]]):
     latest: dict[str, int] = {}

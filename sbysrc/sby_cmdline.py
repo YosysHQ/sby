@@ -29,8 +29,8 @@ def parser_func(release_version='unknown SBY version'):
             help="maximum number of processes to run in parallel")
     parser.add_argument("--sequential", action="store_true", dest="sequential",
             help="run tasks in sequence, not in parallel")
-    parser.add_argument("--livecsv", action="store_true", dest="livecsv",
-            help="print live updates of property statuses during task execution in csv format")
+    parser.add_argument("--live", action="append", choices=["csv", "jsonl"], dest="live_formats",
+            help="print live updates of property statuses during task execution, may be specified multiple times")
 
     parser.add_argument("--autotune", action="store_true", dest="autotune",
             help="automatically find a well performing engine and engine configuration for each task")
@@ -77,8 +77,8 @@ def parser_func(release_version='unknown SBY version'):
 
     parser.add_argument("--status", action="store_true", dest="status",
             help="summarize the contents of the status database")
-    parser.add_argument("--statuscsv", action="store_true", dest="statuscsv",
-            help="print the most recent status for each property in csv format")
+    parser.add_argument("--statusfmt", action="store", default="", choices=["csv", "jsonl"], dest="status_format",
+            help="print the most recent status for each property in specified format")
     parser.add_argument("--latest", action="store_true", dest="status_latest",
             help="only check statuses from the most recent run of a task")
     parser.add_argument("--statusreset", action="store_true", dest="status_reset",
