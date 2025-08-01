@@ -579,7 +579,7 @@ class SbyConfig:
                     self.error(f"sby file syntax error: '[files]' section entry expects up to 2 arguments, {len(entries)} specified")
 
                 if len(entries) == 1:
-                    self.files[os.path.basename(entries[0])] = entries[0]
+                    self.files[Path(entries[0]).name] = entries[0]
                 elif len(entries) == 2:
                     self.files[entries[0]] = entries[1]
 
