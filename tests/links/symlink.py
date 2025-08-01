@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 import sys
 
@@ -13,6 +12,7 @@ def main():
                 assert(local_contents.strip() == 'log foo')
         else:
             assert(srcfile.is_symlink() == (task == "link"))
+            assert(srcfile.name != "script.ys")
 
 if __name__ == "__main__":
     main()
