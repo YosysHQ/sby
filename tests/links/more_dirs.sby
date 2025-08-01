@@ -1,0 +1,17 @@
+[tasks]
+link
+copy
+
+[options]
+mode prep
+
+[engines]
+btor btormc
+
+[script]
+read -noverific
+script dir/script.ys
+
+[files]
+here/dir ${WORKDIR}/../dir
+a/b/c.v prv32fmcmp.v
