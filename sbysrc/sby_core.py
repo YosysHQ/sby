@@ -45,12 +45,8 @@ signal.signal(signal.SIGINT, force_shutdown)
 signal.signal(signal.SIGTERM, force_shutdown)
 
 def process_filename(filename):
-    if filename.startswith("~/"):
-        filename = os.environ['HOME'] + filename[1:]
-
     filename = os.path.expandvars(filename)
-
-    return filename
+    return Path(filename).expanduser()
 
 def dress_message(workdir, logmessage):
     tm = localtime()
@@ -1033,13 +1029,14 @@ class SbyTask(SbyConfig):
         raise SbyAbort(logmessage)
 
     def makedirs(self, path):
-        if self.reusedir and os.path.isdir(path):
+        path = Path(path)
+        if self.reusedir and path.is_dir():
             rmtree(path, ignore_errors=True)
-        if not os.path.isdir(path):
-            os.makedirs(path)
+        path.mkdir(parents=True, exist_ok=True)
 
     def copy_src(self, linkmode=False):
-        self.makedirs(self.workdir + "/src")
+        outdir = Path(self.workdir) / "src"
+        self.makedirs(outdir)
 
         for dstfile, lines in self.verbatim_files.items():
             dstfile = self.workdir + "/src/" + dstfile
@@ -1050,25 +1047,25 @@ class SbyTask(SbyConfig):
                     f.write(line)
 
         for dstfile, srcfile in self.files.items():
-            if dstfile.startswith("/") or dstfile.startswith("../") or ("/../" in dstfile):
+            dstfile = Path(dstfile)
+            if dstfile.is_absolute() or ".." in dstfile.parts:
                 self.error(f"destination filename must be a relative path without /../: {dstfile}")
-            dstfile = self.workdir + "/src/" + dstfile
+            dstfile = outdir / dstfile
 
             srcfile = process_filename(srcfile)
 
-            basedir = os.path.dirname(dstfile)
-            if basedir != "" and not os.path.exists(basedir):
-                os.makedirs(basedir)
+            basedir = dstfile.parent
+            basedir.mkdir(parents=True, exist_ok=True)
 
             if linkmode:
                 verb = "Link"
             else:
                 verb = "Copy"
-            self.log(f"{verb} '{os.path.abspath(srcfile)}' to '{os.path.abspath(dstfile)}'.")
+            self.log(f"{verb} '{srcfile.absolute()}' to '{dstfile.absolute()}'.")
 
             if linkmode:
-                os.symlink(os.path.relpath(srcfile, basedir), dstfile)
-            elif os.path.isdir(srcfile):
+                os.symlink(srcfile.resolve(), dstfile)
+            elif srcfile.is_dir():
                 copytree(srcfile, dstfile, dirs_exist_ok=True)
             else:
                 copyfile(srcfile, dstfile)
@@ -1097,12 +1094,12 @@ class SbyTask(SbyConfig):
             self.__dict__["opt_" + option_name] = default_value
 
     def make_model(self, model_name):
-        if not os.path.isdir(f"{self.workdir}/model"):
-            os.makedirs(f"{self.workdir}/model")
+        modeldir = Path(self.workdir) / "model"
+        modeldir.mkdir(exist_ok=True)
 
         if model_name == "prep":
-            with open(f"""{self.workdir}/model/design_prep.ys""", "w") as f:
-                print(f"# running in {self.workdir}/model/", file=f)
+            with open(modeldir / "design_prep.ys", "w") as f:
+                print(f"# running in {modeldir}/", file=f)
                 print(f"""read_rtlil design.il""", file=f)
                 if not self.opt_skip_prep:
                     print("scc -select; simplemap; select -clear", file=f)
@@ -1146,7 +1143,7 @@ class SbyTask(SbyConfig):
             return [proc]
 
         if model_name == "base":
-            with open(f"""{self.workdir}/model/design.ys""", "w") as f:
+            with open(modeldir / "design.ys", "w") as f:
                 print(f"# running in {self.workdir}/src/", file=f)
                 for cmd in self.script:
                     print(cmd, file=f)
@@ -1168,7 +1165,7 @@ class SbyTask(SbyConfig):
 
             def instance_hierarchy_callback(retcode):
                 if self.design == None:
-                    with open(f"{self.workdir}/model/design.json") as f:
+                    with open(modeldir / "design.json") as f:
                         self.design = design_hierarchy(f)
                         self.status_db.create_task_properties([
                             prop for prop in self.design.properties_by_path.values()
@@ -1184,8 +1181,8 @@ class SbyTask(SbyConfig):
             return [proc]
 
         if re.match(r"^smt2(_syn)?(_nomem)?(_stbv|_stdt)?$", model_name):
-            with open(f"{self.workdir}/model/design_{model_name}.ys", "w") as f:
-                print(f"# running in {self.workdir}/model/", file=f)
+            with open(modeldir / f"design_{model_name}.ys", "w") as f:
+                print(f"# running in {modeldir}/", file=f)
                 print(f"""read_rtlil design_prep.il""", file=f)
                 print("hierarchy -smtcheck", file=f)
                 print("delete */t:$print", file=f)
@@ -1218,8 +1215,8 @@ class SbyTask(SbyConfig):
             return [proc]
 
         if re.match(r"^btor(_syn)?(_nomem)?$", model_name):
-            with open(f"{self.workdir}/model/design_{model_name}.ys", "w") as f:
-                print(f"# running in {self.workdir}/model/", file=f)
+            with open(modeldir / f"design_{model_name}.ys", "w") as f:
+                print(f"# running in {modeldir}/", file=f)
                 print(f"""read_rtlil design_prep.il""", file=f)
                 print("hierarchy -simcheck", file=f)
                 print("delete */t:$print", file=f)
@@ -1254,8 +1251,8 @@ class SbyTask(SbyConfig):
             return [proc]
 
         if model_name == "aig":
-            with open(f"{self.workdir}/model/design_aiger.ys", "w") as f:
-                print(f"# running in {self.workdir}/model/", file=f)
+            with open(modeldir / "design_aiger.ys", "w") as f:
+                print(f"# running in {modeldir}/", file=f)
                 print("read_rtlil design_prep.il", file=f)
                 print("delete */t:$print", file=f)
                 print("hierarchy -simcheck", file=f)
@@ -1281,7 +1278,7 @@ class SbyTask(SbyConfig):
                 self,
                 "aig",
                 self.model("prep"),
-                f"""cd {self.workdir}/model; {self.exe_paths["yosys"]} -ql design_aiger.log design_aiger.ys"""
+                f"""cd {modeldir}; {self.exe_paths["yosys"]} -ql design_aiger.log design_aiger.ys"""
             )
             proc.checkretcode = True
 
@@ -1292,8 +1289,8 @@ class SbyTask(SbyConfig):
                 self,
                 model_name,
                 self.model("aig"),
-                f"""cd {self.workdir}/model; {self.exe_paths["abc"]} -c 'read_aiger design_aiger.aig; fold{" -s" if self.opt_aigfolds else ""}; strash; write_aiger design_aiger_fold.aig'""",
-                logfile=open(f"{self.workdir}/model/design_aiger_fold.log", "w")
+                f"""cd {modeldir}; {self.exe_paths["abc"]} -c 'read_aiger design_aiger.aig; fold{" -s" if self.opt_aigfolds else ""}; strash; write_aiger design_aiger_fold.aig'""",
+                logfile=open(f"{modeldir}/design_aiger_fold.log", "w")
             )
             proc.checkretcode = True
 
