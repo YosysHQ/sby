@@ -1039,8 +1039,9 @@ class SbyTask(SbyConfig):
         self.makedirs(outdir)
 
         for dstfile, lines in self.verbatim_files.items():
-            dstfile = self.workdir + "/src/" + dstfile
-            self.log(f"Writing '{dstfile}'.")
+            dstfile = outdir / dstfile
+            self.log(f"Writing '{dstfile.absolute()}'.")
+            dstfile.parent.mkdir(parents=True, exist_ok=True)
 
             with open(dstfile, "w") as f:
                 for line in lines:

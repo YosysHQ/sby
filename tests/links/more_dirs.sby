@@ -15,3 +15,6 @@ script dir/script.ys
 [files]
 here/dir ${WORKDIR}/../dir
 a/b/c.v prv32fmcmp.v
+
+[file here/doc]
+log foo
