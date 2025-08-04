@@ -1,6 +1,8 @@
 [tasks]
 link
 copy
+dir_implicit: dir
+dir_explicit: dir
 
 [options]
 mode prep
@@ -15,7 +17,9 @@ script dir/script.ys
 [files]
 ../../docs/examples/demos/picorv32.v
 prv32fmcmp.v
-dir
+~dir: dir
+dir_implicit: dir/
+dir_explicit: dir/ dir/
 
 [file heredoc]
 log foo
