@@ -3,7 +3,7 @@ set -e
 python3 $SBY_MAIN -f $SBY_FILE $TASK
 
 STATUS_CSV=${WORKDIR}/status.csv
-python3 $SBY_MAIN -f $SBY_FILE $TASK --statuscsv --latest | tee $STATUS_CSV
+python3 $SBY_MAIN -f $SBY_FILE $TASK --statusfmt csv --latest | tee $STATUS_CSV
 
 if [[ $TASK =~ "_cover" ]]; then
     wc -l $STATUS_CSV | grep -q '6'
