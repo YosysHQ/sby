@@ -452,7 +452,7 @@ class SbyStatusDb:
             print(header)
 
         # find summary for each task/property combo
-        prop_map: dict[(str, str), dict[str, (int, int)]] = {}
+        prop_map: dict[(str, str, str), dict[str, (int, int)]] = {}
         for row, prop_status in all_properties.items():
             if tasknames and prop_status['task_name'] not in tasknames:
                 continue
@@ -467,29 +467,38 @@ class SbyStatusDb:
             except KeyError:
                 prop_map[key] = prop_status_map = {}
 
-            current_depth, _ = prop_status_map.get(status, (None, None))
+            try:
+                current_depth, _, current_kind = prop_status_map[status]
+            except KeyError:
+                prop_status_map[status] = (this_depth, row, this_kind)
+                continue
+
             update_map = False
-            if current_depth is None:
+            if current_depth is None and current_kind is None:
+                # no depth or kind to compare, just take latest data
                 update_map = True
-            elif this_depth is not None:
-                if status == 'FAIL' and this_depth < current_depth:
+            elif this_depth is not None and this_depth != current_depth:
+                if current_depth is None:
+                    # always prefer a known depth to an unknown
+                    update_map = True
+                elif status == 'FAIL' and this_depth < current_depth:
                     # earliest fail
                     update_map = True
                 elif status != 'FAIL' and this_depth > current_depth:
                     # latest non-FAIL
                     update_map = True
-                elif this_depth == current_depth and this_kind in ['fst', 'vcd']:
-                        # prefer traces over witness files
-                        update_map = True
+            elif this_kind in ['fst', 'vcd']:
+                # prefer traces over witness files
+                update_map = True
             if update_map:
-                prop_status_map[status] = (this_depth, row)
+                prop_status_map[status] = (this_depth, row, this_kind)
 
         for prop in prop_map.values():
             # ignore UNKNOWNs if there are other statuses
             if len(prop) > 1 and "UNKNOWN" in prop:
                 del prop["UNKNOWN"]
 
-            for _, row in prop.values():
+            for _, row, _ in prop.values():
                 line = format_status_data_fmtline(all_properties[row], status_format)
                 print(line)
 
