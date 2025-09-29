@@ -1,6 +1,7 @@
 [tasks]
 abc prove
 abc_keepgoing prove
+btor_cover cover
 
 # "Error: Does not work for combinational networks."
 abc_bmc3 bmc error
@@ -19,6 +20,7 @@ error: expect ERROR
 abc: abc pdr
 abc_keepgoing: abc --keep-going pdr
 btor_pono: btor pono
+btor_cover: btor btormc
 abc_bmc3: abc bmc3
 abc_sim3: abc sim3
 
