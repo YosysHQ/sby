@@ -1,0 +1,21 @@
+[tasks]
+abc
+abc_keepgoing
+
+[options]
+mode prove
+
+[engines]
+abc: abc pdr
+abc_keepgoing: abc --keep-going pdr
+
+[script]
+read -sv test.sv
+prep -top top
+
+[file test.sv]
+module top(input i, output o);
+
+assign o = ~i;
+
+endmodule
