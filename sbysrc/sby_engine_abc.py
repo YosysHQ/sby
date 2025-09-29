@@ -246,6 +246,9 @@ def run(mode, task, engine_idx, engine):
                 else:
                     proc_status = "FAIL"
 
+        match = re.match("Error: (Does not work|Only works) for (sequential|combinational) networks.", line)
+        if match: proc_status = "ERROR"
+
         return line
 
     def exit_callback(retcode):
