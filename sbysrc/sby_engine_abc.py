@@ -203,7 +203,7 @@ def run(mode, task, engine_idx, engine):
         match = re.match(r"^Proved output +([0-9]+) in frame +-?[0-9]+", line)
         if match:
             output = int(match[1])
-            prop = aiger_props[output]
+            prop = aiger_props[output] if aiger_props else None
             if prop:
                 prop.status = "PASS"
                 task.summary.add_event(
@@ -232,7 +232,7 @@ def run(mode, task, engine_idx, engine):
                 disproved_count = int(match[3])
                 undecided_count = int(match[4])
                 if (
-                    all_count != len(aiger_props) or
+                    (aiger_props and all_count != len(aiger_props)) or
                     all_count != proved_count + disproved_count + undecided_count or
                     disproved_count != len(disproved) or
                     proved_count != len(proved)
@@ -245,6 +245,9 @@ def run(mode, task, engine_idx, engine):
                     proc_status = "UNKNOWN"
                 else:
                     proc_status = "FAIL"
+
+        match = re.match("Error: (Does not work|Only works) for (sequential|combinational) networks.", line)
+        if match: proc_status = "ERROR"
 
         return line
 

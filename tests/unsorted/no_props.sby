@@ -1,0 +1,36 @@
+[tasks]
+abc prove
+abc_keepgoing prove
+btor_cover cover
+
+# "Error: Does not work for combinational networks."
+abc_bmc3 bmc error
+# "Error: Only works for sequential networks."
+abc_sim3 bmc error
+# "Property index 0 is greater than the number of properties in file model/design_btor_single.btor (0)"
+btor_pono bmc error
+
+[options]
+prove: mode prove
+bmc: mode bmc
+cover: mode cover
+error: expect ERROR
+
+[engines]
+abc: abc pdr
+abc_keepgoing: abc --keep-going pdr
+btor_pono: btor pono
+btor_cover: btor btormc
+abc_bmc3: abc bmc3
+abc_sim3: abc sim3
+
+[script]
+read -sv test.sv
+prep -top top
+
+[file test.sv]
+module top(input i, output o);
+
+assign o = ~i;
+
+endmodule
