@@ -44,6 +44,8 @@ def sim_witness_trace(prefix, task, engine_idx, witness_file, *, append, inducti
         sim_args = ""
         if inductive:
             sim_args += " -noinitstate"
+        if task.opt_cycle_width != 10:
+            formats.append(f"-width {task.opt_cycle_width}")
         print(f"sim -hdlname -summary {trace_name}.json -append {append}{sim_args} -r {trace_name}.yw {' '.join(formats)}", file=f)
 
     def exit_callback(retval):
