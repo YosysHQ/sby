@@ -160,6 +160,9 @@ options are:
 | ``fst``           |   All      | Generate FST traces using Yosys's sim command.          |
 |                   |            | Values: ``on``, ``off``. Default: ``off``               |
 +-------------------+------------+---------------------------------------------------------+
+| ``cycle_width``   |   All      | Cycle width used by Yosys's sim command.                |
+|                   |            | Values: even numbers >= 2. Default: ``10``              |
++-------------------+------------+---------------------------------------------------------+
 | ``aigsmt``        |   All      | Which SMT2 solver to use for converting AIGER witnesses |
 |                   |            | to counter example traces. Use ``none`` to disable      |
 |                   |            | conversion of AIGER witnesses. Default: ``yices``       |

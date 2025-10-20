@@ -1395,6 +1395,9 @@ class SbyTask(SbyConfig):
         self.handle_bool_option("vcd", True)
         self.handle_bool_option("vcd_sim", False)
         self.handle_bool_option("fst", False)
+        self.handle_int_option("cycle_width", 10)
+        if self.opt_cycle_width < 2 or self.opt_cycle_width % 2 != 0:
+                self.error(f"cycle_width option must be an even number >= 2, but is {self.opt_cycle_width}")
 
         self.handle_bool_option("witrename", True)
         self.handle_bool_option("aigfolds", False)
