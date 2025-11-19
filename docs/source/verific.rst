@@ -151,7 +151,6 @@ by a SystemVerilog file ``formal_bind.sv``.
 .. _vhd_example: https://github.com/YosysHQ/sby/tree/master/docs/examples/vhd
 
 .. literalinclude:: ../examples/vhd/formal_bind.sby
-  :language: yoscrypt
   :start-after: [script]
   :end-before: [files]
   :caption: ``formal_bind.sby`` script section
