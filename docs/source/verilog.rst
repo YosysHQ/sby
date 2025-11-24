@@ -167,7 +167,7 @@ time, as in
 
 .. code-block:: systemverilog
 
-   (* anyconst ) reg some_value;
+   (* anyconst *) reg some_value;
 
 The ``(* anyconst *)`` attribute will create a solver chosen constant.
 It is often used when verifying memories: the proof allows the solver to
