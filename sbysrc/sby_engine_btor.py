@@ -23,8 +23,10 @@ from sby_sim import sim_witness_trace
 
 def run(mode, task, engine_idx, engine):
     random_seed = None
+    nomem_opt = False
+    syn_opt = False
 
-    opts, solver_args = getopt.getopt(engine[1:], "", ["seed="])
+    opts, solver_args = getopt.getopt(engine[1:], "", ["nomem", "syn", "seed="])
 
     if len(solver_args) == 0:
         task.error("Missing solver command.")
@@ -32,8 +34,17 @@ def run(mode, task, engine_idx, engine):
     for o, a in opts:
         if o == "--seed":
             random_seed = a
+        if o == "--nomem":
+            nomem_opt = True
+        elif o == "--syn":
+            syn_opt = True
         else:
             task.error("Unexpected BTOR engine options.")
+
+    model_name = "btor"
+
+    if syn_opt: model_name += "_syn"
+    if nomem_opt: model_name += "_nomem"
 
     if solver_args[0] == "btormc":
         if mode != "bmc":
@@ -203,7 +214,7 @@ def run(mode, task, engine_idx, engine):
                 else:
                     suffix = common_state.produced_cex
 
-                model = f"design_btor{'_single' if solver_args[0] == 'pono' else ''}"
+                model = f"design_{model_name}{'_single' if solver_args[0] == 'pono' else ''}"
 
                 yw_proc = SbyProc(
                     task, f"engine_{engine_idx}.trace{suffix}", [],
@@ -219,8 +230,8 @@ def run(mode, task, engine_idx, engine):
                     proc2 = SbyProc(
                         task,
                         f"engine_{engine_idx}.trace{suffix}",
-                        task.model("btor"),
-                        "cd {dir} ; btorsim -c --vcd engine_{idx}/trace{i}{i2}.vcd --hierarchical-symbols --info model/design_btor{s}.info model/design_btor{s}.btor engine_{idx}/trace{i}.wit".format(dir=task.workdir, idx=engine_idx, i=suffix, i2='' if btorsim_vcd else '_btorsim', s='_single' if solver_args[0] == 'pono' else ''),
+                        task.model(model_name),
+                        "cd {dir} ; btorsim -c --vcd engine_{idx}/trace{i}{i2}.vcd --hierarchical-symbols --info model/design_{m}{s}.info model/design_{m}{s}.btor engine_{idx}/trace{i}.wit".format(dir=task.workdir, idx=engine_idx, i=suffix, i2='' if btorsim_vcd else '_btorsim', m=model_name, s='_single' if solver_args[0] == 'pono' else ''),
                         logfile=open(f"{task.workdir}/engine_{engine_idx}/logfile2.txt", "w")
                     )
                     proc2.output_callback = output_callback2
@@ -310,8 +321,8 @@ def run(mode, task, engine_idx, engine):
 
     proc = SbyProc(
         task,
-        f"engine_{engine_idx}", task.model("btor"),
-        f"cd {task.workdir}; {solver_cmd} model/design_btor{'_single' if solver_args[0]=='pono' else ''}.btor",
+        f"engine_{engine_idx}", task.model(model_name),
+        f"cd {task.workdir}; {solver_cmd} model/design_{model_name}{'_single' if solver_args[0] == 'pono' else ''}.btor",
         logfile=open(f"{task.workdir}/engine_{engine_idx}/logfile.txt", "w")
     )
     proc.checkretcode = True

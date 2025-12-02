@@ -1238,8 +1238,8 @@ class SbyTask(SbyConfig):
                 print("delete -output", file=f)
                 print("dffunmap", file=f)
                 print("stat", file=f)
-                print("write_btor {}-i design_{m}.info -ywmap design_btor.ywb design_{m}.btor".format("-c " if self.opt_mode == "cover" else "", m=model_name), file=f)
-                print("write_btor -s {}-i design_{m}_single.info -ywmap design_btor_single.ywb design_{m}_single.btor".format("-c " if self.opt_mode == "cover" else "", m=model_name), file=f)
+                print("write_btor {}-i design_{m}.info -ywmap design_{m}.ywb design_{m}.btor".format("-c " if self.opt_mode == "cover" else "", m=model_name), file=f)
+                print("write_btor -s {}-i design_{m}_single.info -ywmap design_{m}_single.ywb design_{m}_single.btor".format("-c " if self.opt_mode == "cover" else "", m=model_name), file=f)
 
             proc = SbyProc(
                 self,
