@@ -298,6 +298,8 @@ The following mode/engine/solver combinations are currently supported:
 |           | ``abc sim3``             |
 |           |                          |
 |           | ``aiger aigbmc``         |
+|           |                          |
+|           | ``aiger rIC3``           |
 +-----------+--------------------------+
 | ``prove`` | ``smtbmc [all solvers]`` |
 |           |                          |
@@ -308,6 +310,8 @@ The following mode/engine/solver combinations are currently supported:
 |           | ``aiger rIC3``           |
 |           |                          |
 |           | ``aiger suprove``        |
+|           |                          |
+|           | ``btor rIC3``            |
 +-----------+--------------------------+
 | ``cover`` | ``smtbmc [all solvers]`` |
 |           |                          |

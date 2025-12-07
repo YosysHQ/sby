@@ -42,6 +42,10 @@ def run(task):
             import sby_engine_aiger
             sby_engine_aiger.run("prove", task, engine_idx, engine)
 
+        elif engine[0] == "btor":
+            import sby_engine_btor
+            sby_engine_btor.run("prove", task, engine_idx, engine)
+
         elif engine[0] == "abc":
             import sby_engine_abc
             sby_engine_abc.run("prove", task, engine_idx, engine)

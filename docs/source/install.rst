@@ -138,4 +138,4 @@ rIC3
 ^^^^
   https://github.com/gipsyh/rIC3/
 
-The minimum required version is 1.3.5
+The minimum required version of rIC3 is 1.5.2

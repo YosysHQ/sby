@@ -36,6 +36,8 @@ def run(mode, task, engine_idx, engine):
             task.error("Unexpected BTOR engine options.")
 
     if solver_args[0] == "btormc":
+        if mode != "bmc":
+            task.error("The btormc solver is only supported in bmc mode.")
         solver_cmd = ""
         if random_seed:
             solver_cmd += f"BTORSEED={random_seed} "
@@ -45,6 +47,8 @@ def run(mode, task, engine_idx, engine):
         solver_cmd += " ".join([""] + solver_args[1:])
 
     elif solver_args[0] == "pono":
+        if mode != "bmc":
+            task.error("The pono solver is only supported in bmc mode.")
         if random_seed:
             task.error("Setting the random seed is not available for the pono solver.")
         if task.opt_skip is not None:
@@ -52,6 +56,25 @@ def run(mode, task, engine_idx, engine):
         solver_cmd = task.exe_paths["pono"] + f" --witness -v 1 -e bmc -k {task.opt_depth - 1}"
         solver_cmd += " ".join([""] + solver_args[1:])
 
+    elif solver_args[0] == "rIC3":
+        if random_seed:
+            task.error("Setting the random seed is not available for the rIC3 solver.")
+        if task.opt_skip is not None:
+            task.error("The btor engine supports the option skip only for the btormc solver.")
+        if mode == "prove":
+            solver_cmd = " ".join([task.exe_paths["rIC3"], "--witness"] + solver_args[1:])
+        elif mode == "bmc":
+            solver_cmd = " ".join(
+                [
+                    task.exe_paths["rIC3"],
+                    "-e bmc",
+                    "--end {}".format(task.opt_depth - 1),
+                    "--witness",
+                ]
+                + solver_args[1:]
+            )
+        else:
+            task.error("The rIC3 solver is only supported in bmc and prove mode.")
     else:
         task.error(f"Invalid solver command {solver_args[0]}.")
 
@@ -92,13 +115,26 @@ def run(mode, task, engine_idx, engine):
             else:
                 task.error(f"engine_{engine_idx}: Engine terminated without status.")
             task.update_unknown_props(dict(source="btor", engine=f"engine_{engine_idx}"))
-        else:
+        elif mode == "bmc":
             if common_state.expected_cex == 0:
                 proc_status = "pass"
             elif common_state.solver_status == "sat":
                 proc_status = "FAIL"
             elif common_state.solver_status == "unsat":
                 proc_status = "pass"
+            elif common_state.solver_status == "unknown":
+                proc_status = "pass"
+            else:
+                task.error(f"engine_{engine_idx}: Engine terminated without status.")
+        elif mode == "prove":
+            if common_state.expected_cex == 0:
+                proc_status = "pass"
+            elif common_state.solver_status == "sat":
+                proc_status = "FAIL"
+            elif common_state.solver_status == "unsat":
+                proc_status = "pass"
+            elif common_state.solver_status == "unknown":
+                proc_status = "UNKNOWN"
             else:
                 task.error(f"engine_{engine_idx}: Engine terminated without status.")
 
@@ -233,6 +269,23 @@ def run(mode, task, engine_idx, engine):
                 if line not in ["b0"]:
                     return line
 
+            elif solver_args[0] == "rIC3":
+                match = re.match(r".*bmc found counter-example in depth (\d+).*", line)
+                if match:
+                    common_state.current_step = int(match[1])
+                if line == "UNSAT":
+                    if common_state.solver_status is None:
+                        common_state.solver_status = "unsat"
+                    return "No CEX found."
+                if line == "UNKNOWN":
+                    if common_state.solver_status is None:
+                        common_state.solver_status = "unknown"
+                if line == "SAT":
+                    if common_state.solver_status is None:
+                        common_state.solver_status = "sat"
+                return line
+                
+
             print(line, file=proc.logfile)
 
         return None
@@ -264,6 +317,8 @@ def run(mode, task, engine_idx, engine):
     proc.checkretcode = True
     if solver_args[0] == "pono":
         proc.retcodes = [0, 1, 255] # UNKNOWN = -1, FALSE = 0, TRUE = 1, ERROR = 2
+    if solver_args[0] == "rIC3":
+        proc.retcodes = [10, 20, 30] # FALSE = 10, TRUE = 20, ERROR = 30
     proc.output_callback = output_callback
     proc.register_exit_callback(exit_callback)
     common_state.running_procs += 1
