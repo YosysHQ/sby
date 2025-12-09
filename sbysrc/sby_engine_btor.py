@@ -85,7 +85,7 @@ def run(mode, task, engine_idx, engine):
                 + solver_args[1:]
             )
         else:
-            task.error("The rIC3 solver is only supported in bmc and prove mode.")
+            task.error("The rIC3 solver is only supported in bmc and prove modes.")
     else:
         task.error(f"Invalid solver command {solver_args[0]}.")
 
