@@ -295,8 +295,6 @@ def run(mode, task, engine_idx, engine):
                     if common_state.solver_status is None:
                         common_state.solver_status = "sat"
                 return line
-                
-
             print(line, file=proc.logfile)
 
         return None
