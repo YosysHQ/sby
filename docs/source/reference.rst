@@ -389,7 +389,7 @@ The engine supports no engine options and supports the following solvers:
 +-------------------------------+---------------------------------+
 | ``pono``                      |   ``bmc``                       |
 +-------------------------------+---------------------------------+
-| ``rIC3``                      |   ``bmc``,``prove``             |
+| ``rIC3``                      |   ``bmc``, ``prove``            |
 +-------------------------------+---------------------------------+
 
 Solver options are passed to the solver as additional command line options.
