@@ -1,0 +1,64 @@
+[tasks]
+stage_1_init init
+stage_1_fv fv
+stage_2_init init
+stage_2_fv fv
+
+[options]
+init:
+mode prep
+
+fv:
+mode cover
+depth 40
+
+--
+
+[engines]
+init: none
+fv: smtbmc
+
+[script]
+stage_1_init:
+verific -formal Req_Ack.sv
+hierarchy -top DUT
+setattr -set keep 1 w:\\*
+prep -top DUT
+flatten
+write_rtlil stage_1_init.il
+
+stage_1_fv:
+read_rtlil stage_1_init.il
+# This selection computes (all things with phase)-(all things with phase=1)
+# to remove all phased SVA constructs not intended for phase 1.
+select */a:phase */a:phase=1 %d
+delete
+
+stage_2_init:
+read_rtlil stage_1_init.il
+sim -a -w -scope DUT -r trace0.yw
+write_rtlil stage_2_init.il
+
+stage_2_fv:
+read_rtlil stage_2_init.il
+# This selection computes (all things with phase)-(all things with phase=2)
+# to remove all phased SVA constructs not intended for phase 2.
+select */a:phase */a:phase=2 %d
+delete
+
+--
+
+[files]
+
+stage_1_init:
+Req_Ack.sv
+
+stage_1_fv:
+skip_staged_flow_stage_1_init/src/stage_1_init.il
+
+stage_2_init:
+skip_staged_flow_stage_1_init/src/stage_1_init.il
+skip_staged_flow_stage_1_fv/engine_0/trace0.yw
+
+stage_2_fv:
+skip_staged_flow_stage_2_init/src/stage_2_init.il
