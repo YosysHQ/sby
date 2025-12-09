@@ -329,7 +329,7 @@ def run(mode, task, engine_idx, engine):
     if solver_args[0] == "pono":
         proc.retcodes = [0, 1, 255] # UNKNOWN = -1, FALSE = 0, TRUE = 1, ERROR = 2
     if solver_args[0] == "rIC3":
-        proc.retcodes = [10, 20, 30] # FALSE = 10, TRUE = 20, ERROR = 30
+        proc.retcodes = [10, 20, 30] # FALSE = 10, TRUE = 20, UNKNOWN = 30
     proc.output_callback = output_callback
     proc.register_exit_callback(exit_callback)
     common_state.running_procs += 1
