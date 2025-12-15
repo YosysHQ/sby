@@ -1,9 +1,6 @@
 #!/bin/bash
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-cd "$SCRIPT_DIR"
-
 FLOW_FILE="skip_staged_flow.sby"
 
 # Clean previous runs so we always exercise the full staged flow.
