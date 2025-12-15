@@ -11,7 +11,7 @@ module DUT (
 
         // Deterministic initial state
         initial begin
-                reqs_seen = 2'b00;
+                reqs_seen = 2'b0;
                 cycle_count = 32'b0;
         end
 
