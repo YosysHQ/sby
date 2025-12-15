@@ -4,4 +4,4 @@ Staged simulation + verification example demonstrating staged verification using
 - Uses phased SVA (`(* phase = "1" *)`, `(* phase = "2" *)`) and a selector script to strip irrelevant properties per stage.
 - Needs Yosys with Verific (`verific -formal` in the scripts).
 
-Run via the wrapper: `make -C tests staged_sim_and_verif/staged_sim_and_verif` (which calls `staged_sim_and_verif.sh` and exercises all four tasks in `skip_staged_flow.sby`).***
+Run via the wrapper: from the root directory, call `make -C tests staged_sim_and_verif/staged_sim_and_verif`, which calls `staged_sim_and_verif.sh` and exercises all four tasks in `skip_staged_flow.sby`.
