@@ -25,9 +25,9 @@ hierarchy -top DUT
 
 stage_1_fv:
 read_rtlil design_prep.il
-# This selection computes (all things with phase)-(all things with phase=1)
-# to remove all phased SVA constructs not intended for phase 1.
-select */a:phase */a:phase=1 %d
+# This selection computes (all phase-labeled things) - (all phase-1-labeled
+# things) to remove all phase-tagged SVA constructs not intended for phase 1.
+select */c:phase* */c:phase1_* %d
 delete
 
 stage_2_init:
@@ -36,9 +36,9 @@ sim -a -w -scope DUT -r trace0.yw
 
 stage_2_fv:
 read_rtlil design_prep.il
-# This selection computes (all things with phase)-(all things with phase=2)
-# to remove all phased SVA constructs not intended for phase 2.
-select */a:phase */a:phase=2 %d
+# This selection computes (all phase-labeled things) - (all phase-2-labeled
+# things) to remove all phase-tagged SVA constructs not intended for phase 2.
+select */c:phase* */c:phase2_* %d
 delete
 
 --

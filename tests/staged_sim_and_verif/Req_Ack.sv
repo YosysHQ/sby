@@ -44,19 +44,16 @@ module DUT (
         // occurs. This leaves us in a state where we're waiting for the second
         // ack.
         always @(posedge clk) begin
-                (* phase = "1" *)
-                cover(reqs_seen == 2);
+                phase1_reqs_seen: cover(reqs_seen == 2);
         end
 
         // In phase 2, assume that there's no more reqs; despite this, assert
         // that an ack will eventually come for the second req.
         always @ (posedge clk) begin
-                (* phase = "2" *)
-                assume(!req);
+                phase2_no_new_req: assume(!req);
         end
         always @(posedge clk) begin
-                (* phase = "2" *)
-                cover(ack);
+                phase2_ack_eventually: cover(ack);
         end
 
 
