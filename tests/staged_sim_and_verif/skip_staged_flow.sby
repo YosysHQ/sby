@@ -69,7 +69,7 @@ skip_staged_flow_stage_1_init/model/design_prep.il
 
 stage_2_init:
 skip_staged_flow_stage_1_init/model/design_prep.il
-skip_staged_flow_stage_1_fv/engine_0/trace0.yw
+skip_staged_flow_stage_1_cover/engine_0/trace0.yw
 
 stage_2a_cover:
 skip_staged_flow_stage_2_init/model/design_prep.il
