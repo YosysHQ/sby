@@ -7,16 +7,19 @@ module DUT (
 `ifdef FORMAL
 
         logic [1:0] reqs_seen;
+        logic [1:0] acks_seen;
         logic [31:0] cycle_count;
 
         // Deterministic initial state
         initial begin
                 reqs_seen = 2'b0;
+                acks_seen = 2'b0;
                 cycle_count = 32'b0;
         end
 
         always @ (posedge clk) begin
                 if (req) reqs_seen <= reqs_seen + 1;
+                if (ack && !$past(ack)) acks_seen <= acks_seen + 1;
                 cycle_count <= cycle_count + 1;
         end
 
@@ -47,13 +50,20 @@ module DUT (
                 phase1_reqs_seen: cover(reqs_seen == 2);
         end
 
-        // In phase 2, assume that there's no more reqs; despite this, assert
-        // that an ack will eventually come for the second req.
+        // In phase 2, assume that there's no more reqs; cover that an ack will
+        // eventually come for the second req, and separately prove bounded
+        // counts for reqs/acks.
         always @ (posedge clk) begin
-                phase2_no_new_req: assume(!req);
+                phase2_shared_no_new_req: assume(!req);
         end
+
         always @(posedge clk) begin
-                phase2_ack_eventually: cover(ack);
+                phase2a_cover_ack: cover(ack);
+        end
+
+        always @(posedge clk) begin
+                phase2b_assert_req_count: assert(reqs_seen <= 2);
+                phase2b_assert_ack_count: assert(acks_seen <= 2);
         end
 
 
