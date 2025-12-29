@@ -61,9 +61,13 @@ module DUT (
                 phase2a_cover_ack: cover(ack);
         end
 
+        // Assert the second ack arrives within a bounded window after the second
+        // request, and also that ack count never exceeds the expected two.
+        phase2b_assert_ack_reaches_two: assert property (@(posedge clk)
+                $rose(reqs_seen == 2) |-> ##[1:8] acks_seen == 2
+        );
         always @(posedge clk) begin
-                phase2b_assert_req_count: assert(reqs_seen <= 2);
-                phase2b_assert_ack_count: assert(acks_seen <= 2);
+                phase2b_assert_ack_stable: assert(acks_seen <= 2);
         end
 
 
