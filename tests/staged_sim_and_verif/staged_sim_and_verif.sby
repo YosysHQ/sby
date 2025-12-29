@@ -1,0 +1,14 @@
+[options]
+mode cover
+depth 1
+
+[engines]
+smtbmc
+
+[script]
+# Minimal job so dumptaskinfo picks up the tools this flow requires.
+verific -formal Req_Ack.sv
+prep -top DUT
+
+[files]
+Req_Ack.sv
