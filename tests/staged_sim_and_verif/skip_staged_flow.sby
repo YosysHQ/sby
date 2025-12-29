@@ -11,6 +11,7 @@ mode prep
 fv:
 mode cover
 depth 40
+skip_prep on
 
 --
 
