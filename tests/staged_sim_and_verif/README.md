@@ -1,13 +1,14 @@
 Staged simulation + verification example demonstrating staged verification using simulation and writeback via `sim -w` pass.
 - Stage 1: run cover to reach “req sent, ack pending”, producing `trace0.yw`.
-- Stage 2: replay the witness with `sim -w` to bake state, then run another cover that requires the ack.
-- Uses phased SVA (`(* phase = "1" *)`, `(* phase = "2" *)`) and a selector script to strip irrelevant properties per stage.
+- Stage 2A (cover branch): replay the witness with `sim -w` to bake state, then run another cover that requires the ack.
+- Stage 2B (assert branch): replay the same baked state and assert there is at most one further ack after the second req.
+- Uses labeled properties (`phase1_*`, `phase2_shared_*`, `phase2a_*`, `phase2b_*`) and a selector script to strip irrelevant properties per stage.
 - Needs Yosys with Verific (`verific -formal` in the scripts).
 
-Run via the wrapper: from the root directory, call `make -C tests staged_sim_and_verif/staged_sim_and_verif`, which calls `staged_sim_and_verif.sh` and exercises all four tasks in `skip_staged_flow.sby`. You may also run each task manually; simply ensure you run the tasks in the correct order shown in the `.sh` file.
+Run via the wrapper: from the root directory, call `make -C tests staged_sim_and_verif/staged_sim_and_verif`, which calls `staged_sim_and_verif.sh` and exercises all five tasks in `skip_staged_flow.sby`. You may also run each task manually; simply ensure you run the tasks in the correct order shown in the `.sh` file.
 
 Design notes
-- Two-phase flow: phase 1 reaches “two reqs seen” and emits a witness; phase 2 replays that witness with `sim -w` and covers the matching ack.
-- Phase separation uses labeled properties (`phase1_*` / `phase2_*`), matching the SCY approach; each phase prunes with `select */c:phase* */c:phase1_* %d` (or `phase2_*`) then `delete`, leaving only the desired phase’s properties.
+- Two-phase flow with a branch in phase 2: phase 1 reaches “two reqs seen” and emits a witness; phase 2 replays that witness with `sim -w` and then splits into a cover branch (ack) and an assert branch (single remaining ack). This covers both SCY-like sequential covers and an assertion path that goes beyond SCY’s current cover-only sequencing.
+- Phase separation uses labeled properties (`phase1_*`, `phase2_shared_*`, `phase2a_*`, `phase2b_*`), matching the SCY approach. Each branch prunes with `select */c:phase* ... %u %d` to keep only the shared + branch-specific labels for that task.
 - Tooling: needs Yosys with Verific (`verific -formal`) for SVA parsing. The minimal `staged_sim_and_verif.sby` exists just so the test harness discovers the Verific requirement.
-- Harness glue: the current make harness can’t express “run these SBY tasks sequentially from one .sby”; it spins each task as an independent target. We keep the multi-task config in `skip_staged_flow.sby` (prefixed so collect skips it) and use `staged_sim_and_verif.sh` to drive the four tasks in order. The tiny `staged_sim_and_verif.sby` is only there so collect/required_tools see the test; the `.sh` enforces ordering. Set `SBY_MAIN` to your SBY entrypoint (e.g., `.../share/yosys/python3/sby_cmdline.py` from OSS CAD Suite) when running manually.
+- Harness glue: the current make harness can’t express “run these SBY tasks sequentially from one .sby”; it spins each task as an independent target. We keep the multi-task config in `skip_staged_flow.sby` (prefixed so collect skips it) and use `staged_sim_and_verif.sh` to drive the five tasks in order. The tiny `staged_sim_and_verif.sby` is only there so collect/required_tools see the test and recognize that verific is required. The `.sh` is what actually runs and enforces ordering.
