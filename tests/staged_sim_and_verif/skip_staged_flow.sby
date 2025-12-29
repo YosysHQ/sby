@@ -23,6 +23,7 @@ fv: smtbmc
 stage_1_init:
 verific -formal Req_Ack.sv
 hierarchy -top DUT
+prep
 
 stage_1_fv:
 read_rtlil design_prep.il
