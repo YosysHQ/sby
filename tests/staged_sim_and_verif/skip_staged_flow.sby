@@ -1,0 +1,78 @@
+[tasks]
+stage_1_init init
+stage_1_cover cover
+stage_2_init init
+stage_2a_cover cover
+stage_2b_assert assert
+
+[options]
+init:
+mode prep
+
+cover:
+mode cover
+depth 40
+skip_prep on
+
+assert:
+mode prove
+depth 40
+skip_prep on
+
+--
+
+[engines]
+init: none
+cover: smtbmc
+assert: smtbmc
+
+[script]
+stage_1_init:
+verific -formal Req_Ack.sv
+hierarchy -top DUT
+prep
+
+stage_1_cover:
+read_rtlil design_prep.il
+# This selection computes (all phase-labeled things) - (all phase-1-labeled
+# things) to remove all phase-tagged SVA constructs not intended for phase 1.
+select */c:phase* */c:phase1_* %d
+delete
+
+stage_2_init:
+read_rtlil design_prep.il
+sim -a -w -scope DUT -r trace0.yw
+
+stage_2a_cover:
+read_rtlil design_prep.il
+# This selection computes (all phase-labeled things) - (phase2 shared + phase2a)
+# to remove all phase-tagged SVA constructs not intended for this branch.
+select */c:phase* */c:phase2_shared_* */c:phase2a_* %u %d
+delete
+
+stage_2b_assert:
+read_rtlil design_prep.il
+# This selection computes (all phase-labeled things) - (phase2 shared + phase2b)
+# to remove all phase-tagged SVA constructs not intended for this branch.
+select */c:phase* */c:phase2_shared_* */c:phase2b_* %u %d
+delete
+
+--
+
+[files]
+
+stage_1_init:
+Req_Ack.sv
+
+stage_1_cover:
+skip_staged_flow_stage_1_init/model/design_prep.il
+
+stage_2_init:
+skip_staged_flow_stage_1_init/model/design_prep.il
+skip_staged_flow_stage_1_cover/engine_0/trace0.yw
+
+stage_2a_cover:
+skip_staged_flow_stage_2_init/model/design_prep.il
+
+stage_2b_assert:
+skip_staged_flow_stage_2_init/model/design_prep.il
