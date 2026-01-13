@@ -67,7 +67,7 @@ module DUT (
                 phase3a_cover_ack: cover(ack);
         end
 
-        // Assert the second ack arrives within a bounded window after beginning
+        // Assert the third ack arrives within a bounded window after beginning
         // phase 3, and furthermore after that point no further acks arrive.
         property p_acks_seen_hits_3_and_stays;
                 @(posedge clk) ##[0:8] $rose(acks_seen == 3) ##1 (acks_seen == 3)[*0:$];
