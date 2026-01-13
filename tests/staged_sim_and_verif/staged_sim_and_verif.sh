@@ -7,6 +7,7 @@ run_task() {
     python3 "$SBY_MAIN" -f "$FLOW_FILE" "$1"
 }
 
+run_task prep
 run_task stage_1
 run_task stage_2
 run_task stage_3_init
