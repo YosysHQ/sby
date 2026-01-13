@@ -96,7 +96,7 @@ delete
 
 stage_3b_assert:
 read_rtlil stage_3_init.il
-select */c:phase* */c:phase3_shared_* */c:phase3b* %u %d
+select */c:phase* */c:phase3_shared* */c:phase3b* %u %d
 delete
 
 
