@@ -6,8 +6,8 @@ module DUT (
 
 `ifdef FORMAL
 
-        logic [1:0] reqs_seen;
-        logic [1:0] acks_seen;
+        logic [31:0] reqs_seen;
+        logic [31:0] acks_seen;
         logic [31:0] cycle_count;
 
         // Deterministic initial state
