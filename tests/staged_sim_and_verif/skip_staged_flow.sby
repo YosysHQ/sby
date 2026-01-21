@@ -60,9 +60,9 @@ read_rtlil design_prep.il
 # Write checkpoint file.
 write_rtlil stage_1_init.il
 
-# This selection computes (all phase-labeled things) - (all phase-1-labeled
-# things) to remove all phase-tagged SVA constructs not intended for phase 1.
-select */c:phase* */c:phase1* %d
+# This selection computes (all stage-labeled things) - (all stage-1-labeled
+# things) to remove all stage-tagged SVA constructs not intended for stage 1.
+select */c:stage* */c:stage1* %d
 delete
 
 stage_2:
@@ -75,7 +75,7 @@ read_rtlil stage_1_init.il
 sim -a -w -scope DUT -r trace0.yw
 write_rtlil stage_2_init.il
 
-select */c:phase* */c:phase2* %d
+select */c:stage* */c:stage2* %d
 delete
 
 stage_3_init:
@@ -88,12 +88,12 @@ write_rtlil stage_3_init.il
 
 stage_3a_cover:
 read_rtlil stage_3_init.il
-select */c:phase* */c:phase3_shared* */c:phase3a* %u %d
+select */c:stage* */c:stage3_shared* */c:stage3a* %u %d
 delete
 
 stage_3b_assert:
 read_rtlil stage_3_init.il
-select */c:phase* */c:phase3_shared* */c:phase3b* %u %d
+select */c:stage* */c:stage3_shared* */c:stage3b* %u %d
 delete
 
 

@@ -47,28 +47,28 @@ module DUT (
         // occurs. This leaves us in a state where we're waiting for the second
         // ack.
         always @(posedge clk) begin
-                phase1_reqs_seen: cover(reqs_seen == 2);
+                stage1_reqs_seen: cover(reqs_seen == 2);
         end
 
-        // In phase 2, cover that the first ack arrives within a bounded window
+        // In stage 2, cover that the first ack arrives within a bounded window
         // after the first req + another req arrives.
-        phase2_cover_ack_and_new_req: cover property (@(posedge clk)
+        stage2_cover_ack_and_new_req: cover property (@(posedge clk)
                 $rose(ack) ##[1:$] (reqs_seen == 3)
         );
 
 
-        // In phase 3, assume that there's no more reqs.
+        // In stage 3, assume that there's no more reqs.
         always @ (posedge clk) begin
-                phase3_shared_no_new_req: assume(!req);
+                stage3_shared_no_new_req: assume(!req);
         end
 
-        // In phase 3a, cover the second ack arriving eventually.
+        // In stage 3a, cover the second ack arriving eventually.
         always @(posedge clk) begin
-                phase3a_cover_ack: cover(ack);
+                stage3a_cover_ack: cover(ack);
         end
 
-        // In phase 3b, assert that once we've seen 3 acks, we stay at 3 acks.
-        phase3b_acks_remains_3: assert property (
+        // In stage 3b, assert that once we've seen 3 acks, we stay at 3 acks.
+        stage3b_acks_remains_3: assert property (
                 @(posedge clk) $rose(acks_seen == 3) |-> (acks_seen == 3)[*1:$]
         );
 
