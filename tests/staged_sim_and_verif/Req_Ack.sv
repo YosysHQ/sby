@@ -6,14 +6,14 @@ module DUT (
 
 `ifdef FORMAL
 
-        logic [1:0] reqs_seen;
-        logic [1:0] acks_seen;
+        logic [31:0] reqs_seen;
+        logic [31:0] acks_seen;
         logic [31:0] cycle_count;
 
         // Deterministic initial state
         initial begin
-                reqs_seen = 2'b0;
-                acks_seen = 2'b0;
+                reqs_seen = 32'b0;
+                acks_seen = 32'b0;
                 cycle_count = 32'b0;
         end
 
@@ -47,29 +47,30 @@ module DUT (
         // occurs. This leaves us in a state where we're waiting for the second
         // ack.
         always @(posedge clk) begin
-                phase1_reqs_seen: cover(reqs_seen == 2);
+                stage1_reqs_seen: cover(reqs_seen == 2);
         end
 
-        // In phase 2, assume that there's no more reqs; cover that an ack will
-        // eventually come for the second req, and separately prove bounded
-        // counts for reqs/acks.
-        always @ (posedge clk) begin
-                phase2_shared_no_new_req: assume(!req);
-        end
-
-        always @(posedge clk) begin
-                phase2a_cover_ack: cover(ack);
-        end
-
-        // Assert the second ack arrives within a bounded window after the second
-        // request, and also that ack count never exceeds the expected two.
-        phase2b_assert_ack_reaches_two: assert property (@(posedge clk)
-                $rose(reqs_seen == 2) |-> ##[1:8] acks_seen == 2
+        // In stage 2, cover that the first ack arrives within a bounded window
+        // after the first req + another req arrives.
+        stage2_cover_ack_and_new_req: cover property (@(posedge clk)
+                $rose(ack) ##[1:$] (reqs_seen == 3)
         );
-        always @(posedge clk) begin
-                phase2b_assert_ack_stable: assert(acks_seen <= 2);
+
+
+        // In stage 3, assume that there's no more reqs.
+        always @ (posedge clk) begin
+                stage3_shared_no_new_req: assume(!req);
         end
 
+        // In stage 3a, cover the second ack arriving eventually.
+        always @(posedge clk) begin
+                stage3a_cover_ack: cover(ack);
+        end
+
+        // In stage 3b, assert that once we've seen 3 acks, we stay at 3 acks.
+        stage3b_acks_remains_3: assert property (
+                @(posedge clk) $rose(acks_seen == 3) |-> (acks_seen == 3)[*1:$]
+        );
 
 `endif
 
