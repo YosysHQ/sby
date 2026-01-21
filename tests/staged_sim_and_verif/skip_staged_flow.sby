@@ -1,29 +1,21 @@
 [tasks]
 prep
-stage_1
-stage_2
+stage_1 cover
+stage_2 cover
 stage_3_init
-stage_3a_cover
+stage_3a_cover cover
 stage_3b_assert
 
 [options]
 prep:
 mode prep
 
-stage_1:
-mode cover
-skip_prep on
-
-stage_2:
+cover:
 mode cover
 skip_prep on
 
 stage_3_init:
 mode prep
-skip_prep on
-
-stage_3a_cover:
-mode cover
 skip_prep on
 
 stage_3b_assert:
@@ -33,13 +25,18 @@ skip_prep on
 --
 
 [engines]
-smtbmc
 
 prep:
 none
 
+cover:
+smtbmc
+
 stage_3_init:
 none
+
+stage_3b_assert:
+smtbmc
 
 --
 
