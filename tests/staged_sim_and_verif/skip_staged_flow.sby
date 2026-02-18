@@ -42,13 +42,6 @@ smtbmc
 
 [script]
 
-# This separate prep step generates model_prep.il, which is our ground-truth
-# design file from which all other checkpoints are derived. It is essential
-# to have at least one prep step in `mode prep`, as we must produce a .il file
-# which has had the SBY-internal prep routine run on it. Any file written
-# in the user-provided script below will represent the state of the design 
-# *before* the SBY prep routine. (Note that the `prep` pass below is *not*
-# the SBY prep routine, but just the Yosys synthesis pass.)
 prep:
 verific -formal Req_Ack.sv
 hierarchy -top DUT
@@ -57,20 +50,12 @@ prep
 stage_1:
 read_rtlil design_prep.il
 
-# Write checkpoint file.
 write_rtlil stage_1_init.il
 
-# This selection computes (all stage-labeled things) - (all stage-1-labeled
-# things) to remove all stage-tagged SVA constructs not intended for stage 1.
 select */c:stage* */c:stage1* %d
 delete
 
 stage_2:
-# Read the stage 1 checkpoint, and then use the stage 1 trace to simulate up
-# to the end of stage 1.
-# Note that, in stage 2, we do not use -noinitstate on sim, as this first 
-# simulation begins at t=0 and thus $initstate cells should be active. All 
-# future calls to sim should include -noinitstate.
 read_rtlil stage_1_init.il
 sim -a -w -scope DUT -r trace0.yw
 write_rtlil stage_2_init.il
@@ -81,7 +66,6 @@ delete
 stage_3_init:
 read_rtlil stage_2_init.il
 
-# Use -noinitstate, as this simulation does not begin at t=0.
 sim -a -w -scope DUT -r trace0.yw -noinitstate
 
 write_rtlil stage_3_init.il
