@@ -1,78 +1,106 @@
 [tasks]
-stage_1_init init
-stage_1_cover cover
-stage_2_init init
-stage_2a_cover cover
-stage_2b_assert assert
+prep
+stage_1 cover
+stage_2 cover
+stage_3_init
+stage_3a_cover cover
+stage_3b_assert
 
 [options]
-init:
+prep:
 mode prep
 
 cover:
 mode cover
-depth 40
 skip_prep on
 
-assert:
+stage_3_init:
+mode prep
+skip_prep on
+
+stage_3b_assert:
 mode prove
-depth 40
 skip_prep on
 
 --
 
 [engines]
-init: none
-cover: smtbmc
-assert: smtbmc
+
+prep:
+none
+
+cover:
+smtbmc
+
+stage_3_init:
+none
+
+stage_3b_assert:
+smtbmc
+
+--
 
 [script]
-stage_1_init:
+
+prep:
 verific -formal Req_Ack.sv
 hierarchy -top DUT
 prep
 
-stage_1_cover:
+stage_1:
 read_rtlil design_prep.il
-# This selection computes (all phase-labeled things) - (all phase-1-labeled
-# things) to remove all phase-tagged SVA constructs not intended for phase 1.
-select */c:phase* */c:phase1_* %d
+
+write_rtlil stage_1_init.il
+
+select */c:stage* */c:stage1* %d
 delete
 
-stage_2_init:
-read_rtlil design_prep.il
+stage_2:
+read_rtlil stage_1_init.il
 sim -a -w -scope DUT -r trace0.yw
+write_rtlil stage_2_init.il
 
-stage_2a_cover:
-read_rtlil design_prep.il
-# This selection computes (all phase-labeled things) - (phase2 shared + phase2a)
-# to remove all phase-tagged SVA constructs not intended for this branch.
-select */c:phase* */c:phase2_shared_* */c:phase2a_* %u %d
+select */c:stage* */c:stage2* %d
 delete
 
-stage_2b_assert:
-read_rtlil design_prep.il
-# This selection computes (all phase-labeled things) - (phase2 shared + phase2b)
-# to remove all phase-tagged SVA constructs not intended for this branch.
-select */c:phase* */c:phase2_shared_* */c:phase2b_* %u %d
+stage_3_init:
+read_rtlil stage_2_init.il
+
+sim -a -w -scope DUT -r trace0.yw -noinitstate
+
+write_rtlil stage_3_init.il
+
+stage_3a_cover:
+read_rtlil stage_3_init.il
+select */c:stage* */c:stage3_shared* */c:stage3a* %u %d
 delete
+
+stage_3b_assert:
+read_rtlil stage_3_init.il
+select */c:stage* */c:stage3_shared* */c:stage3b* %u %d
+delete
+
 
 --
 
 [files]
 
-stage_1_init:
+prep:
 Req_Ack.sv
 
-stage_1_cover:
-skip_staged_flow_stage_1_init/model/design_prep.il
+stage_1:
+skip_staged_flow_prep/model/design_prep.il
 
-stage_2_init:
-skip_staged_flow_stage_1_init/model/design_prep.il
-skip_staged_flow_stage_1_cover/engine_0/trace0.yw
+stage_2:
+skip_staged_flow_stage_1/src/stage_1_init.il
+skip_staged_flow_stage_1/engine_0/trace0.yw
 
-stage_2a_cover:
-skip_staged_flow_stage_2_init/model/design_prep.il
+stage_3_init:
+skip_staged_flow_stage_2/src/stage_2_init.il
+skip_staged_flow_stage_2/engine_0/trace0.yw
 
-stage_2b_assert:
-skip_staged_flow_stage_2_init/model/design_prep.il
+stage_3a_cover:
+skip_staged_flow_stage_3_init/src/stage_3_init.il
+
+stage_3b_assert:
+skip_staged_flow_stage_3_init/src/stage_3_init.il

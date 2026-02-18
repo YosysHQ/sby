@@ -1,4 +1,7 @@
 Staged simulation + verification example demonstrating staged verification using simulation and writeback via `sim -w` pass.
+
+This test mirrors what is described in <https://yosyshq.readthedocs.io/projects/ap130/en/latest/>, and should be kept up to date with that appnote.
+
 - Stage 1: run cover to reach “req sent, ack pending”, producing `trace0.yw`.
 - Stage 2A (cover branch): replay the witness with `sim -w` to bake state, then run another cover that requires the ack.
 - Stage 2B (assert branch): replay the same baked state and assert there is at most one further ack after the second req.
