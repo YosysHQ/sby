@@ -343,7 +343,9 @@ the following options:
 |                  | warmup the SMT solver).                                 |
 +------------------+---------------------------------------------------------+
 | ``--keep-going`` | In BMC mode, continue after the first failed assertion  |
-|                  | and report further failed assertions.                   |
+|                  | and report further failed assertions. In prove mode,    |
+|                  | ``--keep-going`` is currently only supported with       |
+|                  | ``abc pdr`` (see the ``abc`` engine section below).     |
 +------------------+---------------------------------------------------------+
 | ``--unroll``,    | Disable/enable unrolling of the SMT problem. The        |
 | ``--nounroll``   | default value depends on the solver being used.         |
@@ -411,8 +413,7 @@ Solver options are passed to the solver as additional command line options.
 ~~~~~~~~~~~~~~
 
 The ``abc`` engine is a front-end for the functionality in Berkeley ABC. It
-currently supports no engine options and supports the following
-solvers:
+supports the following solvers:
 
 +------------+-----------------+---------------------------------+
 |   Solver   |   Modes         |   ABC Command                   |
@@ -427,6 +428,23 @@ solvers:
 Solver options are passed as additional arguments to the ABC command
 implementing the solver.
 
+When using the ``pdr`` solver, the ``abc`` engine supports the following
+engine option (currently the only engine option available for ``abc``):
+
++------------------+---------------------------------------------------------+
+|   Option         | Description                                             |
++==================+=========================================================+
+| ``--keep-going`` | Continue after the first proven or failed assertion and |
+|                  | report individual per-property results, rather than a   |
+|                  | single global result.                                   |
++------------------+---------------------------------------------------------+
+
+Example:
+
+.. code-block:: sby
+
+   [engines]
+   abc --keep-going pdr
 
 ``none`` engine
 ~~~~~~~~~~~~~~~
