@@ -1,0 +1,25 @@
+[options]
+mode bmc
+depth 1
+expect fail
+wait on
+
+[engines]
+smtbmc yices
+smtbmc boolector
+btor btormc
+abc bmc3
+
+
+[script]
+read -sv escapechars.v
+prep -top test
+
+[file escapechars.v]
+module test(
+input \foo!"#$%&'()*+,-./:;<=>?@[\]^_`{|}~bar
+);
+always @* begin
+assert (\foo!"#$%&'()*+,-./:;<=>?@[\]^_`{|}~bar );
+end
+endmodule
