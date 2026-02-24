@@ -1,5 +1,5 @@
 #
-# SymbiYosys (sby) -- Front-end for Yosys-based formal verification flows
+# SBY -- Front-end for Yosys-based formal verification flows
 #
 # Copyright (C) 2016  Claire Xenia Wolf <claire@yosyshq.com>
 #
