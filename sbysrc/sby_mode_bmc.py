@@ -43,6 +43,10 @@ def run(task):
             import sby_engine_btor
             sby_engine_btor.run("bmc", task, engine_idx, engine)
 
+        elif engine[0] == "itp":
+            import sby_engine_itp
+            sby_engine_itp.run("bmc", task, engine_idx, engine)
+
         elif engine[0] == "none":
             pass
 
