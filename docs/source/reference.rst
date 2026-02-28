@@ -446,6 +446,67 @@ Example:
    [engines]
    abc --keep-going pdr
 
+``itp`` engine
+~~~~~~~~~~~~~~
+
+The ``itp`` engine implements interpolation-based model checking using Craig
+interpolants extracted from SAT resolution proofs. It uses the external
+`itp-bmc <https://github.com/inquisitour/itp-bmc>`_ tool.
+
+Supported modes: ``prove``, ``bmc``
+
+**Installation:**
+
+Install the ``itp-bmc`` binary to PATH:
+
+.. code-block:: bash
+
+   git clone https://github.com/inquisitour/itp-bmc.git
+   cd itp-bmc
+   make
+   sudo cp bmc /usr/local/bin/itp-bmc
+
+Or set the ``ITP_BMC`` environment variable to point to the binary.
+
+**Engine arguments:**
+
+.. code-block:: sby
+
+   [engines]
+   itp <bound> <skip>
+
++------------+--------------------------------------------------------------+
+|  Argument  | Description                                                  |
++============+==============================================================+
+| ``bound``  | Maximum unrolling depth. Default: value of ``depth`` option  |
++------------+--------------------------------------------------------------+
+| ``skip``   | Number of initial timeframes to skip before checking bad     |
+|            | states. Useful for designs requiring reset cycles.           |
+|            | Default: value of ``skip`` option or 0                       |
++------------+--------------------------------------------------------------+
+
+**Example:**
+
+.. code-block:: sby
+
+   [options]
+   mode prove
+
+   [engines]
+   itp 20 0
+
+For designs requiring reset cycles (e.g. riscv-formal):
+
+.. code-block:: sby
+
+   [engines]
+   itp 15 10
+
+.. note::
+
+   The ``itp`` engine does not currently produce counterexample witness
+   traces. When a property violation is found, only FAIL status is reported.
+
 ``none`` engine
 ~~~~~~~~~~~~~~~
 
