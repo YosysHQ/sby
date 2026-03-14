@@ -466,7 +466,7 @@ Install the ``itp-bmc`` binary to PATH:
    make
    sudo cp bmc /usr/local/bin/itp-bmc
 
-Or set the ``ITP_BMC`` environment variable to point to the binary.
+Or set the ``ITP_BMC`` environment variable, or use the ``--itp-bmc`` command-line flag to specify the path directly.
 
 **Engine arguments:**
 

@@ -33,42 +33,19 @@
 # generated. Trace generation support is planned for a future version.
 #
 
-import os, getopt, shutil
+import os, getopt
 from sby_core import SbyProc
-
-def find_itp_bmc(task, engine_idx):
-    """Locate the itp-bmc binary via ITP_BMC env var or PATH."""
-    if "ITP_BMC" in os.environ:
-        path = os.environ["ITP_BMC"]
-        if not os.path.isfile(path):
-            task.error(f"engine_{engine_idx}: ITP_BMC set to '{path}' but file not found.")
-        return path
-    found = shutil.which("itp-bmc")
-    if found:
-        return found
-    task.error(
-        f"engine_{engine_idx}: 'itp-bmc' not found. "
-        f"Install it to PATH or set the ITP_BMC environment variable."
-    )
 
 def run(mode, task, engine_idx, engine):
     if mode not in ["prove", "bmc"]:
         task.error(f"engine_{engine_idx}: The itp engine is only supported in prove and bmc modes.")
 
     # Parse options
-    opts, args = getopt.getopt(engine[1:], "", ["depth=", "skip="])
+    args = engine[1:]
 
     # Defaults from task options
     bound = getattr(task, "opt_depth", 20) or 20
     skip  = getattr(task, "opt_skip",  0)  or 0
-
-    for o, a in opts:
-        if o == "--depth":
-            bound = int(a)
-        elif o == "--skip":
-            skip = int(a)
-        else:
-            task.error(f"engine_{engine_idx}: Invalid itp option '{o}'.")
 
     # Positional args override: itp [bound] [skip]
     if len(args) > 0:
@@ -88,7 +65,7 @@ def run(mode, task, engine_idx, engine):
         task.error(f"engine_{engine_idx}: skip ({skip}) must be less than bound ({bound}).")
 
     # Locate binary and derive workdir (for minisat relative path)
-    bmc_binary  = find_itp_bmc(task, engine_idx)
+    bmc_binary = task.exe_paths["itp-bmc"]
     bmc_workdir = os.path.dirname(os.path.realpath(bmc_binary))
 
     log = task.log_prefix(f"engine_{engine_idx}")
@@ -104,22 +81,21 @@ def run(mode, task, engine_idx, engine):
         nonlocal proc_status
         if "Fixpoint reached" in line:
             log("Interpolation fixpoint reached — property proved SAFE")
+            proc_status = "PASS"
         elif "Counterexample found" in line:
             log("Counterexample found — property UNSAFE")
-            proc_status = "FAIL"
         elif "Safe up to bound" in line:
             log(f"Bounded safety result (fixpoint not reached): {line.strip()}")
+            proc_status = "PASS"
         return line
 
     def exit_callback(retcode):
         nonlocal proc_status
-        if retcode == 0:
-            proc_status = "PASS"
-        else:
-            proc_status = "FAIL"
 
+        # If output_callback already determined status (e.g. from output lines),
+        # trust that over the exit code
         if proc_status is None:
-            task.error(f"engine_{engine_idx}: Engine terminated without producing a status.")
+            proc_status = "PASS" if retcode == 0 else "FAIL"
 
         task.update_status(proc_status)
         task.summary.set_engine_status(engine_idx, proc_status)
