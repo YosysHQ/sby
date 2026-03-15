@@ -43,12 +43,9 @@ def run(mode, task, engine_idx, engine):
     # Parse options
     args = engine[1:]
 
-    DEFAULT_BOUND = 20
-    DEFAULT_SKIP = 0
-
     # Defaults from task options
-    bound = getattr(task, "opt_depth", DEFAULT_BOUND) or DEFAULT_BOUND
-    skip  = getattr(task, "opt_skip",  DEFAULT_SKIP)  or DEFAULT_SKIP
+    bound = task.opt_depth
+    skip  = task.opt_skip
 
     # Positional args override: itp [bound] [skip]
     if len(args) > 0:
