@@ -11,10 +11,10 @@ jobs:
 
     steps:
       - name: Checkout SBY
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Install oss-cad-suite
-        uses: YosysHQ/setup-oss-cad-suite@v3
+        uses: YosysHQ/setup-oss-cad-suite@v4
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Run SBY tests
