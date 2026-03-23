@@ -1373,7 +1373,9 @@ class SbyTask(SbyConfig):
 
         self.handle_str_option("mode", None)
 
-        if self.opt_mode not in ["bmc", "prove", "cover", "live", "prep"]:
+        if self.opt_mode is None:
+            self.error("Missing mode. Please specify a `mode` in the [options] section.")
+        elif self.opt_mode not in ["bmc", "prove", "cover", "live", "prep"]:
             self.error(f"Invalid mode: {self.opt_mode}")
 
         self.expect = ["PASS"]

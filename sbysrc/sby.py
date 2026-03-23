@@ -215,7 +215,7 @@ def read_sbyconfig(sbydata, taskname):
             tasks_section = False
 
         if task_skiping_blocks:
-            if line == "--":
+            if line.strip() == "--":
                 task_skip_block = False
                 task_skiping_blocks = False
                 return
