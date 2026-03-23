@@ -1269,7 +1269,7 @@ class SbyTask(SbyConfig):
                 print("formalff -clk2ff -ff2anyinit", file=f)
                 print("simplemap", file=f)
                 print("dffunmap", file=f)
-                print("abc -g AND -fast", file=f)
+                print("aigmap", file=f)
                 print("opt_clean", file=f)
                 print("stat", file=f)
                 print(f"write_aiger -I -B -zinit -no-startoffset {'-vmap' if self.opt_aigvmap else '-map'} design_aiger.aim" +
