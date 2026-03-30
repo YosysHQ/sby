@@ -940,6 +940,7 @@ class SbyTask(SbyConfig):
             "btormc": os.getenv("BTORMC", "btormc"),
             "pono": os.getenv("PONO", "pono"),
             "imctk-eqy-engine": os.getenv("IMCTK_EQY_ENGINE", "imctk-eqy-engine"),
+            "itp-bmc": os.getenv("ITP_BMC", "itp-bmc"),
         }
 
         self.taskloop = taskloop or SbyTaskloop()

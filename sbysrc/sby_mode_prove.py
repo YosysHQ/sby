@@ -46,6 +46,10 @@ def run(task):
             import sby_engine_abc
             sby_engine_abc.run("prove", task, engine_idx, engine)
 
+        elif engine[0] == "itp":
+            import sby_engine_itp
+            sby_engine_itp.run("prove", task, engine_idx, engine)
+
         elif engine[0] == "none":
             pass
 

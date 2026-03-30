@@ -55,6 +55,8 @@ def parser_func(release_version='unknown SBY version'):
             action=DictAction, dest="exe_paths")
     parser.add_argument("--btormc", metavar="<path_to_executable>",
             action=DictAction, dest="exe_paths")
+    parser.add_argument("--itp-bmc", metavar="<path_to_executable>",
+            action=DictAction, dest="exe_paths")
     parser.add_argument("--pono", metavar="<path_to_executable>",
             action=DictAction, dest="exe_paths",
             help="configure which executable to use for the respective tool")
