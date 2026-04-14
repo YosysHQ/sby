@@ -365,7 +365,7 @@ if dump_files:
             find_files(taskname)
     else:
         find_files(None)
-    print("\n".join(file_set))
+    print("\n".join(str(f) for f in file_set))
     sys.exit(0)
 
 if dump_tags:
