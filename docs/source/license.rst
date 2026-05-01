@@ -1,12 +1,12 @@
 
-SymbiYosys license
+SBY license
 ==================
 
-SymbiYosys (sby) itself is licensed under the ISC license:
+SBY itself is licensed under the ISC license:
 
 .. code-block:: text
 
-   SymbiYosys (sby) -- Front-end for Yosys-based formal verification flows
+   SBY -- Front-end for Yosys-based formal verification flows
    
    Copyright (C) 2016  Claire Xenia Wolf <claire@yosyshq.com>
    
@@ -22,6 +22,6 @@ SymbiYosys (sby) itself is licensed under the ISC license:
    ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-Note that the solvers and other components used by SymbiYosys come with their
+Note that the solvers and other components used by SBY come with their
 own license terms.
 

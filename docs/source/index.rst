@@ -1,9 +1,9 @@
 
-SymbiYosys (sby) Documentation
+SBY Documentation
 ==============================
 
-SymbiYosys (sby) is a front-end driver program for Yosys-based formal
-hardware verification flows. SymbiYosys provides flows for the following
+SBY is a front-end driver program for Yosys-based formal
+hardware verification flows. SBY provides flows for the following
 formal tasks:
 
    * Bounded verification of safety properties (assertions)
