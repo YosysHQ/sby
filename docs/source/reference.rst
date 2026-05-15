@@ -514,7 +514,9 @@ The ``itp`` engine has been verified to produce unbounded safety proofs
    for the first ``skip`` timeframes, but fixpoint convergence is only
    guaranteed when ``skip`` is set to 0. Designs requiring non-zero
    ``skip`` values (e.g. multi-cycle reset sequences) will return bounded
-   results only.
+   results only, as pure BMC cannot rule out paths through invalid reset 
+   states without inductive reasoning. This is a property of BMC-based
+   interpolation, not a limitation specific to this engine.
 
    The ``itp`` engine does not currently produce counterexample witness
    traces. When a property violation is found, only FAIL status is reported.
