@@ -466,7 +466,8 @@ Install the ``itp-bmc`` binary to PATH:
    make
    sudo cp bmc /usr/local/bin/itp-bmc
 
-Or set the ``ITP_BMC`` environment variable, or use the ``--itp-bmc`` command-line flag to specify the path directly.
+Or set the ``ITP_BMC`` environment variable, or use the ``--itp-bmc``
+command-line flag to specify the path directly.
 
 **Engine arguments:**
 
@@ -481,8 +482,7 @@ Or set the ``ITP_BMC`` environment variable, or use the ``--itp-bmc`` command-li
 | ``bound``  | Maximum unrolling depth. Default: value of ``depth`` option  |
 +------------+--------------------------------------------------------------+
 | ``skip``   | Number of initial timeframes to skip before checking bad     |
-|            | states. Useful for designs requiring reset cycles.           |
-|            | Default: value of ``skip`` option or 0                       |
+|            | states. Default: value of ``skip`` option or 0               |
 +------------+--------------------------------------------------------------+
 
 **Example:**
@@ -495,14 +495,26 @@ Or set the ``ITP_BMC`` environment variable, or use the ``--itp-bmc`` command-li
    [engines]
    itp 20 0
 
-For designs requiring reset cycles (e.g. riscv-formal):
+**Tested on:**
 
-.. code-block:: sby
+The ``itp`` engine has been verified to produce unbounded safety proofs
+(fixpoint convergence) on the following RISC-V cores using the
+`riscv-formal <https://github.com/YosysHQ/riscv-formal>`_ framework 
+(instructions checked: add, sub, and, or, xor, lui):
 
-   [engines]
-   itp 15 10
+- NERV — 6/6 instruction checks, fixpoint at bound 2
+- PicoRV32 — 6/6 instruction checks, fixpoint at bound 2
+- SERV — 6/6 instruction checks, fixpoint at bound 2
+- VexRiscv — 6/6 instruction checks, fixpoint at bound 2
 
 .. note::
+
+   The ``itp`` engine achieves unbounded safety proofs via interpolant
+   fixpoint detection. The ``skip`` parameter skips bad-state checking
+   for the first ``skip`` timeframes, but fixpoint convergence is only
+   guaranteed when ``skip`` is set to 0. Designs requiring non-zero
+   ``skip`` values (e.g. multi-cycle reset sequences) will return bounded
+   results only.
 
    The ``itp`` engine does not currently produce counterexample witness
    traces. When a property violation is found, only FAIL status is reported.

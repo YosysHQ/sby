@@ -64,9 +64,9 @@ def run(mode, task, engine_idx, engine):
     if skip >= bound:
         task.error(f"engine_{engine_idx}: skip ({skip}) must be less than bound ({bound}).")
 
-    # Locate binary and derive workdir (for minisat relative path)
+    # Locate binary and derive workdir
     bmc_binary = task.exe_paths["itp-bmc"]
-    bmc_workdir = os.path.dirname(os.path.realpath(bmc_binary))
+    bmc_workdir = os.path.abspath(f"{task.workdir}/engine_{engine_idx}")
 
     log = task.log_prefix(f"engine_{engine_idx}")
 
