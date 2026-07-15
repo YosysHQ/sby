@@ -40,6 +40,15 @@ def collect(path):
     ):
         return
 
+    skip_files = []
+    try:
+        with open(path / ".skip", "r") as f:
+            for line in f:
+                skip_files.append(line.rstrip())
+    except FileNotFoundError:
+        # no .skip file
+        pass
+
     checked_dirs.append(path)
     for entry in path.glob("*.sby"):
         filename = str(entry)
@@ -49,6 +58,8 @@ def collect(path):
         if entry.name.startswith("skip_"):
             continue
         if entry.with_suffix(".ivy").exists():
+            continue
+        if entry.stem in skip_files:
             continue
         tests.append(entry)
     for entry in path.glob("*"):
