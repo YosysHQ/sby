@@ -1,6 +1,39 @@
 Tasks and tags
 ==============
 
+Multi-line tag sections
+-----------------------
+If ``<tag>:`` is used on a line by itself then the conditional string
+extends until ``--`` is found on a line by itself.
+
+.. code-block:: sby
+
+   [options]
+   task_1_or_2:
+   mode bmc
+   depth 100
+   --
+
+   task3:
+   mode prove
+   --
+
+If the closing ``--`` line is ommitted, the current conditional block will
+extend until the next conditional block.  However it is recommended to always
+include the closing ``--`` line to avoid inadvertently making the rest of the
+file conditional.
+
+.. literalinclude:: /../examples/tags/bad.sby
+   :language: sby
+   :start-at: [options]
+   :caption: ``bad.sby``
+
+.. literalinclude:: /../examples/tags/bad.log
+   :language: console
+   :start-at: dumpcfg
+   :caption: ``[engines]`` section is only enabled for ``task3``
+
+
 Complex pycode blocks
 ---------------------
 The following example demonstrates how to configure safety and liveness checks
