@@ -17,99 +17,61 @@ The optional :sby:`[tasks]` section can be used to configure multiple
 verification tasks in a single ``.sby`` file. Each line in the :sby:`[tasks]`
 section configures one task. For example:
 
-.. code-block:: sby
+.. literalinclude:: ../examples/tags/example.sby
+   :language: sby
+   :end-before: [options]
+   :caption: ``example.sby`` tasks section
+   :name: example_tasks
 
-   [tasks]
-   task1 task_1_or_2 task_1_or_3
-   task2 task_1_or_2
-   task3 task_1_or_3
+The command ``sby --dumptasks <sby_file>`` prints the list of all tasks defined
+in a given ``.sby`` file.  One or more tasks can be specified as additional
+command line arguments when calling ``sby`` on a ``.sby`` file, e.g. ``sby
+example.sby task1 task2`` will run both ``task1`` and ``task2``.  If no task is
+specified then the default behavior is to run all available tasks.
 
-Each task can be assigned additional group aliases, such as ``task_1_or_2``
-and ``task_1_or_3`` in the above example.
+.. literalinclude:: ../examples/tags/example.log
+   :language: console
+   :end-before: dumptags
+   :caption: Viewing available tasks
 
-One or more tasks can be specified as additional command line arguments when
-calling ``sby`` on a ``.sby`` file:
+Tags
+~~~~
 
-.. code-block:: text
+Each task generates a tag of the same name, and can be assigned additional tags
+that may be shared across tasks, such as ``task_1_or_2`` and ``task_1_or_3`` in
+the :ref:`example_tasks` above.  Individual lines of an ``.sby`` file can be
+enabled or disabled for certain tasks by prefixing them with ``<tag>:`` or
+``~<tag>:`` respectively:
 
-   sby example.sby task2
+.. literalinclude:: ../examples/tags/example.sby
+   :language: sby
+   :start-at: [options]
+   :caption: ``example.sby`` options section
 
-If no task is specified then all tasks in the :sby:`[tasks]` section are run.
+As with tasks, it is possible to dump all the available tags in a given ``.sby``
+file with the ``--dumptags`` option.  If a single task is provided to ``sby``,
+only the tags for that task will be listed.
 
-After the :sby:`[tasks]` section individual lines can be specified for specific
-tasks or task groups:
+.. literalinclude:: ../examples/tags/example.log
+   :language: console
+   :start-at: dumptags
+   :end-before: dumpcfg
+   :caption: Using ``--dumptags``
 
-.. code-block:: sby
+It is possible to check the pre-processed config file for a given task with the
+``--dumpcfg`` option.
 
-   [options]
-   task_1_or_2: mode bmc
-   task_1_or_2: depth 100
-   task3: mode prove
+.. literalinclude:: ../examples/tags/example.log
+   :language: console
+   :start-at: dumpcfg
+   :caption: ``example.sby`` options section when running ``task1``
 
-If the tag ``<taskname>:`` is used on a line by itself then the conditional string
-extends until the next conditional block or ``--`` on a line by itself.
+.. warning::
 
-.. code-block:: sby
+   Any ``<tag>:`` or ``~<tag>:`` lines before the :sby:`[tasks]` section will
+   not be parsed.  It is recommended to always put the :sby:`[tasks]` section
+   first.
 
-   [options]
-   task_1_or_2:
-   mode bmc
-   depth 100
-
-   task3:
-   mode prove
-   --
-
-The tag ``~<taskname>:`` can be used for a line or block that should not be used when
-the given task is active:
-
-.. code-block:: sby
-
-   [options]
-   ~task3:
-   mode bmc
-   depth 100
-
-   task3:
-   mode prove
-   --
-
-The following example demonstrates how to configure safety and liveness checks for all
-combinations of some host implementations A and B and device implementations X and Y:
-
-.. code-block:: sby
-
-   [tasks]
-   prove_hAdX prove hostA deviceX
-   prove_hBdX prove hostB deviceX
-   prove_hAdY prove hostA deviceY
-   prove_hBdY prove hostB deviceY
-   live_hAdX live hostA deviceX
-   live_hBdX live hostB deviceX
-   live_hAdY live hostA deviceY
-   live_hBdY live hostB deviceY
-
-
-   [options]
-   prove: mode prove
-   live: mode live
-
-   [engines]
-   prove: abc pdr
-   live: aiger suprove
-
-   [script]
-   hostA: read -sv hostA.v
-   hostB: read -sv hostB.v
-   deviceX: read -sv deviceX.v
-   deviceY: read -sv deviceY.v
-   ...
-
-The :sby:`[tasks]` section must appear in the ``.sby`` file before the first
-``<taskname>:`` or ``~<taskname>:`` tag.
-
-The command ``sby --dumptasks <sby_file>`` prints the list of all tasks defined in
-a given ``.sby`` file.
 
 Note that there is currently no way to specify dependencies on other tasks. For complex flows where such dependencies are needed, consider using separate ``.sby`` files, or a single file with external scripting. For an advanced example which uses tasks and external scripting to implement a multi-stage verification
 flow, see `AppNote 130: Multi-Stage Verification
