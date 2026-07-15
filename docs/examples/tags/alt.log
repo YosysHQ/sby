@@ -1,0 +1,42 @@
+./gen.sh -s alt -t unbounded_hAdX
+$ sby --dumptasks alt.sby
+$ sby --dumptags alt.sby
+known
+liveness
+unbounded
+$ sby --dumptags alt.sby unbounded_hAdX
+\w+_h[AB]d[XY]
+known
+unbounded
+unbounded_h.d.
+$ sby --dumpdefaults alt.sby
+$ sby --dumpcfg alt.sby
+[tasks]
+unbounded_h.d. : unbounded
+liveness_h.d. : liveness
+\w+_h[AB]d[XY] : known
+
+[options]
+
+[engines]
+abc pdr
+aiger suprove
+
+[script]
+
+[files]
+$ sby --dumpcfg alt.sby unbounded_hAdX
+[options]
+mode prove
+
+[engines]
+abc pdr
+
+[script]
+read -sv A.v X.v unbounded.v
+prep -top unbounded
+
+[files]
+unbounded.v
+hostA.v
+deviceX.v

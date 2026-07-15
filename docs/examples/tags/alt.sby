@@ -1,0 +1,38 @@
+[tasks]
+unbounded_h.d. : unbounded
+liveness_h.d. : liveness
+\w+_h[AB]d[XY] : known
+
+[options]
+unbounded: mode prove
+liveness: mode live
+
+[engines]
+~liveness: abc pdr
+~unbounded: aiger suprove
+
+[script]
+--pycode-begin--
+m = re.fullmatch(r'(unbounded|liveness)_h(.)d(.)', task or '')
+if m:
+    top, h, d = m.groups()
+    output(f'read -sv {h}.v {d}.v {top}.v')
+    output(f'prep -top {top}')
+else:
+    assert task is None, f'Invalid task {task!r}'
+--pycode-end--
+
+[files]
+--pycode-begin--
+m = re.fullmatch(r'(\w+)_h(\w)d(\w)', task or '')
+if m:
+    assert 'known' in tags, f'Unknown host/device {task!r}'
+    top, h, d = m.groups()
+    sources = [
+        f"{top}.v",
+        f"host{h}.v",
+        f"device{d}.v",
+    ]
+    for source in sources:
+        output(source)
+--pycode-end--

@@ -107,3 +107,30 @@ generated config does not include any lines that are conditionally enabled
 .. literalinclude:: /../examples/tags/complex.log
    :language: console
    :start-at: dumpcfg
+
+A better way
+~~~~~~~~~~~~
+
+For this particular example, a better approach might be the following:
+
+.. literalinclude:: /../examples/tags/alt.sby
+   :language: sby
+
+This uses regex string matching on the task name, allowing any task to be
+provided in the ``sby`` call that matches at least one task.  This allows for
+all of the same calls, e.g. ``sby alt.sby unbounded_hAdX``, but there are no
+longer any default tasks, so calling ``sby alt.sby`` is no longer valid.
+
+.. warning::
+
+   So long as the provided task matches *any* regex task then SBY will recognize
+   it as valid, opening up the potential for downstream issues where a partially
+   recognized task name is not fully configured.  Extreme care should be taken
+   when using multiple regex tasks.
+
+We use the tag ``known`` here to validate that the host/device implementations
+are valid. This isn't strictly necessary, but it does mean that we can provide
+an error message if an unknown host/device is used, and demonstrates that care
+must be taken when using regex matching.  e.g. without the ``assert task is
+None`` line, a task of ``witness_hAdX`` would provide an error message about
+``mode`` being unset, which may not be immediately obvious as to why that is.
