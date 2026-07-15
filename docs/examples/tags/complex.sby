@@ -11,8 +11,8 @@ unbounded: mode prove
 liveness: mode live
 
 [engines]
-unbounded: abc pdr
-liveness: aiger suprove
+~liveness: abc pdr
+~unbounded: aiger suprove
 
 [script]
 --pycode-begin--

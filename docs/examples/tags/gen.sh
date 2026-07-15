@@ -33,4 +33,6 @@ set -x
 $sby --dumptasks ${script}.sby
 $sby --dumptags ${script}.sby
 $sby --dumptags ${script}.sby $task
+$sby --dumpdefaults ${script}.sby
+$sby --dumpcfg ${script}.sby
 $sby --dumpcfg ${script}.sby $task

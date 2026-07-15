@@ -56,7 +56,7 @@ only the tags for that task will be listed.
 .. literalinclude:: ../examples/tags/example.log
    :language: console
    :start-at: dumptags
-   :end-before: dumpcfg
+   :end-before: dumpdefaults
    :caption: Using ``--dumptags``
 
 It is possible to check the pre-processed config file for a given task with the

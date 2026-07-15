@@ -13,6 +13,18 @@ $ sby --dumptags example.sby task1
 task1
 task_1_or_2
 task_1_or_3
+$ sby --dumpdefaults example.sby
+task1
+task2
+task3
+$ sby --dumpcfg example.sby
+[tasks]
+task1 task_1_or_2 task_1_or_3
+task2 task_1_or_2
+task3 task_1_or_3
+
+[options]
+depth 100
 $ sby --dumpcfg example.sby task1
 [options]
 mode bmc

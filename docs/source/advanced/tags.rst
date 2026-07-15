@@ -31,7 +31,45 @@ file conditional.
 .. literalinclude:: /../examples/tags/bad.log
    :language: console
    :start-at: dumpcfg
+   :end-before: dumpcfg
    :caption: ``[engines]`` section is only enabled for ``task3``
+
+
+Alternative tag assignment
+--------------------------
+
+An alternative tag assignment method is provided which uses the colon (``:``)
+character to separate tasks and tags.  With this method it is possible to assign
+a group of tags to multiple tasks at the same time.
+
+.. code-block:: sby
+
+   [tasks]
+   task1
+   task2
+   task3
+
+   task1 task2 : deep bounded
+
+
+Default tasks
+-------------
+
+A special tag, ``default``, is provided for controlling which tasks should be
+run when no specific tasks are provided.  The ``--dumpdefaults`` option is
+provided for getting the list of default tasks for a given ``.sby`` file.  Note
+that ``default`` does *not* get added to the list of tags, and should not be
+used for controlling conditional lines.
+
+.. literalinclude:: /../examples/tags/default.sby
+   :language: sby
+   :caption: ``default.sby`` tasks section
+
+.. literalinclude:: /../examples/tags/default.log
+   :language: console
+   :start-at: dumpdefaults
+   :end-before: dumpcfg
+   :caption: Using ``--dumpdefaults``
 
 
 Complex pycode blocks
@@ -56,7 +94,10 @@ so it is important to check ``if task is not None`` to avoid the
 
 When working with complex ``.sby`` files like this, it is very helpful to use
 ``--dumptasks`` and ``--dumpcfg`` to confirm things are being pre-processed as
-expected.
+expected.  Note that when ``--dumpcfg`` is called without any tasks, the
+generated config does not include any lines that are conditionally enabled
+(``<tag>:``) and all lines that are conditionally disabled (``~<tag>:``).  The
+``[tasks]`` section is also only included when called without any tasks.
 
 .. literalinclude:: /../examples/tags/complex.log
    :language: console
