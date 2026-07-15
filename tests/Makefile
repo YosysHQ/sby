@@ -47,7 +47,8 @@ make/rules/collect.mk: make/collect_tests.py
 make/rules/test/%.mk:
 	python3 make/test_rules.py --rule $@ --source $<
 
-ifneq (help,$(MAKECMDGOALS))
+NO_COLLECT_TARGS := help clean_rules
+ifneq ($(filter-out $(NO_COLLECT_TARGS),$(MAKECMDGOALS)),)
 
 # This should run every time but only trigger anything depending on it whenever
 # the script overwrites make/rules/found_tools. This doesn't really match how
@@ -66,3 +67,7 @@ endif
 include make/rules/collect.mk
 
 endif
+
+.PHONY: clean_rules
+clean_rules:
+	@rm -rf make/rules
