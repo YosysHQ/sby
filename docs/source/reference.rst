@@ -31,6 +31,7 @@ specified then the default behavior is to run all available tasks.
 
 .. literalinclude:: ../examples/tags/example.log
    :language: console
+   :start-at: dumptasks
    :end-before: dumptags
    :caption: Viewing available tasks
 

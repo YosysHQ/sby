@@ -1,0 +1,47 @@
+./gen.sh -s complex -t unbounded_hAdX
+$ sby --dumptasks complex.sby
+unbounded_hAdX
+unbounded_hAdY
+unbounded_hBdX
+unbounded_hBdY
+liveness_hAdX
+liveness_hAdY
+liveness_hBdX
+liveness_hBdY
+$ sby --dumptags complex.sby
+deviceX
+deviceY
+hostA
+hostB
+liveness
+liveness_hAdX
+liveness_hAdY
+liveness_hBdX
+liveness_hBdY
+unbounded
+unbounded_hAdX
+unbounded_hAdY
+unbounded_hBdX
+unbounded_hBdY
+$ sby --dumptags complex.sby unbounded_hAdX
+deviceX
+hostA
+unbounded
+unbounded_hAdX
+$ sby --dumpcfg complex.sby unbounded_hAdX
+[options]
+mode prove
+
+[engines]
+abc pdr
+
+[script]
+read -sv hostA.v
+read -sv deviceX.v
+read -sv unbounded.v
+prep -top unbounded
+
+[files]
+hostA.v
+deviceX.v
+unbounded.v

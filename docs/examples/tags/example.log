@@ -1,3 +1,4 @@
+./gen.sh 
 $ sby --dumptasks example.sby
 task1
 task2

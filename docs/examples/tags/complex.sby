@@ -1,0 +1,35 @@
+[tasks]
+--pycode-begin--
+for m in ['unbounded', 'liveness']:
+    for h in ['A', 'B']:
+        for d in ['X', 'Y']:
+            output(f'{m}_h{h}d{d} {m} host{h} device{d}')
+--pycode-end--
+
+[options]
+unbounded: mode prove
+liveness: mode live
+
+[engines]
+unbounded: abc pdr
+liveness: aiger suprove
+
+[script]
+--pycode-begin--
+sources = []
+for tag in tags:
+    if tag.startswith(('host', 'device')):
+        sources.append(tag)
+        output(f'read -sv {tag}.v')
+
+if task is not None:
+    top = task.split('_')[0]
+    sources.append(top)
+    output(f'read -sv {top}.v')
+    output(f'prep -top {top}')
+
+output('')
+output('[files]')
+for source in sources:
+    output(f'{source}.v')
+--pycode-end--
