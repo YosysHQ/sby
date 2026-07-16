@@ -74,9 +74,11 @@ It is possible to check the pre-processed config file for a given task with the
    first.
 
 
-Note that there is currently no way to specify dependencies on other tasks. For complex flows where such dependencies are needed, consider using separate ``.sby`` files, or a single file with external scripting. For an advanced example which uses tasks and external scripting to implement a multi-stage verification
-flow, see `AppNote 130: Multi-Stage Verification
-<https://yosyshq.readthedocs.io/projects/ap130>`_.
+Note that there is currently no way to specify dependencies on other tasks. For
+complex flows where such dependencies are needed, refer to :ref:`Task
+dependencies with Make`. For an advanced example which uses tasks and external
+scripting to implement a multi-stage verification flow, see `AppNote 130:
+Multi-Stage Verification <https://yosyshq.readthedocs.io/projects/ap130>`_.
 
 Options section
 ---------------

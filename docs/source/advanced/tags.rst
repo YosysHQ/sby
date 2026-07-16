@@ -57,9 +57,10 @@ Default tasks
 
 A special tag, ``default``, is provided for controlling which tasks should be
 run when no specific tasks are provided.  The ``--dumpdefaults`` option is
-provided for getting the list of default tasks for a given ``.sby`` file.  Note
-that ``default`` does *not* get added to the list of tags, and should not be
-used for controlling conditional lines.
+provided for getting the list of default tasks for a given ``.sby`` file.  If no
+``default`` tag is provided, all tasks listed in the ``[tasks]`` section will be
+used as the default.  Note that ``default`` does *not* get added to the list of
+tags, and should not be used for controlling conditional lines.
 
 .. literalinclude:: /../examples/tags/default.sby
    :language: sby
@@ -134,3 +135,53 @@ an error message if an unknown host/device is used, and demonstrates that care
 must be taken when using regex matching.  e.g. without the ``assert task is
 None`` line, a task of ``witness_hAdX`` would provide an error message about
 ``mode`` being unset, which may not be immediately obvious as to why that is.
+
+
+Running tasks in parallel
+-------------------------
+
+By default, if there are multiple tasks available then SBY will attempt to run
+them in parallel.  If SBY is called by a modern version of ``make``, it will
+attempt to connect to the Make jobserver for controlling parallelism.  If no
+jobserver is available, such as when calling ``sby`` directly, the maximum
+number of parallel jobs can be set by the ``-j`` command line option:
+
+.. code-block:: shell
+
+   # Calling SBY with up to 4 parallel tasks
+   sby -j4 <jobname>.sby
+
+Task dependencies with Make
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Say we have some set of tasks which can be broken into two stages, and the
+second stage shouldn't run until the first stage has completed.  In SBY we have
+no way to describe such a dependency.  Instead, we can use a Makefile for flow
+control:
+
+.. literalinclude:: /../examples/tags/dependencies.sby
+   :language: sby
+   :caption: ``docs/examples/tags/dependencies.sby``
+
+.. literalinclude:: /../examples/tags/dependencies.mk
+   :language: make
+   :caption: ``docs/examples/tags/dependencies.mk``
+   :start-after: PHONY
+   :end-before: both tasks
+
+Since each task will (by default) output to a directory called
+``<jobname>_<taskname>``, we are able to provide a single pattern rule that
+will call ``sby`` for any given ``<taskname>``.
+
+An alternative approach is to define a single rule for each stage, allowing a
+single invocation of SBY to run multiple tasks.  Remember that SBY can connect
+to the Make jobserver, so no parallelism is lost here.  This may even reduce the
+overhead of launching multiple ``sby`` processes, particularly if there are many
+tasks.
+
+.. literalinclude:: /../examples/tags/dependencies.mk
+   :language: make
+   :caption: Make rule for running both stage 2 tasks together
+   :start-after: both tasks
+
+
