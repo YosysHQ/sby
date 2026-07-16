@@ -21,5 +21,6 @@ formal tasks:
    autotune.rst
    verilog.rst
    verific.rst
+   appnotes.rst
    license.rst
 

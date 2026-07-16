@@ -23,8 +23,10 @@ from sby_sim import sim_witness_trace
 
 def run(mode, task, engine_idx, engine):
     random_seed = None
+    nomem_opt = False
+    syn_opt = False
 
-    opts, solver_args = getopt.getopt(engine[1:], "", ["seed="])
+    opts, solver_args = getopt.getopt(engine[1:], "", ["nomem", "syn", "seed="])
 
     if len(solver_args) == 0:
         task.error("Missing solver command.")
@@ -32,10 +34,21 @@ def run(mode, task, engine_idx, engine):
     for o, a in opts:
         if o == "--seed":
             random_seed = a
+        elif o == "--nomem":
+            nomem_opt = True
+        elif o == "--syn":
+            syn_opt = True
         else:
             task.error("Unexpected BTOR engine options.")
 
+    model_name = "btor"
+
+    if syn_opt: model_name += "_syn"
+    if nomem_opt: model_name += "_nomem"
+
     if solver_args[0] == "btormc":
+        if mode not in ["bmc", "cover"]:
+            task.error("The btormc solver is only supported in bmc and cover modes.")
         solver_cmd = ""
         if random_seed:
             solver_cmd += f"BTORSEED={random_seed} "
@@ -45,6 +58,8 @@ def run(mode, task, engine_idx, engine):
         solver_cmd += " ".join([""] + solver_args[1:])
 
     elif solver_args[0] == "pono":
+        if mode != "bmc":
+            task.error("The pono solver is only supported in bmc mode.")
         if random_seed:
             task.error("Setting the random seed is not available for the pono solver.")
         if task.opt_skip is not None:
@@ -52,6 +67,25 @@ def run(mode, task, engine_idx, engine):
         solver_cmd = task.exe_paths["pono"] + f" --witness -v 1 -e bmc -k {task.opt_depth - 1}"
         solver_cmd += " ".join([""] + solver_args[1:])
 
+    elif solver_args[0] == "rIC3":
+        if random_seed:
+            task.error("Setting the random seed is not available for the rIC3 solver.")
+        if task.opt_skip is not None:
+            task.error("The btor engine supports the option skip only for the btormc solver.")
+        if mode == "prove":
+            solver_cmd = " ".join([task.exe_paths["rIC3"], "--witness"] + solver_args[1:])
+        elif mode == "bmc":
+            solver_cmd = " ".join(
+                [
+                    task.exe_paths["rIC3"],
+                    "-e bmc",
+                    "--end {}".format(task.opt_depth - 1),
+                    "--witness",
+                ]
+                + solver_args[1:]
+            )
+        else:
+            task.error("The rIC3 solver is only supported in bmc and prove modes.")
     else:
         task.error(f"Invalid solver command {solver_args[0]}.")
 
@@ -92,13 +126,29 @@ def run(mode, task, engine_idx, engine):
             else:
                 task.error(f"engine_{engine_idx}: Engine terminated without status.")
             task.update_unknown_props(dict(source="btor", engine=f"engine_{engine_idx}"))
-        else:
+        elif mode == "bmc":
             if common_state.expected_cex == 0:
                 proc_status = "pass"
             elif common_state.solver_status == "sat":
                 proc_status = "FAIL"
             elif common_state.solver_status == "unsat":
                 proc_status = "pass"
+            elif common_state.solver_status == "unknown":
+                # Currently only rIC3 solver can return unknown.
+                # rIC3 in bmc mode returns "sat" for counterexample found
+                # and "unknown" for no counterexample found until bound k.
+                proc_status = "pass"
+            else:
+                task.error(f"engine_{engine_idx}: Engine terminated without status.")
+        elif mode == "prove":
+            if common_state.expected_cex == 0:
+                proc_status = "pass"
+            elif common_state.solver_status == "sat":
+                proc_status = "FAIL"
+            elif common_state.solver_status == "unsat":
+                proc_status = "pass"
+            elif common_state.solver_status == "unknown":
+                proc_status = "UNKNOWN"
             else:
                 task.error(f"engine_{engine_idx}: Engine terminated without status.")
 
@@ -167,12 +217,13 @@ def run(mode, task, engine_idx, engine):
                 else:
                     suffix = common_state.produced_cex
 
-                model = f"design_btor{'_single' if solver_args[0] == 'pono' else ''}"
+                model = f"design_{model_name}{'_single' if solver_args[0] == 'pono' else ''}"
 
                 yw_proc = SbyProc(
                     task, f"engine_{engine_idx}.trace{suffix}", [],
                     f"cd {task.workdir}; {task.exe_paths['witness']} wit2yw engine_{engine_idx}/trace{suffix}.wit model/{model}.ywb engine_{engine_idx}/trace{suffix}.yw",
                 )
+                yw_proc.checkretcode = True
                 common_state.running_procs += 1
                 yw_proc.register_exit_callback(simple_exit_callback)
 
@@ -183,8 +234,8 @@ def run(mode, task, engine_idx, engine):
                     proc2 = SbyProc(
                         task,
                         f"engine_{engine_idx}.trace{suffix}",
-                        task.model("btor"),
-                        "cd {dir} ; btorsim -c --vcd engine_{idx}/trace{i}{i2}.vcd --hierarchical-symbols --info model/design_btor{s}.info model/design_btor{s}.btor engine_{idx}/trace{i}.wit".format(dir=task.workdir, idx=engine_idx, i=suffix, i2='' if btorsim_vcd else '_btorsim', s='_single' if solver_args[0] == 'pono' else ''),
+                        task.model(model_name),
+                        "cd {dir} ; btorsim -c --vcd engine_{idx}/trace{i}{i2}.vcd --hierarchical-symbols --info model/design_{m}{s}.info model/design_{m}{s}.btor engine_{idx}/trace{i}.wit".format(dir=task.workdir, idx=engine_idx, i=suffix, i2='' if btorsim_vcd else '_btorsim', m=model_name, s='_single' if solver_args[0] == 'pono' else ''),
                         logfile=open(f"{task.workdir}/engine_{engine_idx}/logfile2.txt", "w")
                     )
                     proc2.output_callback = output_callback2
@@ -233,6 +284,24 @@ def run(mode, task, engine_idx, engine):
                 if line not in ["b0"]:
                     return line
 
+            elif solver_args[0] == "rIC3":
+                match = re.match(r".*bmc found counter-example in depth (\d+).*", line)
+                if match:
+                    common_state.current_step = int(match[1])
+                match = re.match(r".*all workers unexpectedly exited.*", line)
+                if match:
+                    common_state.solver_status = "error"
+                if line == "UNSAT":
+                    if common_state.solver_status is None:
+                        common_state.solver_status = "unsat"
+                    return "No CEX found."
+                if line == "UNKNOWN":
+                    if common_state.solver_status is None:
+                        common_state.solver_status = "unknown"
+                if line == "SAT":
+                    if common_state.solver_status is None:
+                        common_state.solver_status = "sat"
+                return line
             print(line, file=proc.logfile)
 
         return None
@@ -257,13 +326,15 @@ def run(mode, task, engine_idx, engine):
 
     proc = SbyProc(
         task,
-        f"engine_{engine_idx}", task.model("btor"),
-        f"cd {task.workdir}; {solver_cmd} model/design_btor{'_single' if solver_args[0]=='pono' else ''}.btor",
+        f"engine_{engine_idx}", task.model(model_name),
+        f"cd {task.workdir}; {solver_cmd} model/design_{model_name}{'_single' if solver_args[0] == 'pono' else ''}.btor",
         logfile=open(f"{task.workdir}/engine_{engine_idx}/logfile.txt", "w")
     )
     proc.checkretcode = True
     if solver_args[0] == "pono":
         proc.retcodes = [0, 1, 255] # UNKNOWN = -1, FALSE = 0, TRUE = 1, ERROR = 2
+    if solver_args[0] == "rIC3":
+        proc.retcodes = [10, 20, 30] # FALSE = 10, TRUE = 20, UNKNOWN = 30
     proc.output_callback = output_callback
     proc.register_exit_callback(exit_callback)
     common_state.running_procs += 1

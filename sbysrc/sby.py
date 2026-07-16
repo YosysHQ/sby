@@ -215,7 +215,7 @@ def read_sbyconfig(sbydata, taskname):
             tasks_section = False
 
         if task_skiping_blocks:
-            if line == "--":
+            if line.strip() == "--":
                 task_skip_block = False
                 task_skiping_blocks = False
                 return
@@ -365,7 +365,7 @@ if dump_files:
             find_files(taskname)
     else:
         find_files(None)
-    print("\n".join(file_set))
+    print("\n".join(str(f) for f in file_set))
     sys.exit(0)
 
 if dump_tags:

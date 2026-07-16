@@ -53,7 +53,15 @@ def run(mode, task, engine_idx, engine):
         if mode == "prove":
             solver_cmd = " ".join([task.exe_paths["rIC3"], "--witness"] + solver_args[1:])
         if mode == "bmc":
-            solver_cmd = " ".join([task.exe_paths["rIC3"], "--bmc-max-k {}".format(task.opt_depth - 1), "-e bmc", "-v 0", "--witness"] + solver_args[1:])
+            solver_cmd = " ".join(
+                [
+                    task.exe_paths["rIC3"],
+                    "-e bmc",
+                    "--end {}".format(task.opt_depth - 1),
+                    "--witness",
+                ]
+                + solver_args[1:]
+            )
             status_2 = "PASS"  # rIC3 outputs status 2 when BMC passes
 
     elif solver_args[0] == "aigbmc":
@@ -98,6 +106,8 @@ def run(mode, task, engine_idx, engine):
     )
     if solver_args[0] not in ["avy", "rIC3"]:
         proc.checkretcode = True
+    if not json_output:
+        proc.preserve_whitespace = True
 
     proc_status = None
     produced_cex = False
@@ -129,6 +139,11 @@ def run(mode, task, engine_idx, engine):
                 elif event["status"] == "fail":
                     proc_status = "FAIL"
             return None
+
+        if solver_args[0] == "rIC3":
+            match = re.match(r".*all workers unexpectedly exited.*", line)
+            if match:
+                proc_status = "ERROR"
 
         if proc_status is not None:
             if not end_of_cex and not produced_cex and line.isdigit():
@@ -166,6 +181,9 @@ def aigsmt_exit_callback(task, engine_idx, proc_status, *, run_aigsmt, smtbmc_vc
     task.update_status(proc_status)
     task.summary.set_engine_status(engine_idx, proc_status)
     task.terminate()
+    if task.opt_mode == "live":
+        # we don't have any tools to process or visualize justice (lasso) witnesses
+        return
     if proc_status == "FAIL" and (not run_aigsmt or task.opt_aigsmt != "none"):
         aigsmt_trace_callback(task, engine_idx, proc_status, run_aigsmt=run_aigsmt, smtbmc_vcd=smtbmc_vcd, smtbmc_append=smtbmc_append, sim_append=sim_append)
 
@@ -179,6 +197,7 @@ def aigsmt_trace_callback(task, engine_idx, proc_status, *, run_aigsmt, smtbmc_v
         task, f"engine_{engine_idx}", [],
         f"cd {task.workdir}; {task.exe_paths['witness']} aiw2yw engine_{engine_idx}/{name}.aiw model/design_aiger.ywa engine_{engine_idx}/{name}{aiw2yw_suffix}.yw",
     )
+    witness_proc.checkretcode = True
     final_proc = witness_proc
 
     if run_aigsmt:

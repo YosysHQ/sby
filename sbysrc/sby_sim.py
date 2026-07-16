@@ -99,6 +99,7 @@ def sim_witness_trace(prefix, task, engine_idx, witness_file, *, append, inducti
         deps,
         f"""cd {task.workdir}/engine_{engine_idx}; {task.exe_paths["yosys"]} -ql {trace_name}.log {trace_name}.ys""",
     )
+    proc.checkretcode = True
     proc.noprintregex = re.compile(r"Warning: Assert .* failed.*")
     proc.register_exit_callback(exit_callback)
     return proc

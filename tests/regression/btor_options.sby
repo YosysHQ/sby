@@ -1,0 +1,75 @@
+[tasks]
+--pycode-begin--
+supported = {
+    "btormc": {
+        "modes": ["bmc", "cover"],
+        "opts": ["base", "seed", "nomem", "syn", "syn_nomem"],
+    },
+    "pono": {
+        "modes": ["bmc"],
+        "opts": ["base", "nomem", "syn", "syn_nomem"],
+    },
+    "ric3": {
+        "modes": ["bmc", "prove"],
+        "opts": ["base", "nomem", "syn", "syn_nomem"],
+    },
+}
+
+for solver, support in supported.items():
+    for mode in support["modes"]:
+        for opt in support["opts"]:
+            output(
+                f"{solver}_{mode}_{opt} "
+                f"mode_{mode} solver_{solver} opt_{opt}"
+            )
+--pycode-end--
+
+[options]
+mode_bmc: mode bmc
+mode_cover: mode cover
+mode_prove: mode prove
+
+depth 4
+
+expect pass
+
+[engines]
+--pycode-begin--
+if "opt_seed" in tags:
+    opts = "--seed=42 "
+elif "opt_nomem" in tags:
+    opts = "--nomem "
+elif "opt_syn" in tags:
+    opts = "--syn "
+elif "opt_syn_nomem" in tags:
+    opts = "--syn --nomem "
+else:
+    opts = ""
+
+if "solver_btormc" in tags:
+    output(f"btor {opts}btormc")
+elif "solver_pono" in tags:
+    output(f"btor {opts}pono")
+elif "solver_ric3" in tags:
+    output(f"btor {opts}rIC3")
+--pycode-end--
+
+[script]
+read -formal top.sv
+prep -top top
+
+[file top.sv]
+module top(input clk);
+    reg [1:0] counter = 0;
+    reg [1:0] memory [0:3];
+    reg [1:0] value;
+
+    always @(posedge clk) begin
+        counter <= counter + 1;
+        memory[counter] <= counter;
+        value <= memory[counter];
+
+        assert property (counter < 4);
+        cover property (counter == 2 && value == 1);
+    end
+endmodule

@@ -1,0 +1,46 @@
+[tasks]
+--pycode-begin--
+supported = {
+    "aigbmc": ["bmc"],
+    "ric3": ["bmc", "prove"],
+    "avy": ["prove"],
+    "suprove": ["prove", "live"],
+}
+
+for solver, modes in supported.items():
+    for mode in modes:
+        output(f"{solver}_{mode} mode_{mode} solver_{solver}")
+--pycode-end--
+
+[options]
+mode_bmc: mode bmc
+mode_prove: mode prove
+mode_live: mode live
+
+mode_bmc: depth 4
+mode_live: expect fail
+
+[engines]
+solver_aigbmc: aiger aigbmc
+solver_ric3: aiger rIC3
+solver_avy: aiger avy
+solver_suprove: aiger suprove
+
+[script]
+read -formal top.sv
+prep -top top
+
+[file top.sv]
+module top(input clk, input up, down);
+    reg [4:0] counter = 0;
+
+    always @(posedge clk) begin
+        if (up && counter != 10)
+            counter <= counter + 1;
+        if (down && counter != 0)
+            counter <= counter - 1;
+
+        assert property (counter != 15);
+        assert property (s_eventually counter == 15);
+    end
+endmodule

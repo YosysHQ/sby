@@ -138,7 +138,7 @@ rIC3
 ^^^^
   https://github.com/gipsyh/rIC3/
 
-The minimum required version is 1.3.5
+SBY currently supports the release version 1.5.2 of rIC3 only.
 
 itp-bmc
 ^^^^^^^

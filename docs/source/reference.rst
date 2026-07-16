@@ -111,6 +111,10 @@ The :sby:`[tasks]` section must appear in the ``.sby`` file before the first
 The command ``sby --dumptasks <sby_file>`` prints the list of all tasks defined in
 a given ``.sby`` file.
 
+Note that there is currently no way to specify dependencies on other tasks. For complex flows where such dependencies are needed, consider using separate ``.sby`` files, or a single file with external scripting. For an advanced example which uses tasks and external scripting to implement a multi-stage verification
+flow, see `AppNote 130: Multi-Stage Verification
+<https://yosyshq.readthedocs.io/projects/ap130>`_.
+
 Options section
 ---------------
 
@@ -124,6 +128,7 @@ Mode      Description
 ``prove`` Unbounded model check to verify safety properties (``assert(...)`` statements)
 ``live``  Unbounded model check to verify liveness properties (``assert(s_eventually ...)`` statements)
 ``cover`` Generate set of shortest traces required to reach all cover() statements
+``prep``  Prepare the design and write the preprocessed model without running solver engines
 ========= ===========
 
 ..
@@ -175,6 +180,12 @@ options are:
 |                   |            | ``<name>`` this will generate the                       |
 |                   |            | ``model/design_<name>.*`` files within the working      |
 |                   |            | directory, even when not required to run the task.      |
++-------------------+------------+---------------------------------------------------------+
+| ``skip_prep``     |   All      | Skip SBY's internal preparation step. Values: ``on``,   |
+|                   |            | ``off``. Default: ``off``. For an example of how it can |
+|                   |            | be useful to disable the preparation step in complex    |
+|                   |            | flows, see `AppNote 130: Multi-Stage Verification       |
+|                   |            | <https://yosyshq.readthedocs.io/projects/ap130>`_.      |
 +-------------------+------------+---------------------------------------------------------+
 | ``smtc``          | ``bmc``,   | Pass this ``.smtc`` file to the smtbmc engine. All      |
 |                   | ``prove``, | other engines are disabled when this option is used.    |
@@ -293,11 +304,15 @@ The following mode/engine/solver combinations are currently supported:
 |           |                          |
 |           | ``btor pono``            |
 |           |                          |
+|           | ``btor rIC3``            |
+|           |                          |
 |           | ``abc bmc3``             |
 |           |                          |
 |           | ``abc sim3``             |
 |           |                          |
 |           | ``aiger aigbmc``         |
+|           |                          |
+|           | ``aiger rIC3``           |
 +-----------+--------------------------+
 | ``prove`` | ``smtbmc [all solvers]`` |
 |           |                          |
@@ -305,9 +320,11 @@ The following mode/engine/solver combinations are currently supported:
 |           |                          |
 |           | ``aiger avy``            |
 |           |                          |
+|           | ``aiger suprove``        |
+|           |                          |
 |           | ``aiger rIC3``           |
 |           |                          |
-|           | ``aiger suprove``        |
+|           | ``btor rIC3``            |
 +-----------+--------------------------+
 | ``cover`` | ``smtbmc [all solvers]`` |
 |           |                          |
@@ -385,6 +402,8 @@ The engine supports no engine options and supports the following solvers:
 +-------------------------------+---------------------------------+
 | ``pono``                      |   ``bmc``                       |
 +-------------------------------+---------------------------------+
+| ``rIC3``                      |   ``bmc``, ``prove``            |
++-------------------------------+---------------------------------+
 
 Solver options are passed to the solver as additional command line options.
 
@@ -402,7 +421,7 @@ solvers:
 +-------------------------------+---------------------------------+
 | ``avy``                       |   ``prove``                     |
 +-------------------------------+---------------------------------+
-| ``rIC3``                      |   ``prove``                     |
+| ``rIC3``                      |   ``bmc``, ``prove``            |
 +-------------------------------+---------------------------------+
 | ``aigbmc``                    |   ``bmc``                       |
 +-------------------------------+---------------------------------+

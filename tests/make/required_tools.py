@@ -11,9 +11,11 @@ REQUIRED_TOOLS = {
     ("smtbmc", "abc"): ["yosys-abc"],
     ("aiger", "suprove"): ["suprove", "yices"],
     ("aiger", "avy"): ["avy", "yices"],
+    ("aiger", "rIC3"): ["rIC3", "yices"],
     ("aiger", "aigbmc"): ["aigbmc", "yices"],
     ("btor", "btormc"): ["btormc", "btorsim"],
     ("btor", "pono"): ["pono", "btorsim"],
+    ("btor", "rIC3"): ["rIC3", "btorsim"],
     ("abc"): ["yices"],
 }
 

@@ -1,0 +1,55 @@
+[options]
+mode bmc
+depth 3
+expect fail
+
+[engines]
+smtbmc bitwuzla
+
+[script]
+read_verilog -sv top.sv
+prep -top top -flatten
+
+[file top.sv]
+module top(input logic clk, input logic [1:0] addr, input logic [7:0] data);
+    logic [7:0] value;
+
+    wrapper wrapper (
+        .clk(clk),
+        .addr(addr),
+        .data(data),
+        .value(value)
+    );
+
+    always_ff @(posedge clk) begin
+        assert (value != 8'hff);
+    end
+endmodule
+
+module wrapper(
+    input logic clk,
+    input logic [1:0] addr,
+    input logic [7:0] data,
+    output logic [7:0] value
+);
+    uut uut (
+        .clk(clk),
+        .addr(addr),
+        .data(data),
+        .value(value)
+    );
+endmodule
+
+module uut(
+    input logic clk,
+    input logic [1:0] addr,
+    input logic [7:0] data,
+    output logic [7:0] value
+);
+    logic [7:0] \mem\with\backslash  [0:3];
+
+    always_ff @(posedge clk) begin
+        \mem\with\backslash  [addr] <= data;
+        value <= \mem\with\backslash  [addr];
+    end
+endmodule

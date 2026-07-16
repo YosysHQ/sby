@@ -11,10 +11,10 @@ jobs:
 
     steps:
       - name: Checkout SBY
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Install oss-cad-suite
-        uses: YosysHQ/setup-oss-cad-suite@v3
+        uses: YosysHQ/setup-oss-cad-suite@v4
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Run SBY tests
@@ -24,10 +24,10 @@ jobs:
     runs-on: [self-hosted, linux, x64, fast]
     steps:
       - name: Checkout SBY
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Checkout Yosys
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: 'YosysHQ/yosys'
           path: 'yosys'
@@ -40,14 +40,16 @@ jobs:
       - name: Build Yosys
         run: |
           cd yosys
-          make config-clang
-          echo "ENABLE_VERIFIC := 1" >> Makefile.conf
-          echo "ENABLE_VERIFIC_EDIF := 1" >> Makefile.conf
-          echo "ENABLE_VERIFIC_LIBERTY := 1" >> Makefile.conf
-          echo "ENABLE_VERIFIC_YOSYSHQ_EXTENSIONS := 1" >> Makefile.conf
-          echo "ENABLE_CCACHE := 1" >> Makefile.conf
-          make -j${{ env.procs }}
-          make install DESTDIR=${GITHUB_WORKSPACE}/.local PREFIX=
+          rm -rf build Configuration.cmake
+          echo 'set(CMAKE_C_COMPILER clang CACHE STRING "")' >> Configuration.cmake
+          echo 'set(CMAKE_CXX_COMPILER clang++ CACHE STRING "")' >> Configuration.cmake
+          echo 'set(YOSYS_COMPILER_LAUNCHER ccache CACHE STRING "")' >> Configuration.cmake
+          echo 'set(YOSYS_VERIFIC_DIR "/usr/local/src/verific_lib" CACHE STRING "")' >> Configuration.cmake
+
+          cmake -C Configuration.cmake -B build . -DCMAKE_INSTALL_PREFIX=${GITHUB_WORKSPACE}/.local -DCMAKE_BUILD_TYPE=Debug
+
+          cmake --build build -j${{ env.procs }}
+          cmake --build build --target install
 
       - name: Build SBY
         run: |

@@ -289,7 +289,7 @@ class AigModel(tl.process.Process):
                 "formalff -clk2ff -ff2anyinit",
                 "simplemap",
                 "dffunmap",
-                "abc -g AND -fast",
+                "aigmap",
                 "opt_clean",
                 "stat",
                 "write_rtlil design_aiger.il",

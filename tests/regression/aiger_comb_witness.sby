@@ -1,0 +1,21 @@
+[tasks]
+aigbmc
+ric3
+
+[options]
+mode bmc
+depth 1
+expect fail
+
+[engines]
+aigbmc: aiger aigbmc
+ric3: aiger rIC3
+
+[script]
+read -formal top.sv
+prep -top top
+
+[file top.sv]
+module top(input a);
+    always @* assert (!a);
+endmodule
