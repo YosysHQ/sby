@@ -320,7 +320,9 @@ def read_sbyconfig(sbydata, taskname):
     if defaultlist is None:
         defaultlist = tasklist
 
-    return cfgdata, tasklist, defaultlist, sorted(list(task_tags_all))
+    return_tags = task_tags_all if taskname is None else task_tags_active
+
+    return cfgdata, tasklist, defaultlist, sorted(list(return_tags))
 
 
 sbydata = list()
@@ -368,14 +370,9 @@ if dump_files:
     print("\n".join(str(f) for f in file_set))
     sys.exit(0)
 
-if dump_tags:
-    _, _, _, tagnames = read_sbyconfig(sbydata, None)
-    for tag in tagnames:
-        print(tag)
-    sys.exit(0)
-
 if dump_tasks or dump_defaults or dump_tags:
-    _, tasks, dtasks, tags = read_sbyconfig(sbydata, None)
+    taskname = tasknames[0] if len(tasknames) == 1 else None
+    _, tasks, dtasks, tags = read_sbyconfig(sbydata, taskname)
     for name in tasks if dump_tasks else dtasks if dump_defaults else tags:
         if name is not None:
             print(name)

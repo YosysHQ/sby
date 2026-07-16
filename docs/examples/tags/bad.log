@@ -1,0 +1,31 @@
+./gen.sh -s bad
+$ sby --dumptasks bad.sby
+task1
+task2
+task3
+$ sby --dumptags bad.sby
+task1
+task2
+task3
+task_1_or_2
+task_1_or_3
+$ sby --dumptags bad.sby task1
+task1
+task_1_or_2
+task_1_or_3
+$ sby --dumpdefaults bad.sby
+task1
+task2
+task3
+$ sby --dumpcfg bad.sby
+[tasks]
+task1 task_1_or_2 task_1_or_3
+task2 task_1_or_2
+task3 task_1_or_3
+
+[options]
+$ sby --dumpcfg bad.sby task1
+[options]
+mode bmc
+depth 100
+

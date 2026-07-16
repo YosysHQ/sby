@@ -1,0 +1,27 @@
+./gen.sh -s default
+$ sby --dumptasks default.sby
+task1
+task2
+task3
+$ sby --dumptags default.sby
+task1
+task2
+task3
+task_1_or_2
+task_1_or_3
+$ sby --dumptags default.sby task1
+task1
+task_1_or_2
+task_1_or_3
+$ sby --dumpdefaults default.sby
+task2
+task3
+$ sby --dumpcfg default.sby
+[tasks]
+task1 task_1_or_3 task_1_or_2
+task2 task_1_or_2
+task3 task_1_or_3
+
+task2 task3 : default
+$ sby --dumpcfg default.sby task1
+

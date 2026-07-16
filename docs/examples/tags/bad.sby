@@ -1,0 +1,15 @@
+[tasks]
+task1 task_1_or_2 task_1_or_3
+task2 task_1_or_2
+task3 task_1_or_3
+
+[options]
+task_1_or_2:
+mode bmc
+depth 100
+
+task3:
+mode prove
+
+[engines]
+...

@@ -1,0 +1,6 @@
+[tasks]
+task1 task_1_or_3 task_1_or_2
+task2 task_1_or_2
+task3 task_1_or_3
+
+task2 task3 : default

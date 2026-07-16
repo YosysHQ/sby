@@ -27,7 +27,7 @@ a FIFO is
 
 In hardware we can create such a construct by providing two addresses into a
 register file.  This tutorial will use an example implementation provided in
-`fifo.sv`. 
+``fifo.sv``. 
 
 First, the address generator module:  
 
