@@ -455,20 +455,6 @@ interpolants extracted from SAT resolution proofs. It uses the external
 
 Supported modes: ``prove``, ``bmc``
 
-**Installation:**
-
-Install the ``itp-bmc`` binary to PATH:
-
-.. code-block:: bash
-
-   git clone https://github.com/inquisitour/itp-bmc.git
-   cd itp-bmc
-   make
-   sudo cp bmc /usr/local/bin/itp-bmc
-
-Or set the ``ITP_BMC`` environment variable, or use the ``--itp-bmc``
-command-line flag to specify the path directly.
-
 **Engine arguments:**
 
 .. code-block:: sby
@@ -494,18 +480,6 @@ command-line flag to specify the path directly.
 
    [engines]
    itp 20 0
-
-**Tested on:**
-
-The ``itp`` engine has been verified to produce unbounded safety proofs
-(fixpoint convergence) on the following RISC-V cores using the
-`riscv-formal <https://github.com/YosysHQ/riscv-formal>`_ framework 
-(instructions checked: add, sub, and, or, xor, lui):
-
-- NERV — 6/6 instruction checks, fixpoint at bound 2
-- PicoRV32 — 6/6 instruction checks, fixpoint at bound 2
-- SERV — 6/6 instruction checks, fixpoint at bound 2
-- VexRiscv — 6/6 instruction checks, fixpoint at bound 2
 
 .. note::
 

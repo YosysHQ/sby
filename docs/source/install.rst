@@ -139,3 +139,18 @@ rIC3
   https://github.com/gipsyh/rIC3/
 
 The minimum required version is 1.3.5
+
+itp-bmc
+^^^^^^^
+
+https://github.com/inquisitour/itp-bmc
+
+.. code-block:: text
+
+   git clone https://github.com/inquisitour/itp-bmc.git
+   cd itp-bmc
+   make
+   sudo cp bmc /usr/local/bin/itp-bmc
+
+Or set the ``ITP_BMC`` environment variable, or use the ``--itp-bmc``
+command-line flag to specify the path directly.
