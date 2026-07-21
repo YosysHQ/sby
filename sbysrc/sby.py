@@ -224,6 +224,16 @@ def read_sbyconfig(sbydata, taskname):
             found_task_tag = False
             task_skip_line = False
 
+            windows_drive_path = re.match(r"^([A-Za-z]):[\\/]", line)
+            if windows_drive_path and windows_drive_path.group(1) in task_tags_all:
+                drive = windows_drive_path.group(1)
+                print(
+                    f'ERROR: Task or group name "{drive}" conflicts with Windows path "{line}". '
+                    "Rename the task or group.",
+                    file=sys.stderr,
+                )
+                sys.exit(1)
+
             for t in task_tags_all:
                 if line.startswith(t+":"):
                     line = line[len(t)+1:].lstrip()
