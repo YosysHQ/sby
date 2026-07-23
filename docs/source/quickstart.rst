@@ -99,10 +99,10 @@ difference in addresses, and then compare with the count signal.
    :end-at: ;
    :dedent:
 
-SymbiYosys
+SBY
 **********
 
-SymbiYosys (sby) uses a .sby file to define a set of tasks used for
+SBY uses a .sby file to define a set of tasks used for
 verification.  
 
 **basic**
