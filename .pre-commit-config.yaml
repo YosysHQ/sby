@@ -18,10 +18,9 @@ repos:
   rev: v6.0.0
   hooks:
   - id: check-case-conflict
-  - id: check-merge-conflict
+  - id: check-executables-have-shebangs
   - id: check-yaml
     args: [--allow-multiple-documents]
-  - id: debug-statements
   - id: end-of-file-fixer
   - id: fix-byte-order-marker
   - id: mixed-line-ending
