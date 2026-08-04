@@ -23,4 +23,3 @@ formal tasks:
    verific.rst
    appnotes.rst
    license.rst
-

@@ -441,7 +441,7 @@ class SbyConfig:
                     import sby_autotune
                     self.autotune_config = sby_autotune.SbyAutotuneConfig()
                     continue
-                
+
                 if section == "cancelledby":
                     mode = "cancelledby"
                     if args is not None:
@@ -481,7 +481,7 @@ class SbyConfig:
             if mode == "autotune":
                 self.autotune_config.config_line(self, line)
                 continue
-            
+
             if mode == "cancelledby":
                 taskname = line.strip()
                 if taskname:
@@ -1319,7 +1319,7 @@ class SbyTask(SbyConfig):
             proc.terminate(timeout or cancel)
         if timeout:
             self.update_unknown_props(dict(source="timeout"))
-            
+
     def cancel(self):
         self.terminate(cancel=True)
         self.update_status("CANCELLED")
@@ -1424,7 +1424,7 @@ class SbyTask(SbyConfig):
         self.handle_bool_option("skip_prep", False)
 
         self.handle_bool_option("assume_early", True)
-        
+
         if self.opt_mode == "cover":
             self.handle_bool_option("cover_assert", False)
 

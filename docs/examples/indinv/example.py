@@ -54,7 +54,7 @@ for lidx, paths in pathsByLidx.items():
             loop = path[1]
 
     loopsByLidx[lidx] = loop
-    
+
     print()
     print("%d-Element Loop:" % len(loop))
     print("  ", " ->- ".join(["%2d" % i for i in loop + (loop[0],)]))

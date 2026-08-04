@@ -5,7 +5,7 @@ Inductive invariants are boolean functions over the design state, that
  1. return true for every reachable state (=invariants), and
  2. if they return true for a state then they will also return true
     for every state reachable from the given state (=inductive)
-    
+
 Formally, inductive invariants are sets of states that are closed under
 the state transition function (=inductive), and contain the entire set
 of reachable states (=invariants).
@@ -17,7 +17,7 @@ the following technique for proving and using inductive invariants.
 Consider the following circuit (stripped-down [example.sv](example.sv)):
 
 ```SystemVerilog
-module example(clk, state); 
+module example(clk, state);
 	input logic clk;
 	output logic [4:0] state = 27;
 

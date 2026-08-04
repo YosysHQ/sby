@@ -255,7 +255,7 @@ class SbyStatusDb:
             for fmt in self.live_formats:
                 fmtline = format_status_data_fmtline(row, fmt)
                 self.task.log(f"{click.style(fmt, fg='yellow')}: {fmtline}")
-        
+
     @transaction
     def add_task_trace(
         self,
@@ -511,7 +511,7 @@ def combine_statuses(statuses):
     return ",".join(sorted(statuses))
 
 def parse_status_data_row(raw: sqlite3.Row):
-    row_dict = dict(raw)    
+    row_dict = dict(raw)
     row_dict["name"] = json.loads(row_dict.get("name", "null"))
     row_dict["data"] = json.loads(row_dict.get("data") or "{}")
     return row_dict

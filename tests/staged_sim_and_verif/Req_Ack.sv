@@ -34,7 +34,7 @@ module DUT (
         );
 
         // ack comes exactly 4 cycles after req
-        assume property (@(posedge clk) 
+        assume property (@(posedge clk)
                 req |-> ##4 ack
         );
 

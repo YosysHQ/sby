@@ -1,4 +1,4 @@
-module example(clk, state); 
+module example(clk, state);
 	input logic clk;
 	output logic [4:0] state = 27;
 

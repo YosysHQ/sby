@@ -12,7 +12,7 @@ mode cover
 prove:
 mode prove
 --
-bmc: 
+bmc:
 mode bmc
 --
 bigtest: depth 120

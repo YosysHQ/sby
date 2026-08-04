@@ -1,5 +1,5 @@
 // address generator/counter
-module addr_gen 
+module addr_gen
 #(  parameter MAX_DATA=16,
     parameter ADDR_BITS=5
 ) ( input en, clk, rst,
@@ -21,7 +21,7 @@ module addr_gen
 endmodule
 
 // Define our top level fifo entity
-module fifo 
+module fifo
 #(  parameter MAX_DATA=16,
     parameter ADDR_BITS=5
 ) ( input wen, ren, clk, rst,
@@ -38,13 +38,13 @@ module fifo
     wire [ADDR_BITS-1:0] waddr, raddr;
     reg [7:0] data [MAX_DATA-1:0];
     always @(posedge clk)
-        if (wen) 
+        if (wen)
             data[waddr] <= wdata;
     assign rdata = data[raddr];
     // end storage
 
     // addr_gen for both write and read addresses
-    addr_gen #(.MAX_DATA(MAX_DATA), .ADDR_BITS(ADDR_BITS)) 
+    addr_gen #(.MAX_DATA(MAX_DATA), .ADDR_BITS(ADDR_BITS))
     fifo_writer (
         .en     (wen || wskip),
         .clk    (clk  ),
@@ -52,7 +52,7 @@ module fifo
         .addr   (waddr)
     );
 
-    addr_gen #(.MAX_DATA(MAX_DATA), .ADDR_BITS(ADDR_BITS)) 
+    addr_gen #(.MAX_DATA(MAX_DATA), .ADDR_BITS(ADDR_BITS))
     fifo_reader (
         .en     (ren || rskip),
         .clk    (clk  ),
@@ -90,8 +90,8 @@ module fifo
 `ifdef FORMAL
     // observers
     wire [ADDR_BITS:0] addr_diff;
-    assign addr_diff = waddr >= raddr 
-                  ? waddr - raddr 
+    assign addr_diff = waddr >= raddr
+                  ? waddr - raddr
                   : waddr + MAX_DATA - raddr;
 
     // tests
@@ -105,7 +105,7 @@ module fifo
             a_oflow2: assert (waddr < MAX_DATA);
 
             // count should be equal to the difference between writer and reader address
-            a_count_diff: assert (count == addr_diff 
+            a_count_diff: assert (count == addr_diff
                                || count == MAX_DATA && addr_diff == 0);
 
             // count should only be able to increase or decrease by 1
@@ -163,7 +163,7 @@ module fifo
     // the change in data makes certain that the value is overriden
     let d_change = (wdata != rdata);
     property read_skip;
-        @(posedge clk) disable iff (rst) 
+        @(posedge clk) disable iff (rst)
         !ren && d_change |=> $changed(raddr);
     endproperty
     w_overfill:  cover property (read_skip);

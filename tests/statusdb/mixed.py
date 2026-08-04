@@ -59,7 +59,7 @@ def main():
         elif workdir == "mixed_no_assert" and prop_type == "cover":
             valid_status = ["PASS"]
         assert status in valid_status, f"Unexpected {prop_type} status {status} for {prop} ({src})"
-        
+
 
 if __name__ == "__main__":
     main()

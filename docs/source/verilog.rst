@@ -225,4 +225,3 @@ SystemVerilog Concurrent Assertions
 -----------------------------------
 
 TBD, see :ref:`sva`.
-

@@ -46,7 +46,7 @@ Installing prerequisites (this command is for Ubuntu 20.04):
    sudo apt-get install build-essential clang bison flex \
                         libreadline-dev gawk tcl-dev libffi-dev git \
                         graphviz xdot pkg-config python3 zlib1g-dev
-   
+
    python3 -m pip install click
 
 Required components
@@ -88,7 +88,7 @@ Boolector
 https://boolector.github.io
 
 .. code-block:: text
-    
+
     git clone https://github.com/boolector/boolector
     cd boolector
     ./contrib/setup-btor2tools.sh
@@ -98,9 +98,9 @@ https://boolector.github.io
     sudo cp build/bin/{boolector,btor*} /usr/local/bin/
     sudo cp deps/btor2tools/build/bin/btorsim /usr/local/bin/
 
-To use the ``btor`` engine you will need to install btor2tools from 
+To use the ``btor`` engine you will need to install btor2tools from
 `commit c35cf1c <https://github.com/Boolector/btor2tools/commit/c35cf1c>`_ or
-newer. 
+newer.
 
 Yices 2
 -------

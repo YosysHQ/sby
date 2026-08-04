@@ -2,34 +2,34 @@
 Getting started
 ===============
 
-.. note:: 
+.. note::
 
-    This tutorial assumes sby and boolector installation as per the 
-    :ref:`install-doc`.  For this tutorial, it is also recommended to install 
+    This tutorial assumes sby and boolector installation as per the
+    :ref:`install-doc`.  For this tutorial, it is also recommended to install
     `GTKWave <http://gtkwave.sourceforge.net/>`_, an open source VCD viewer.
     `Source files used in this tutorial
-    <https://github.com/YosysHQ/sby/tree/master/docs/examples/fifo>`_ can be 
+    <https://github.com/YosysHQ/sby/tree/master/docs/examples/fifo>`_ can be
     found on the sby git, under ``docs/examples/fifo``.
 
 First In, First Out (FIFO) buffer
 *********************************
 
 From `Wikipedia <https://en.wikipedia.org/wiki/FIFO_(computing_and_electronics)>`_,
-a FIFO is 
-    
+a FIFO is
+
     a method for organizing the manipulation of a data structure (often,
     specifically a data buffer) where the oldest (first) entry, or "head" of the
     queue, is processed first.
 
     Such processing is analogous to servicing people in a queue area on a
     first-come, first-served (FCFS) basis, i.e. in the same sequence in which
-    they arrive at the queue's tail. 
+    they arrive at the queue's tail.
 
 In hardware we can create such a construct by providing two addresses into a
 register file.  This tutorial will use an example implementation provided in
-`fifo.sv`. 
+`fifo.sv`.
 
-First, the address generator module:  
+First, the address generator module:
 
 .. literalinclude:: ../examples/fifo/fifo.sv
    :language: systemverilog
@@ -103,7 +103,7 @@ SymbiYosys
 **********
 
 SymbiYosys (sby) uses a .sby file to define a set of tasks used for
-verification.  
+verification.
 
 **basic**
     Bounded model check of design.
@@ -122,16 +122,16 @@ should be run if no tasks are specified, such as when running the command below.
 
     sby fifo.sby
 
-.. note:: 
+.. note::
 
     The default set of tests should all pass.  If this is not the case there may
-    be a problem with the installation of sby or one of its solvers. 
+    be a problem with the installation of sby or one of its solvers.
 
 To see what happens when a test fails, the below command can be used.  Note the
 use of the ``-f`` flag to automatically overwrite existing task output.  While
 this may not be necessary on the first run, it is quite useful when making
 adjustments to code and rerunning tests to validate.
-    
+
     sby -f fifo.sby nofullskip
 
 The nofullskip task disables the code shown below.  Because the count signal has
@@ -199,7 +199,7 @@ We can then run gtkwave with the trace file indicated to see the correct
 operation as in the image below.  When the buffer is empty, a read with no write
 will result in the ``wksip`` signal going high, incrementing *both* read and
 write addresses and avoiding underflow.
-    
+
     gtkwave fifo_cover/engine_0/trace4.vcd noskip.gtkw
 
 .. image:: media/gtkwave_coverskip.png
@@ -233,9 +233,9 @@ while still passing all of the tests?
 .. note::
 
     If you need a **hint**, try increasing the width of the address wires.  4 bits
-    supports up to 2\ :sup:`4`\ =16 addresses.  Are there other signals that 
-    need to be wider?  Can you make the width parameterisable to support 
-    arbitrarily large buffers?  
+    supports up to 2\ :sup:`4`\ =16 addresses.  Are there other signals that
+    need to be wider?  Can you make the width parameterisable to support
+    arbitrarily large buffers?
 
 Once the tests are passing with ``MAX_DATA=17``, try something bigger, like 64,
 or 100.  Does the ``basic`` task still pass?  What about ``cover``?  By default,
@@ -246,7 +246,7 @@ try to increase the cover mode depth to be at least a few cycles larger than the
 ``MAX_DATA``.
 
 .. note::
-    
+
     Reference files are provided in the ``fifo/golden`` directory, showing how
     the verilog could have been modified and how a ``bigtest`` task could be
     added.
@@ -258,14 +258,14 @@ Until this point, all of the properties described have been *immediate*
 assertions.  As the name suggests, immediate assertions are evaluated
 immediately whereas concurrent assertions allow for the capture of sequences of
 events which occur across time.  The use of concurrent assertions requires a
-more advanced series of checks.  
+more advanced series of checks.
 
 Compare the difference in implementation of ``w_underfill`` depending on the
 presence of Verific.  ``w_underfill`` looks for a sequence of events where the
 write enable is low but the write address changes in the following cycle.  This
 is the expected behaviour for reading while empty and implies that the
 ``w_skip`` signal went high.  Verific enables elaboration of SystemVerilog
-Assertions (SVA) properties.  Here we use such a property, ``write_skip``.  
+Assertions (SVA) properties.  Here we use such a property, ``write_skip``.
 
 .. literalinclude:: ../examples/fifo/fifo.sv
    :language: systemverilog
@@ -310,5 +310,5 @@ Further information
 *******************
 For more information on the uses of assertions and the difference between
 immediate and concurrent assertions, refer to appnote 109: `Property Checking
-with SystemVerilog Assertions 
+with SystemVerilog Assertions
 <https://yosyshq.readthedocs.io/projects/ap109/en/latest/>`_.

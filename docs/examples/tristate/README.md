@@ -1,12 +1,12 @@
 # Tristate demo
 
-Run 
+Run
 
     sby -f tristate.sby pass
 
 to run the pass task. This uses the top module that exclusively enables each of the submodules.
 
-Run 
+Run
 
     sby -f tristate.sby fail
 

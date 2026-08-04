@@ -106,7 +106,7 @@ if status_show or status_reset or task_status or status_format:
 
     if status_format:
         status_db.print_status_summary_fmt(tasknames, status_format, status_latest)
-        
+
     if task_status:
         status_db.print_task_summary()
 
