@@ -1,0 +1,18 @@
+[options]
+mode prove
+timeout 1
+expect timeout
+
+[engines]
+smtbmc bitwuzla
+
+[script]
+read -formal top.v
+prep -top top
+
+[file top.v]
+module top(input clk);
+    reg q = 0;
+    always @(posedge clk) q <= 0;
+    always @* assert(q == 0);
+endmodule
