@@ -139,10 +139,11 @@ class SbyJobLease:
         self.is_done = False
 
     def done(self):
-        if self.is_ready and not self.is_done:
-            self.client.return_lease()
-
+        if self.is_done:
+            return
         self.is_done = True
+        if self.is_ready:
+            self.client.return_lease()
 
     def __repr__(self):
         return f"is_ready={self.is_ready} is_done={self.is_done}"
@@ -297,14 +298,17 @@ class SbyJobClient:
     def activate_pending_lease(self):
         while self.pending_leases:
             pending = self.pending_leases.pop(0)()
-            if pending is None:
+            if pending is None or pending.is_done:
                 continue
             pending.is_ready = True
             return True
         return False
 
     def has_pending_leases(self):
-        while self.pending_leases and not self.pending_leases[-1]():
+        while self.pending_leases:
+            pending = self.pending_leases[-1]()
+            if pending is not None and not pending.is_done:
+                break
             self.pending_leases.pop()
         return bool(self.pending_leases)
 
