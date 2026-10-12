@@ -405,8 +405,8 @@ class SbyStatusDb:
         task_status = defaultdict(set)
         for task in tasks.values():
             task_status[task["name"]].add(task["status"] or "UNKNOWN")
-        for task_name, statuses in sorted(task_status.items()):
-            print(task_name, combine_statuses(statuses))
+        for task_name, statuses in sorted(task_status.items(), key=lambda item: item[0] or ""):
+            print(task_name or "<default>", combine_statuses(statuses))
 
     def get_status_data_joined(self, status_id: int):
         row = self.db.execute(

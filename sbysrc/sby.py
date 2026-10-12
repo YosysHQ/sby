@@ -496,7 +496,9 @@ def start_task(taskloop, taskname):
     else:
         junit_filename = "junit"
 
-    task = SbyTask(sbyconfig, my_workdir, early_logmsgs, reusedir, status_cancels, taskloop, name=taskname, live_formats=status_live_formats)
+    task_early_logmsgs = list(early_logmsgs)
+    early_logmsgs.clear()
+    task = SbyTask(sbyconfig, my_workdir, task_early_logmsgs, reusedir, status_cancels, taskloop, name=taskname, live_formats=status_live_formats)
 
     for k, v in exe_paths.items():
         task.exe_paths[k] = v

@@ -151,15 +151,25 @@ class SbyProc:
     def terminate(self, force=False):
         if (self.task.opt_wait or self.wait) and not force:
             return
+        if self.job_lease:
+            self.job_lease.done()
+            self.job_lease = None
+        if self.logfile is not None:
+            self.logfile.close()
+            self.logfile = None
         if self.running:
             if not self.silent:
                 self.task.log(f"{click.style(self.info, fg='magenta')}: terminating process")
             if os.name == "posix":
                 try:
                     os.killpg(self.p.pid, signal.SIGTERM)
-                except PermissionError:
+                except (PermissionError, ProcessLookupError, OSError):
                     pass
-            self.p.terminate()
+            try:
+                self.p.terminate()
+            except (PermissionError, ProcessLookupError, OSError):
+                pass
+            self.running = False
             self.task.update_proc_stopped(self)
         elif not self.finished and not self.terminated and not self.exited:
             self.task.update_proc_canceled(self)
@@ -640,10 +650,10 @@ class SbyTaskloop:
 
             self.procs_waiting = []
 
-            for proc in self.procs_running:
+            for proc in list(self.procs_running):
                 proc.poll()
 
-            for proc in self.procs_pending:
+            for proc in list(self.procs_pending):
                 proc.poll()
 
             if self.jobclient:
@@ -983,6 +993,7 @@ class SbyTask(SbyConfig):
             if total_clock_time > self.opt_timeout:
                 self.log(f"Reached TIMEOUT ({self.opt_timeout} seconds). Terminating all subprocesses.")
                 self.status = "TIMEOUT"
+                self.update_status("TIMEOUT")
                 self.terminate(timeout=True)
 
     def update_proc_pending(self, proc):
@@ -1330,6 +1341,8 @@ class SbyTask(SbyConfig):
         self.terminate()
 
     def update_unknown_props(self, data):
+        if not self.design:
+            return
         for prop in self.design.hierarchy:
             if prop.status != "UNKNOWN":
                 continue
@@ -1338,12 +1351,15 @@ class SbyTask(SbyConfig):
                 self.status_db.set_task_property_status(prop, data=data)
 
     def pass_unknown_asserts(self, data):
+        if not self.design:
+            return
         for prop in self.design.pass_unknown_asserts():
             self.status_db.set_task_property_status(prop, data=data)
 
     def update_status(self, new_status, step = None):
-        assert new_status in ["PASS", "FAIL", "UNKNOWN", "ERROR", "CANCELLED"]
-        self.status_db.set_task_status(new_status)
+        assert new_status in ["PASS", "FAIL", "UNKNOWN", "ERROR", "CANCELLED", "TIMEOUT"]
+        if hasattr(self, 'status_db'):
+            self.status_db.set_task_status(new_status)
 
         if new_status == "UNKNOWN":
             return
@@ -1369,6 +1385,9 @@ class SbyTask(SbyConfig):
 
         elif new_status == "CANCELLED":
             self.status = "CANCELLED"
+
+        elif new_status == "TIMEOUT":
+            self.status = "TIMEOUT"
 
         else:
             assert 0
