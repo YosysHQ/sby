@@ -164,6 +164,8 @@ class SbyProc:
         elif not self.finished and not self.terminated and not self.exited:
             self.task.update_proc_canceled(self)
         self.terminated = True
+        if self.job_lease:
+            self.job_lease.done()
 
     def poll(self, force_unchecked=False):
         if self.task.task_local_abort and not force_unchecked:
