@@ -33,19 +33,19 @@ def main():
         if prop_id in checked_props:
             continue
         checked_props.add(prop_id)
-        prop_type = (kind or "").lower()
         valid_status: list[None|str] = []
-        if workdir in ["mixed_bmc", "mixed_assert"] and prop_type == "assert":
-            valid_status = ["FAIL"]
-        elif workdir == "mixed_bmc" and prop_type == "cover":
-            valid_status = [None, "UNKNOWN"]
-        elif workdir == "mixed_assert" and prop_type == "cover":
-            valid_status = ["PASS", None, "UNKNOWN"]
-        elif workdir == "mixed_no_assert" and prop_type == "assert":
-            valid_status = [None, "UNKNOWN"]
-        elif workdir == "mixed_no_assert" and prop_type == "cover":
-            valid_status = ["PASS"]
-        assert status in valid_status, f"Unexpected {prop_type} status {status} for {prop} ({src})"
+        match workdir, kind:
+            case "mixed_bmc" | "mixed_assert", "ASSERT":
+                valid_status = ["FAIL"]
+            case "mixed_bmc", "COVER":
+                valid_status = [None, "UNKNOWN"]
+            case "mixed_assert", "COVER":
+                valid_status = ["PASS", None, "UNKNOWN"]
+            case "mixed_no_assert", "ASSERT":
+                valid_status = [None, "UNKNOWN"]
+            case "mixed_no_assert", "COVER":
+                valid_status = ["PASS"]
+        assert status in valid_status, f"Unexpected {kind} status {status} for {prop} ({src})"
 
 
 if __name__ == "__main__":
