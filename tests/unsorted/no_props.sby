@@ -10,11 +10,15 @@ abc_sim3 bmc error
 # "Property index 0 is greater than the number of properties in file model/design_btor_single.btor (0)"
 btor_pono bmc error
 
+# don't run solver with no properties, don't return an empty PASS state
+smtbmc bmc error empty
+
 [options]
 prove: mode prove
 bmc: mode bmc
 cover: mode cover
 error: expect ERROR
+empty: run_empty off
 
 [engines]
 abc: abc pdr
@@ -23,6 +27,7 @@ btor_pono: btor pono
 btor_cover: btor btormc
 abc_bmc3: abc bmc3
 abc_sim3: abc sim3
+smtbmc: smtbmc yices
 
 [script]
 read -sv test.sv

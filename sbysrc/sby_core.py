@@ -1176,10 +1176,26 @@ class SbyTask(SbyConfig):
                 if self.design == None:
                     with open(modeldir / "design.json") as f:
                         self.design = design_hierarchy(f)
-                        self.status_db.create_task_properties([
-                            prop for prop in self.design.properties_by_path.values()
-                            if not prop.type.assume_like
-                        ])
+
+                    props = []
+                    prop_count = 0
+                    for prop in self.design.properties_by_path.values():
+                        if prop.type.assume_like:
+                            continue
+                        props.append(prop)
+
+                        # count valid properties
+                        if ((prop.kind == "ASSERT" and self.opt_mode in ("bmc", "prove"))
+                            or (prop.kind == "COVER" and self.opt_mode == "cover")
+                            # cover_assert without any covers is vacuous
+                            # or (prop.kind == "ASSERT" and self.opt_mode == "cover" and self.opt_cover_assert)
+                            or (prop.kind == "LIVE" and self.opt_mode == "live")
+                        ):
+                            prop_count += 1
+                    self.status_db.create_task_properties(props)
+
+                    if not self.opt_run_empty and prop_count == 0:
+                        self.error(f"No properties for mode {self.opt_mode!r}")
 
             def instance_hierarchy_error_callback(retcode):
                 self.precise_prop_status = False
@@ -1429,6 +1445,8 @@ class SbyTask(SbyConfig):
 
         if self.opt_mode == "cover":
             self.handle_bool_option("cover_assert", False)
+
+        self.handle_bool_option("run_empty", True)
 
     def setup_status_db(self, status_path=None):
         if hasattr(self, 'status_db'):

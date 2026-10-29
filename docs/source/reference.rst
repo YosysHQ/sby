@@ -215,6 +215,11 @@ options are:
 | ``cover_assert``  | ``cover``  | Check for assertion properties during ``cover`` mode.   |
 |                   |            | Values: ``on``, ``off``. Default: ``off``               |
 +-------------------+------------+---------------------------------------------------------+
+| ``run_empty``     | ``all``    | Run the solver even if there are no properties. Will    |
+|                   |            | raise an error instead if set to ``off`` and there are  |
+|                   |            | no valid properties for the current mode.               |
+|                   |            | Values: ``on``, ``off``. Default: ``on``                |
++-------------------+------------+---------------------------------------------------------+
 
 Cancelledby section
 -------------------
