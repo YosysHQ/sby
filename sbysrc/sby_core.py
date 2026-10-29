@@ -1183,6 +1183,8 @@ class SbyTask(SbyConfig):
                         if prop.type.assume_like:
                             continue
                         props.append(prop)
+
+                        # count valid properties
                         if ((prop.kind == "ASSERT" and self.opt_mode in ("bmc", "prove"))
                             or (prop.kind == "COVER" and self.opt_mode == "cover")
                             # cover_assert without any covers is vacuous
@@ -1190,8 +1192,6 @@ class SbyTask(SbyConfig):
                             or (prop.kind == "LIVE" and self.opt_mode == "live")
                         ):
                             prop_count += 1
-                        if not prop.type.assume_like:
-                            props.append(prop)
                     self.status_db.create_task_properties(props)
 
                     if not self.opt_run_empty and prop_count == 0:
