@@ -3,7 +3,7 @@ Formal extensions to Verilog
 ============================
 
 Any Verilog file may be read using ``read -formal <file>`` within the
-SymbiYosys ``script`` section.  Multiple files may be given on the sames
+SBY ``script`` section.  Multiple files may be given on the sames
 line, or various files may be read in subsequent lines.
 
 ``read -formal`` will also define the ``FORMAL`` macro, which can be used
@@ -28,7 +28,7 @@ example above. Refer to :doc:`verific` for more on the Verific front end.
 SystemVerilog Immediate Assertions
 ----------------------------------
 
-SymbiYosys supports three basic immediate assertion types.
+SBY supports three basic immediate assertion types.
 
 1. ``assume(<expr>);``
 
@@ -39,15 +39,15 @@ SymbiYosys supports three basic immediate assertion types.
 2. ``assert(<expr>);``
 
    An assertion is something the solver will try to make false.  Any time
-   SymbiYosys is run with ``mode bmc``, the proof will fail if some set
+   SBY is run with ``mode bmc``, the proof will fail if some set
    of inputs can cause the ``<expr>`` within the assertion to be zero (false).
-   When SymbiYosys is run with ``mode prove``, the proof may also yield an
+   When SBY is run with ``mode prove``, the proof may also yield an
    ``UNKNOWN`` result if an assertion can be made to fail during the induction
    step.
 
 3. ``cover(<expr>);``
 
-   A cover statement only applies when SymbiYosys is ran with option
+   A cover statement only applies when SBY is ran with option
    ``mode cover``.  In this case, the formal solver will start at the
    beginning of time (i.e. when all initial statements are true), and it will
    try to find some clock when ``<expr>`` can be made to be true.  Such a

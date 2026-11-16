@@ -8,7 +8,7 @@ This document will guide you through the process of installing sby.
 CAD suite(s)
 ************
 
-Sby (SymbiYosys) is part of the `Tabby CAD Suite
+Sby (SBY) is part of the `Tabby CAD Suite
 <https://www.yosyshq.com/tabby-cad-datasheet>`_ and the `OSS CAD Suite
 <https://github.com/YosysHQ/oss-cad-suite-build>`_! The easiest way to use sby
 is to install the binary software suite, which contains all required
