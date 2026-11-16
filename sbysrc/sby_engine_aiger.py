@@ -114,10 +114,24 @@ def run(mode, task, engine_idx, engine):
     end_of_cex = False
     aiw_file = open(f"{task.workdir}/engine_{engine_idx}/trace.aiw", "w")
 
+    justice_props = None
+    count = 0
+    disproved = set()
+    proved = set()
+
     def output_callback(line):
         nonlocal proc_status
         nonlocal produced_cex
         nonlocal end_of_cex
+        nonlocal justice_props
+        nonlocal count
+
+        if justice_props is None:
+            with open(f"{task.workdir}/model/design_aiger.ywa") as ywa_file:
+                ywa = json.load(ywa_file)
+                justice_props = []
+                for path in ywa.get("lives", []):
+                    justice_props.append(task.design.properties_by_path.get(tuple(path)))
 
         if json_output:
             # Forward log messages, but strip the prefix containing runtime and memory stats
@@ -145,13 +159,39 @@ def run(mode, task, engine_idx, engine):
             if match:
                 proc_status = "ERROR"
 
+        if mode == "live" and line.startswith("j"):
+            print(line, file=aiw_file)
+            count += 1
+
+            if proc_status == "PASS":
+                proved.add(line)
+            elif proc_status == "FAIL":
+                disproved.add(line)
+
+            prop_idx = int(line[1:])
+            try:
+                prop = justice_props[prop_idx]
+            except IndexError:
+                prop = None
+            if prop and proc_status:
+                prop.status = proc_status
+                task.summary.add_event(
+                    engine_idx=engine_idx, trace=None,
+                    hdlname=prop.hdlname, src=prop.location, prop=prop,
+                )
+
+            return f"{line} {proc_status}"
+
         if proc_status is not None:
             if not end_of_cex and not produced_cex and line.isdigit():
                 produced_cex = True
             if not end_of_cex:
                 print(line, file=aiw_file)
             if line == ".":
-                end_of_cex = True
+                if mode == "live":
+                    proc_status = None
+                else:
+                    end_of_cex = True
             return None
 
         if line.startswith("u"):
@@ -166,6 +206,24 @@ def run(mode, task, engine_idx, engine):
         return None
 
     def exit_callback(retcode):
+        nonlocal proc_status
+        if mode == "live":
+            nonlocal justice_props
+            nonlocal count
+
+            if len(disproved):
+                proc_status = "FAIL"
+            elif len(proved) == count:
+                proc_status = "PASS"
+            else:
+                proc_status = "UNKNOWN"
+
+            task.log(f"Properties: Proved = {len(proved)}. Disproved = {len(disproved)}. Total = {count}.")
+
+            if justice_props and count != len(justice_props):
+                proc_status = "UNKNOWN"
+                task.warning(f"Expected {len(justice_props)} properties.")
+
         aiw_file.close()
         aigsmt_exit_callback(task, engine_idx, proc_status,
             run_aigsmt=run_aigsmt, smtbmc_vcd=smtbmc_vcd, smtbmc_append=smtbmc_append, sim_append=sim_append, )
