@@ -22,4 +22,3 @@ formal tasks:
    verilog.rst
    verific.rst
    appnotes.rst
-   license.rst
