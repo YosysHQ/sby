@@ -10,7 +10,7 @@ SystemVerilog, VHDL, SVA
 
 .. _Tabby CAD Suite: https://www.yosyshq.com/tabby-cad-datasheet
 
-Run ``verific -sv <files>`` in the ``[script]`` section of you ``.sby`` file
+Add ``verific -sv <files>`` in the ``[script]`` section of your ``.sby`` file
 to read a SystemVerilog source file, and ``verific -vhdl <files>`` to read a
 VHDL source file.
 

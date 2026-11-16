@@ -4,15 +4,15 @@ Getting started
 
 .. note::
 
-    This tutorial assumes sby and boolector installation as per the
+    This tutorial assumes SBY and boolector installation as per the
     :ref:`install-doc`.  For this tutorial, it is also recommended to install
     `GTKWave <http://gtkwave.sourceforge.net/>`_, an open source VCD viewer.
     `Source files used in this tutorial
     <https://github.com/YosysHQ/sby/tree/master/docs/examples/fifo>`_ can be
-    found on the sby git, under ``docs/examples/fifo``.
+    found on the SBY git, under ``docs/examples/fifo``.
 
 First In, First Out (FIFO) buffer
-*********************************
+---------------------------------
 
 From `Wikipedia <https://en.wikipedia.org/wiki/FIFO_(computing_and_electronics)>`_,
 a FIFO is
@@ -54,7 +54,7 @@ Notice that this register design includes a synchronous write and asynchronous
 read.  Each word is 8 bits, and up to 16 words can be stored in the buffer.
 
 Verification properties
-***********************
+-----------------------
 
 In order to verify our design we must first define properties that it must
 satisfy.  For example, there must never be more than there is memory available.
@@ -99,11 +99,10 @@ difference in addresses, and then compare with the count signal.
    :end-at: ;
    :dedent:
 
-SymbiYosys
-**********
+Setting up SBY
+--------------
 
-SymbiYosys (sby) uses a .sby file to define a set of tasks used for
-verification.
+SBY uses a .sby file to define a set of tasks used for verification.
 
 **basic**
     Bounded model check of design.
@@ -125,7 +124,7 @@ should be run if no tasks are specified, such as when running the command below.
 .. note::
 
     The default set of tests should all pass.  If this is not the case there may
-    be a problem with the installation of sby or one of its solvers.
+    be a problem with the installation of ``sby`` or one of its solvers.
 
 To see what happens when a test fails, the below command can be used.  Note the
 use of the ``-f`` flag to automatically overwrite existing task output.  While
@@ -211,7 +210,7 @@ write addresses and avoiding underflow.
     detail.
 
 Exercise
-********
+--------
 
 Adjust the ``[script]`` section of ``fifo.sby`` so that it looks like the below.
 
@@ -252,7 +251,7 @@ try to increase the cover mode depth to be at least a few cycles larger than the
     added.
 
 Concurrent assertions
-*********************
+---------------------
 
 Until this point, all of the properties described have been *immediate*
 assertions.  As the name suggests, immediate assertions are evaluated
@@ -307,7 +306,8 @@ for use in the *Tabby CAD Suite*.
 .. _Tabby CAD Suite: https://www.yosyshq.com/tabby-cad-datasheet
 
 Further information
-*******************
+-------------------
+
 For more information on the uses of assertions and the difference between
 immediate and concurrent assertions, refer to appnote 109: `Property Checking
 with SystemVerilog Assertions

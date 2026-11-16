@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# SymbiYosys (sby) -- Front-end for Yosys-based formal verification flows
+# SBY -- Front-end for Yosys-based formal verification flows
 #
 # Copyright (C) 2016  Claire Xenia Wolf <claire@yosyshq.com>
 #
@@ -142,7 +142,7 @@ if sbyfile is not None:
                 if os.path.exists(workdir + "/" + f):
                     os.remove(workdir + "/" + f)
     elif not sbyfile.endswith(".sby"):
-        print("ERROR: Sby file does not have .sby file extension.", file=sys.stderr)
+        print("ERROR: SBY file does not have .sby file extension.", file=sys.stderr)
         sys.exit(1)
 
 elif init_config_file is not None:

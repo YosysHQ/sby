@@ -21,7 +21,7 @@ endif
 help:
 	@echo ""
 	@echo "sudo make install"
-	@echo "    build and install SymbiYosys (sby)"
+	@echo "    build and install SBY"
 	@echo ""
 	@echo "make html"
 	@echo "    build documentation in docs/build/html/"

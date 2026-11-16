@@ -531,7 +531,7 @@ For designs requiring reset cycles (e.g. riscv-formal):
 
 The ``none`` engine does not run any solver. It can be used together with the
 ``make_model`` option to manually generate any model supported by one of the
-other engines. This makes it easier to use the same models outside of sby.
+other engines. This makes it easier to use the same models outside of ``sby``.
 
 
 Script section
