@@ -1,10 +1,9 @@
 
 SBY Documentation
-==============================
+=================
 
-SBY is a front-end driver program for Yosys-based formal
-hardware verification flows. SBY provides flows for the following
-formal tasks:
+SBY is a front-end driver program for Yosys-based formal hardware verification
+flows. SBY provides flows for the following formal tasks:
 
    * Bounded verification of safety properties (assertions)
    * Unbounded verification of safety properties

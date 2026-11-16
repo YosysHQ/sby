@@ -26,5 +26,5 @@ autotune. The `medium` and `large` tasks take significantly longer and show
 greater differences between engine configurations. Note that the `large` tasks
 can take many minutes to hours, depending on the machine you are using.
 
-You can learn more about Sby's autotune feature from [Sby's
-documentation](https://symbiyosys.readthedocs.io/en/latest/autotune.html).
+You can learn more about SBY's autotune feature from [SBY's
+documentation](https://yosyshq.readthedocs.io/projects/sby/en/latest/autotune.html).

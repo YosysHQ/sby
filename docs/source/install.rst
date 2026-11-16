@@ -3,14 +3,14 @@
 Installation guide
 ==================
 
-This document will guide you through the process of installing sby.
+This document will guide you through the process of installing SBY.
 
 CAD suite(s)
 ************
 
 SBY is part of the `Tabby CAD Suite
 <https://www.yosyshq.com/tabby-cad-datasheet>`_ and the `OSS CAD Suite
-<https://github.com/YosysHQ/oss-cad-suite-build>`_! The easiest way to use sby
+<https://github.com/YosysHQ/oss-cad-suite-build>`_! The easiest way to use SBY
 is to install the binary software suite, which contains all required
 dependencies, including all supported solvers.
 
@@ -32,7 +32,7 @@ CAD Suite, please visit https://www.yosyshq.com/tabby-cad-datasheet.
 Installing from source
 **********************
 
-Follow the instructions below to install sby and its dependencies. Yosys and sby
+Follow the instructions below to install SBY and its dependencies. Yosys and SBY
 are non-optional.  Boolector is recommended to install but not required.  The
 other packages are only required for some engine configurations.
 
@@ -68,7 +68,7 @@ Note that this will install Yosys, Yosys-SMTBMC and ABC (as ``yosys-abc``):
    make -j$(nproc)
    sudo make install
 
-sby
+SBY
 ^^^
 
 https://github.com/YosysHQ/sby

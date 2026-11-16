@@ -3,14 +3,14 @@ Autotune: Automatic Engine Selection
 
 Selecting the best performing engine for a given verification task often
 requires some amount of trial and error. To reduce the manual work required for
-this, sby offers the ``--autotune`` option. This takes an ``.sby`` file and
+this, SBY offers the ``--autotune`` option. This takes an ``.sby`` file and
 runs it using engines and engine configurations. At the end it produces a
 report listing the fastest engines among these candidates.
 
 Using Autotune
 --------------
 
-To run autotune, you can add the ``--autotune`` option to your usual sby
+To run autotune, you can add the ``--autotune`` option to your usual ``sby``
 invocation. For example, if you usually run ``sby demo.sby`` you would run
 ``sby --autotune demo.sby`` instead. When the ``.sby`` file contains multiple
 tasks, autotune is run for each task independently. As without ``--autotune``,
@@ -24,7 +24,7 @@ permanently use an engine configuration you can copy it from the
 Example
 ^^^^^^^
 
-The Sby repository contains a `small example`_ in the ``docs/examples/autotune``
+The SBY repository contains a `small example`_ in the ``docs/examples/autotune``
 directory.
 
 The ``divider.sby`` file contains the following ``[engines]`` section:
@@ -61,7 +61,7 @@ the ``[engines]`` section of ``divider.sby`` to:
 Autotune Log Output
 -------------------
 
-The log output in ``--autotune`` mode differs from the usual sby log output.
+The log output in ``--autotune`` mode differs from the usual ``sby`` log output.
 
 It also starts with preparing the design (this includes running the user
 provided ``[script]``) so it can be passed to the solvers. This is only done
@@ -74,11 +74,11 @@ once and will be reused to run every candidate engine.
    SBY [demo] base: finished (returncode=0)
    SBY [demo] prepared model 'base'
 
-This is followed by selecting the engine candidates to run. The design
-and sby configuration are analyzed to skip engines that are not compatible or
+This is followed by selecting the engine candidates to run. The design and
+``.sby`` configuration are analyzed to skip engines that are not compatible or
 unlikely to work well. When an engine is skipped due to a recommendation, a
-corresponding log message is displayed as well as the total number of
-candidates to try:
+corresponding log message is displayed as well as the total number of candidates
+to try:
 
 .. code-block:: text
 
@@ -98,7 +98,7 @@ starting an engine:
    ...
 
 The engine log that would normally be printed is instead redirected to files
-named ``engine_*_autotune.txt`` within sby's working directory.
+named ``engine_*_autotune.txt`` within SBY's working directory.
 
 To run an engine, further preparation steps may be necessary. These are cached
 and will be reused for every engine requiring them, while properly accounting
@@ -148,10 +148,10 @@ their solving time:
    SBY [demo] DONE (AUTOTUNED, rc=0)
 
 If any tried engine encounters an error or produces an unexpected result,
-autotune will also output a list of failed engines. Note that when the sby file
-does not contain the ``expect`` option, autotune defaults to
-``expect pass,fail`` to simplify running autotune on a verification task with a
-currently unknown outcome.
+autotune will also output a list of failed engines. Note that when the ``.sby``
+file does not contain the ``expect`` option, autotune defaults to ``expect
+pass,fail`` to simplify running autotune on a verification task with a currently
+unknown outcome.
 
 Configuring Autotune
 --------------------
