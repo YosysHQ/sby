@@ -476,8 +476,7 @@ def start_task(taskloop, taskname):
             try:
                 remove_db(f"{my_workdir}/{my_status_db}")
             except FileInUseError:
-                # don't delete an open database
-                pass
+                print("WARNING: Status database currently in use, unable to delete")
 
     junit_ts_name = os.path.basename(sbyfile[:-4]) if sbyfile is not None else workdir if workdir is not None else "stdin"
     junit_tc_name = taskname if taskname is not None else "default"

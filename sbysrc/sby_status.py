@@ -593,8 +593,13 @@ def remove_db(path):
 
     if not maybe_locked:
         # safe to delete
-        os.remove(path)
-        return
+        try:
+            os.remove(path)
+        except FileNotFoundError:
+            # database already deleted by someone else
+            pass
+        finally:
+            return
 
     # test database directly
     with sqlite3.connect(path, isolation_level="EXCLUSIVE", timeout=1) as con:
