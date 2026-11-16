@@ -151,6 +151,17 @@ number of parallel jobs can be set by the ``-j`` command line option:
    # Calling SBY with up to 4 parallel tasks
    sby -j4 <jobname>.sby
 
+Parallel SBY processes and the ``-f`` option
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+It is also possible to run tasks in parallel by calling ``sby <jobname>.sby
+<task>`` for each task. However, care must be taken when this approach is
+combined with the ``-f`` option to force running when the task directory already
+exists, since ``-f`` will also attempt to remove the status database shared by
+all tasks. It is recommended to manually remove all existing SBY output
+directories once instead, e.g. with ``rm -rf <jobname> <jobname>_*``, prior to
+calling ``sby`` in parallel.
+
 Task dependencies with Make
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

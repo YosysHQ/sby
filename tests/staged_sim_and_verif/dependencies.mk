@@ -1,6 +1,6 @@
 skip_staged_flow_%: skip_staged_flow.sby
-	sby -f skip_staged_flow.sby $*
-	
+	sby skip_staged_flow.sby $*
+
 skip_staged_flow_stage_1: skip_staged_flow_prep
 skip_staged_flow_stage_2: skip_staged_flow_stage_1
 skip_staged_flow_stage_3_init: skip_staged_flow_stage_2
