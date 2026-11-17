@@ -1,32 +1,34 @@
 [tasks]
-abc prove
-abc_keepgoing prove
-btor_cover cover
-
-# "Error: Does not work for combinational networks."
-abc_bmc3 bmc error
-# "Error: Only works for sequential networks."
-abc_sim3 bmc error
-# "Property index 0 is greater than the number of properties in file model/design_btor_single.btor (0)"
-btor_pono bmc error
-
 # don't run solver with no properties, don't return an empty PASS state
-smtbmc bmc error empty
+empty_err smtbmc bmc error
+
+# don't run any solver with no properties, return PASS instead
+empty_pass bmc3 sim3 smtbmc bmc pass
+
+# works across mode/status
+abc prove pass
+btor cover fail
 
 [options]
 prove: mode prove
 bmc: mode bmc
 cover: mode cover
-error: expect ERROR
-empty: run_empty off
+error:
+# empty ERROR
+expect ERROR
+pass:
+empty PASS
+# expect PASS
+fail:
+empty FAIL
+expect FAIL
+--
 
 [engines]
 abc: abc pdr
-abc_keepgoing: abc --keep-going pdr
-btor_pono: btor pono
-btor_cover: btor btormc
-abc_bmc3: abc bmc3
-abc_sim3: abc sim3
+btor: btor btormc
+bmc3: abc bmc3
+sim3: abc sim3
 smtbmc: smtbmc yices
 
 [script]

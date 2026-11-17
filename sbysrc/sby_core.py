@@ -813,6 +813,12 @@ class SbySummary:
             yield line
 
         for engine_idx, engine_cmd in self.task.engine_list():
+            if self.task.skipped_empty:
+                yield f"No properties found for mode {self.task.opt_mode!r}"
+                num_engines = len(self.task.engine_list())
+                yield f"Skipping {num_engines} engine{'s' if num_engines != 1 else ''} and returning {self.task.status}"
+                break
+
             engine_cmd = ' '.join(engine_cmd)
             trace_limit = 5
             prop_limit = 5
@@ -931,6 +937,7 @@ class SbyTask(SbyConfig):
         self.design = None
         self.precise_prop_status = False
         self.timeout_reached = False
+        self.skipped_empty = False
         self.task_local_abort = False
         self.exit_callback = self.summarize
 
@@ -1187,15 +1194,13 @@ class SbyTask(SbyConfig):
                         # count valid properties
                         if ((prop.kind == "ASSERT" and self.opt_mode in ("bmc", "prove"))
                             or (prop.kind == "COVER" and self.opt_mode == "cover")
-                            # cover_assert without any covers is vacuous
-                            # or (prop.kind == "ASSERT" and self.opt_mode == "cover" and self.opt_cover_assert)
                             or (prop.kind == "LIVE" and self.opt_mode == "live")
                         ):
                             prop_count += 1
                     self.status_db.create_task_properties(props)
 
-                    if not self.opt_run_empty and prop_count == 0:
-                        self.error(f"No properties for mode {self.opt_mode!r}")
+                    if prop_count == 0:
+                        self.skip_empty()
 
             def instance_hierarchy_error_callback(retcode):
                 self.precise_prop_status = False
@@ -1342,6 +1347,11 @@ class SbyTask(SbyConfig):
         self.terminate(cancel=True)
         self.update_status("CANCELLED")
 
+    def skip_empty(self):
+        self.terminate(cancel=True)
+        self.update_status(self.opt_empty)
+        self.skipped_empty = True
+
     def proc_failed(self, proc):
         # proc parameter used by autotune override
         self.status = "ERROR"
@@ -1446,7 +1456,11 @@ class SbyTask(SbyConfig):
         if self.opt_mode == "cover":
             self.handle_bool_option("cover_assert", False)
 
-        self.handle_bool_option("run_empty", True)
+        self.handle_str_option("empty", "error")
+        s = self.opt_empty.upper()
+        if s not in ["PASS", "FAIL", "ERROR"]:
+            self.error(f"Invalid expect value: {self.opt_empty}")
+        self.opt_empty = s
 
     def setup_status_db(self, status_path=None):
         if hasattr(self, 'status_db'):
