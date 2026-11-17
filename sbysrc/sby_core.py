@@ -1199,7 +1199,7 @@ class SbyTask(SbyConfig):
                             prop_count += 1
                     self.status_db.create_task_properties(props)
 
-                    if prop_count == 0:
+                    if prop_count == 0 and self.opt_mode in ("bmc", "prove", "cover", "live"):
                         self.skip_empty()
 
             def instance_hierarchy_error_callback(retcode):

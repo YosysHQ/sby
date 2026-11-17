@@ -215,7 +215,7 @@ options are:
 | ``cover_assert``  | ``cover``  | Check for assertion properties during ``cover`` mode.   |
 |                   |            | Values: ``on``, ``off``. Default: ``off``               |
 +-------------------+------------+---------------------------------------------------------+
-| ``empty``         | ``all``    | When there are no valid properties for the current mode,|
+| ``empty``         |   All      | When there are no valid properties for the current mode,|
 |                   |            | skip running engines and return this status. Values:    |
 |                   |            | ``pass``, ``fail``, ``error``.  Default: ``error``      |
 +-------------------+------------+---------------------------------------------------------+
