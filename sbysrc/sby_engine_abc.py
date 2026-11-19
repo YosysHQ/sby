@@ -41,8 +41,8 @@ def abc_getopt(args, long):
         elif arg.startswith('--'):
             if '=' in arg:
                 prefix, param = arg.split('=', 1)
-                if prefix + "=" in long:
-                    parsed.append(prefix, param)
+                if prefix[2:] + "=" in long:
+                    parsed.append((prefix, param))
             elif arg[2:] in long:
                 parsed.append((arg, ''))
             elif arg[2:] + "=" in long:
