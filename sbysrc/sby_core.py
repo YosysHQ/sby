@@ -1023,6 +1023,9 @@ class SbyTask(SbyConfig):
         else:
             log(message)
 
+    def warning(self, logmessage):
+        self.log(click.style(f"WARNING: {logmessage}", fg="yellow", bold=True))
+
     def error(self, logmessage):
         tm = localtime()
         self.log(click.style(f"ERROR: {logmessage}", fg="red", bold=True))

@@ -1,0 +1,36 @@
+[tasks]
+live_first live first
+live_last live last
+prove_first prove first
+prove_last prove last
+
+[options]
+live: mode live
+prove: mode prove
+
+# failure should not be order dependent
+expect fail
+
+[engines]
+aiger suprove
+
+[script]
+first: verilog_defines -DFIRST
+live: verilog_defines -DPROP=s_eventually
+prove: verilog_defines -DPROP
+read_verilog -formal top.sv
+prep -top top
+
+[file top.sv]
+
+module top(input clk);
+    always @(posedge clk) begin
+    `ifdef FIRST
+        a: assert property (`PROP 1'b0);
+        z: assert property (`PROP 1'b1);
+    `else
+        z: assert property (`PROP 1'b0);
+        a: assert property (`PROP 1'b1);
+    `endif
+    end
+endmodule
