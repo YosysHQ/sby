@@ -1,0 +1,26 @@
+[options]
+mode live
+expect fail
+
+[engines]
+aiger suprove
+
+[script]
+verific -formal live.sv
+prep -top test
+
+[file live.sv]
+module test (input clk, input rst);
+    reg [3:0] counter = 0;
+    always @(posedge clk) begin
+        if (rst)
+            counter <= 0;
+        else
+            counter <= counter + 1;
+    end
+
+    always @(posedge clk) begin
+        fail: assert property (s_eventually counter == 4'hf);
+        pass: assert property (disable iff (rst) s_eventually counter == 4'hf);
+    end
+endmodule
