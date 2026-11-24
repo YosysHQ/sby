@@ -130,7 +130,7 @@ def run(mode, task, engine_idx, engine):
             with open(f"{task.workdir}/model/design_aiger.ywa") as ywa_file:
                 ywa = json.load(ywa_file)
                 justice_props = []
-                for path in ywa.get("lives", []):
+                for path in ywa["lives"]:
                     justice_props.append(task.design.properties_by_path.get(tuple(path)))
 
         if json_output:
@@ -169,10 +169,7 @@ def run(mode, task, engine_idx, engine):
                 disproved.add(line)
 
             prop_idx = int(line[1:])
-            try:
-                prop = justice_props[prop_idx]
-            except IndexError:
-                prop = None
+            prop = justice_props[prop_idx]
             if prop and proc_status:
                 prop.status = proc_status
                 task.summary.add_event(
