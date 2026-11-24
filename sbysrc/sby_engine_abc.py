@@ -237,7 +237,7 @@ def run(mode, task, engine_idx, engine):
                     disproved_count != len(disproved) or
                     proved_count != len(proved)
                 ):
-                    log("WARNING: inconsistent status output")
+                    task.warning("Inconsistent status output")
                     proc_status = "UNKNOWN"
                 elif proved_count == all_count:
                     proc_status = "PASS"
